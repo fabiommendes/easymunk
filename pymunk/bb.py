@@ -1,6 +1,6 @@
 __docformat__ = "reStructuredText"
 
-from typing import NamedTuple, Tuple
+from typing import NamedTuple, Tuple, Iterable
 
 from . import _chipmunk_cffi
 
@@ -28,6 +28,21 @@ class BB(NamedTuple):
     right: float = 0
     top: float = 0
 
+    @property
+    def height(self) -> float:
+        """Height of bounding box."""
+        return self.top - self.bottom
+
+    @property
+    def width(self) -> float:
+        """Width of bounding box."""
+        return self.right - self.left
+
+    @property
+    def position(self) -> Vec2d:
+        """Position of the center. Alias to self.center()"""
+        return self.center()
+
     @staticmethod
     def newForCircle(p: Tuple[float, float], r: float) -> "BB":
         """Convenience constructor for making a BB fitting a circle at
@@ -37,12 +52,22 @@ class BB(NamedTuple):
         bb_ = lib.cpBBNewForCircle(p, r)
         return BB(bb_.l, bb_.b, bb_.r, bb_.t)
 
+    # Called for `obj in BB`.
+    def __contains__(self, item):
+        if isinstance(item, BB):
+            return self.contains(item)
+        elif isinstance(item, (tuple, Vec2d)):
+            return self.contains_vect(item)
+        # TODO include other shape queries.
+        else:
+            return False
+
     def intersects(self, other: "BB") -> bool:
         """Returns true if the bounding boxes intersect"""
         return bool(lib.cpBBIntersects(self, other))
 
     def intersects_segment(
-        self, a: Tuple[float, float], b: Tuple[float, float]
+            self, a: Tuple[float, float], b: Tuple[float, float]
     ) -> bool:
         """Returns true if the segment defined by endpoints a and b
         intersect this bb."""
@@ -51,7 +76,7 @@ class BB(NamedTuple):
         return bool(lib.cpBBIntersectsSegment(self, a, b))
 
     def contains(self, other: "BB") -> bool:
-        """Returns true if bb completley contains the other bb"""
+        """Returns true if bb completely contains the other bb"""
         return bool(lib.cpBBContainsBB(self, other))
 
     def contains_vect(self, v: Tuple[float, float]) -> bool:
@@ -73,10 +98,27 @@ class BB(NamedTuple):
         cp_bb = lib.cpBBExpand(self, tuple(v))
         return BB(cp_bb.l, cp_bb.b, cp_bb.r, cp_bb.t)
 
+    def translate(self, delta: Tuple[float, float]) -> "BB":
+        """
+        Displace BB to the given displacement vector.
+        """
+        dx, dy = delta
+        return BB(self.left + dx, self.bottom + dy, self.right + dx, self.top + dy)
+
     def center(self) -> Vec2d:
         """Return the center"""
         v = lib.cpBBCenter(self)
         return Vec2d(v.x, v.y)
+
+    def vertices(self) -> Iterable[Vec2d]:
+        """Iterate over all vertices of the bounding box.
+
+        Cycle counter-clockwise from bottom-left.
+        """
+        yield Vec2d(self.left, self.bottom)
+        yield Vec2d(self.right, self.bottom)
+        yield Vec2d(self.right, self.top)
+        yield Vec2d(self.left, self.top)
 
     def area(self) -> float:
         """Return the area"""

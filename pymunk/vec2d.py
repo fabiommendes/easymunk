@@ -67,7 +67,7 @@ class Vec2d(NamedTuple):
     x: float
     y: float
 
-    # String representaion (for debugging)
+    # String representation (for debugging)
     def __repr__(self) -> str:
         return "Vec2d(%s, %s)" % (self.x, self.y)
 

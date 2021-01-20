@@ -16,4 +16,5 @@ pymunk/*.c
 pymunk/*.o
 pymunk/*.pyd
 *.whl
-.eggs/
+.eggs/.idea
+.idea/

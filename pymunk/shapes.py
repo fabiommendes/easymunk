@@ -1,7 +1,9 @@
+from math import pi, sin
+
 __docformat__ = "reStructuredText"
 
 import logging
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple
 
 if TYPE_CHECKING:
     from .body import Body
@@ -14,9 +16,15 @@ from ._typing_attr import TypingAttrMixing
 from .bb import BB
 from .contact_point_set import ContactPointSet
 from .query_info import PointQueryInfo, SegmentQueryInfo
-from .shape_filter import ShapeFilter
+from .shape_filter import ShapeFilter, shape_filter_from_cffi
 from .transform import Transform
 from .vec2d import Vec2d
+
+
+def void(value) -> None:
+    """Explicitly *do not* return a value. This is used to make the
+    typechecker happy.
+    """
 
 
 class Shape(PickleMixin, TypingAttrMixing, object):
@@ -40,16 +48,22 @@ class Shape(PickleMixin, TypingAttrMixing, object):
         "surface_velocity",
     ]
     _pickle_attrs_skip = PickleMixin._pickle_attrs_skip + ["mass", "density"]
-
+    _init_attributes = {
+        "mass",
+        "density",
+        "elasticity",
+        "friction",
+        "collision_type",
+        "filter",
+        "surface_velocity",
+        "body",
+    }
     _space = None  # Weak ref to the space holding this body (if any)
-
+    _body = None
+    _shape = None
     _id_counter = 1
 
-    def __init__(self, shape: "Shape") -> None:
-        self._shape = shape
-        self._body = shape.body
-
-    def _init(self, body: Optional["Body"], _shape: ffi.CData) -> None:
+    def _init(self, body: Optional["Body"], _shape: ffi.CData, **kwargs) -> None:
         self._body = body
 
         if body is not None:
@@ -69,6 +83,12 @@ class Shape(PickleMixin, TypingAttrMixing, object):
         self._shape = ffi.gc(_shape, shapefree)
         self._set_id()
 
+        for k, v in kwargs.items():
+            if k in self._init_attributes:
+                setattr(self, k, v)
+            else:
+                raise TypeError(f"invalid paramter: {k}")
+
     @property
     def _id(self) -> int:
         """Unique id of the Shape
@@ -83,15 +103,9 @@ class Shape(PickleMixin, TypingAttrMixing, object):
         cp.cpShapeSetUserData(self._shape, ffi.cast("cpDataPointer", Shape._id_counter))
         Shape._id_counter += 1
 
-    def _get_mass(self) -> float:
-        return cp.cpShapeGetMass(self._shape)
-
-    def _set_mass(self, mass: float) -> None:
-        cp.cpShapeSetMass(self._shape, mass)
-
-    mass = property(
-        _get_mass,
-        _set_mass,
+    mass: float = property(
+        lambda self: cp.cpShapeGetMass(self._shape),
+        lambda self, mass: void(cp.cpShapeSetMass(self._shape, mass)),
         doc="""The mass of this shape.
 
         This is useful when you let Pymunk calculate the total mass and inertia 
@@ -100,15 +114,9 @@ class Shape(PickleMixin, TypingAttrMixing, object):
         """,
     )
 
-    def _get_density(self) -> float:
-        return cp.cpShapeGetDensity(self._shape)
-
-    def _set_density(self, density: float) -> None:
-        cp.cpShapeSetDensity(self._shape, density)
-
-    density = property(
-        _get_density,
-        _set_density,
+    density: float = property(
+        lambda self: cp.cpShapeGetDensity(self._shape),
+        lambda self, density: void(cp.cpShapeSetDensity(self._shape, density)),
         doc="""The density of this shape.
         
         This is useful when you let Pymunk calculate the total mass and inertia 
@@ -117,31 +125,24 @@ class Shape(PickleMixin, TypingAttrMixing, object):
         """,
     )
 
-    @property
-    def moment(self) -> float:
-        """The calculated moment of this shape."""
-        return cp.cpShapeGetMoment(self._shape)
+    moment: float = property(
+        lambda self: cp.cpShapeGetMoment(self._shape),
+        doc="The calculated moment of this shape.",
+    )
 
-    @property
-    def area(self) -> float:
-        """The calculated area of this shape."""
-        return cp.cpShapeGetArea(self._shape)
+    area: float = property(
+        lambda self: cp.cpShapeGetArea(self._shape),
+        doc="The calculated area of this shape.",
+    )
 
-    @property
-    def center_of_gravity(self) -> Vec2d:
-        """The calculated center of gravity of this shape."""
-        v = cp.cpShapeGetCenterOfGravity(self._shape)
-        return Vec2d(v.x, v.y)
+    center_of_gravity: Vec2d = property(
+        lambda self: Vec2d(*cp.cpShapeGetCenterOfGravity(self._shape)),
+        doc="""The calculated center of gravity of this shape.""",
+    )
 
-    def _get_sensor(self) -> bool:
-        return bool(cp.cpShapeGetSensor(self._shape))
-
-    def _set_sensor(self, is_sensor: bool) -> None:
-        cp.cpShapeSetSensor(self._shape, is_sensor)
-
-    sensor = property(
-        _get_sensor,
-        _set_sensor,
+    sensor: bool = property(
+        lambda self: bool(cp.cpShapeGetSensor(self._shape)),
+        lambda self, is_sensor: void(cp.cpShapeSetSensor(self._shape, is_sensor)),
         doc="""A boolean value if this shape is a sensor or not.
 
         Sensors only call collision callbacks, and never generate real
@@ -149,15 +150,9 @@ class Shape(PickleMixin, TypingAttrMixing, object):
         """,
     )
 
-    def _get_collision_type(self) -> int:
-        return cp.cpShapeGetCollisionType(self._shape)
-
-    def _set_collision_type(self, t: int) -> None:
-        cp.cpShapeSetCollisionType(self._shape, t)
-
-    collision_type = property(
-        _get_collision_type,
-        _set_collision_type,
+    collision_type: int = property(
+        lambda self: cp.cpShapeGetCollisionType(self._shape),
+        lambda self, t: void(cp.cpShapeSetCollisionType(self._shape, t)),
         doc="""User defined collision type for the shape.
 
         See :py:meth:`Space.add_collision_handler` function for more 
@@ -165,29 +160,15 @@ class Shape(PickleMixin, TypingAttrMixing, object):
         """,
     )
 
-    def _get_filter(self) -> ShapeFilter:
-        f = cp.cpShapeGetFilter(self._shape)
-        return ShapeFilter(f.group, f.categories, f.mask)
-
-    def _set_filter(self, f: ShapeFilter) -> None:
-        cp.cpShapeSetFilter(self._shape, f)
-
-    filter = property(
-        _get_filter,
-        _set_filter,
-        doc="""Set the collision :py:class:`ShapeFilter` for this shape.
-        """,
+    filter: ShapeFilter = property(
+        lambda self: shape_filter_from_cffi(cp.cpShapeGetFilter(self._shape)),
+        lambda self, f: void(cp.cpShapeSetFilter(self._shape, f)),
+        doc="Set the collision :py:class:`ShapeFilter` for this shape.",
     )
 
-    def _get_elasticity(self) -> float:
-        return cp.cpShapeGetElasticity(self._shape)
-
-    def _set_elasticity(self, e: float) -> None:
-        cp.cpShapeSetElasticity(self._shape, e)
-
-    elasticity = property(
-        _get_elasticity,
-        _set_elasticity,
+    elasticity: float = property(
+        lambda self: cp.cpShapeGetElasticity(self._shape),
+        lambda self, e: void(cp.cpShapeSetElasticity(self._shape, e)),
         doc="""Elasticity of the shape.
 
         A value of 0.0 gives no bounce, while a value of 1.0 will give a
@@ -196,15 +177,9 @@ class Shape(PickleMixin, TypingAttrMixing, object):
         """,
     )
 
-    def _get_friction(self) -> float:
-        return cp.cpShapeGetFriction(self._shape)
-
-    def _set_friction(self, u: float) -> None:
-        cp.cpShapeSetFriction(self._shape, u)
-
-    friction = property(
-        _get_friction,
-        _set_friction,
+    friction: float = property(
+        lambda self: cp.cpShapeGetFriction(self._shape),
+        lambda self, u: void(cp.cpShapeSetFriction(self._shape, u)),
         doc="""Friction coefficient.
 
         Pymunk uses the Coulomb friction model, a value of 0.0 is
@@ -238,17 +213,10 @@ class Shape(PickleMixin, TypingAttrMixing, object):
         """,
     )
 
-    def _get_surface_velocity(self) -> Vec2d:
-        v = cp.cpShapeGetSurfaceVelocity(self._shape)
-        return Vec2d(v.x, v.y)
-
-    def _set_surface_velocity(self, surface_v: Vec2d) -> None:
-        assert len(surface_v) == 2
-        cp.cpShapeSetSurfaceVelocity(self._shape, surface_v)
-
-    surface_velocity = property(
-        _get_surface_velocity,
-        _set_surface_velocity,
+    surface_velocity: Vec2d = property(
+        lambda self: Vec2d(*cp.cpShapeGetSurfaceVelocity(self._shape)),
+        lambda self, surface_v: void(
+            cp.cpShapeSetSurfaceVelocity(self._shape, surface_v)),
         doc="""The surface velocity of the object.
 
         Useful for creating conveyor belts or players that move around. This
@@ -257,24 +225,22 @@ class Shape(PickleMixin, TypingAttrMixing, object):
         """,
     )
 
-    def _get_body(self) -> Optional["Body"]:
-        return self._body
+    body: Optional["Body"] = property(
+        lambda self: self._body,
+        doc="""The body this shape is attached to. Can be set to None to
+        indicate that this shape doesnt belong to a body.""",
+    )
 
-    def _set_body(self, body: Optional["Body"]) -> None:
-        if self._body != None:
+    # noinspection PyProtectedMember
+    @body.setter
+    def body(self, body: Optional["Body"]) -> None:
+        if self._body is not None:
             self._body._shapes.remove(self)
         body_body = ffi.NULL if body is None else body._body
         cp.cpShapeSetBody(self._shape, body_body)
         if body is not None:
             body._shapes.add(self)
         self._body = body
-
-    body = property(
-        _get_body,
-        _set_body,
-        doc="""The body this shape is attached to. Can be set to None to
-        indicate that this shape doesnt belong to a body.""",
-    )
 
     def update(self, transform: Transform) -> BB:
         """Update, cache and return the bounding box of a shape with an
@@ -326,7 +292,7 @@ class Shape(PickleMixin, TypingAttrMixing, object):
         )
 
     def segment_query(
-        self, start: Tuple[float, float], end: Tuple[float, float], radius: float = 0
+            self, start: Tuple[float, float], end: Tuple[float, float], radius: float = 0
     ) -> SegmentQueryInfo:
         """Check if the line segment from start to end intersects the shape.
 
@@ -377,7 +343,7 @@ class Shape(PickleMixin, TypingAttrMixing, object):
         This method allows the usage of the :mod:`copy` and :mod:`pickle`
         modules with this class.
         """
-        d = super(Shape, self).__getstate__()
+        d = super().__getstate__()
 
         if self.mass > 0:
             d["general"].append(("mass", self.mass))
@@ -396,10 +362,11 @@ class Circle(Shape):
     _pickle_attrs_init = Shape._pickle_attrs_init + ["radius", "offset"]
 
     def __init__(
-        self,
-        body: Optional["Body"],
-        radius: float,
-        offset: Tuple[float, float] = (0, 0),
+            self,
+            body: Optional["Body"],
+            radius: float,
+            offset: Tuple[float, float] = (0, 0),
+            **kwargs,
     ) -> None:
         """body is the body attach the circle to, offset is the offset from the
         body's center of gravity in body local coordinates.
@@ -411,7 +378,7 @@ class Circle(Shape):
         assert len(offset) == 2
         body_body = ffi.NULL if body is None else body._body
         _shape = cp.cpCircleShapeNew(body_body, radius, offset)
-        self._init(body, _shape)
+        self._init(body, _shape, **kwargs)
 
     def unsafe_set_radius(self, r: float) -> None:
         """Unsafe set the radius of the circle.
@@ -458,11 +425,12 @@ class Segment(Shape):
     _pickle_attrs_init = Shape._pickle_attrs_init + ["a", "b", "radius"]
 
     def __init__(
-        self,
-        body: Optional["Body"],
-        a: Tuple[float, float],
-        b: Tuple[float, float],
-        radius: float,
+            self,
+            body: Optional["Body"],
+            a: Tuple[float, float],
+            b: Tuple[float, float],
+            radius: float,
+            **kwargs,
     ) -> None:
         """Create a Segment
 
@@ -480,22 +448,19 @@ class Segment(Shape):
 
         body_body = ffi.NULL if body is None else body._body
         _shape = cp.cpSegmentShapeNew(body_body, a, b, radius)
-        self._init(body, _shape)
+        self._init(body, _shape, **kwargs)
 
-    def _get_a(self) -> Vec2d:
-        v = cp.cpSegmentShapeGetA(self._shape)
-        return Vec2d(v.x, v.y)
+    a: Vec2d = property(
+        lambda self: Vec2d(*cp.cpSegmentShapeGetA(self._shape)),
+        doc="The first of the two endpoints for this segment")
 
-    a = property(_get_a, doc="""The first of the two endpoints for this segment""")
-
-    def _get_b(self) -> Vec2d:
-        v = cp.cpSegmentShapeGetB(self._shape)
-        return Vec2d(v.x, v.y)
-
-    b = property(_get_b, doc="""The second of the two endpoints for this segment""")
+    b: Vec2d = property(
+        lambda self: Vec2d(*cp.cpSegmentShapeGetB(self._shape)),
+        doc="The second of the two endpoints for this segment",
+    )
 
     def unsafe_set_endpoints(
-        self, a: Tuple[float, float], b: Tuple[float, float]
+            self, a: Tuple[float, float], b: Tuple[float, float]
     ) -> None:
         """Set the two endpoints for this segment
 
@@ -509,11 +474,10 @@ class Segment(Shape):
         assert len(b) == 2
         cp.cpSegmentShapeSetEndpoints(self._shape, a, b)
 
-    @property
-    def normal(self) -> Vec2d:
-        """The normal"""
-        v = cp.cpSegmentShapeGetNormal(self._shape)
-        return Vec2d(v.x, v.y)
+    normal: Vec2d = property(
+        lambda self: Vec2d(*cp.cpSegmentShapeGetNormal(self._shape)),
+        doc="The normal",
+    )
 
     def unsafe_set_radius(self, r: float) -> None:
         """Set the radius of the segment
@@ -532,7 +496,7 @@ class Segment(Shape):
         return cp.cpSegmentShapeGetRadius(self._shape)
 
     def set_neighbors(
-        self, prev: Tuple[float, float], next: Tuple[float, float]
+            self, prev: Tuple[float, float], next: Tuple[float, float]
     ) -> None:
         """When you have a number of segment shapes that are all joined
         together, things can still collide with the "cracks" between the
@@ -551,11 +515,12 @@ class Poly(Shape):
     """
 
     def __init__(
-        self,
-        body: Optional["Body"],
-        vertices: Sequence[Tuple[float, float]],
-        transform: Optional[Transform] = None,
-        radius: float = 0,
+            self,
+            body: Optional["Body"],
+            vertices: Sequence[Tuple[float, float]],
+            transform: Optional[Transform] = None,
+            radius: float = 0,
+            **kwargs,
     ) -> None:
         """Create a polygon.
 
@@ -608,7 +573,7 @@ class Poly(Shape):
         _shape = cp.cpPolyShapeNew(
             body_body, len(vertices), vertices, transform, radius
         )
-        self._init(body, _shape)
+        self._init(body, _shape, **kwargs)
 
     def unsafe_set_radius(self, radius: float) -> None:
         """Unsafe set the radius of the poly.
@@ -631,7 +596,8 @@ class Poly(Shape):
 
     @staticmethod
     def create_box(
-        body: Optional["Body"], size: Tuple[float, float] = (10, 10), radius: float = 0
+            body: Optional["Body"], size: Tuple[float, float] = (10, 10),
+            radius: float = 0, **kwargs,
     ) -> "Poly":
         """Convenience function to create a box given a width and height.
 
@@ -652,12 +618,12 @@ class Poly(Shape):
         self = Poly.__new__(Poly)
         body_body = ffi.NULL if body is None else body._body
         _shape = cp.cpBoxShapeNew(body_body, size[0], size[1], radius)
-        self._init(body, _shape)
+        self._init(body, _shape, **kwargs)
 
         return self
 
     @staticmethod
-    def create_box_bb(body: Optional["Body"], bb: BB, radius: float = 0) -> "Poly":
+    def create_box_bb(body: Optional["Body"], bb: BB, radius: float = 0, **kwargs) -> "Poly":
         """Convenience function to create a box shape from a :py:class:`BB`.
 
         The boxes will always be centered at the center of gravity of the
@@ -676,9 +642,41 @@ class Poly(Shape):
         self = Poly.__new__(Poly)
         body_body = ffi.NULL if body is None else body._body
         _shape = cp.cpBoxShapeNew2(body_body, bb, radius)
-        self._init(body, _shape)
+        self._init(body, _shape, **kwargs)
 
         return self
+
+    @staticmethod
+    def create_regular_poly(body: Optional["Body"], n: int, size: float,
+                            radius: float = 0, angle: float = 0, **kwargs) -> "Poly":
+        """Convenience function to create a regular polygon of n sides of a
+        given size.
+
+        The polygon will always be centered at the center of gravity of the
+        body you are attaching it to. If you want to create an off-center
+        box, you will need to use the normal constructor Poly(..).
+
+        The first vertex is in the direction of the x-axis. This can be changed
+        by setting a different initial angle.
+
+        Adding a small radius will bevel the corners and can significantly
+        reduce problems where the box gets stuck on seams in your geometry.
+
+        :param Body body: The body to attach the poly to
+        :param int n: Number of sides
+        :param float size: Length of each side
+        :param float radius: Radius of poly
+        :param float angle: Rotation angle.
+        :rtype: :py:class:`Poly`
+        """
+
+        inner_angle = 2 * pi / n
+        distance = size / 2 / sin(inner_angle / 2)
+        vertices = [Vec2d(distance, 0).rotated(angle)]
+        while len(vertices) < n:
+            vertices.append(vertices[-1].rotated(inner_angle))
+
+        return Poly(body, vertices, radius=radius, **kwargs)
 
     def get_vertices(self) -> List[Vec2d]:
         """Get the vertices in local coordinates for the polygon
@@ -710,9 +708,9 @@ class Poly(Shape):
         return verts
 
     def unsafe_set_vertices(
-        self,
-        vertices: Sequence[Tuple[float, float]],
-        transform: Optional[Transform] = None,
+            self,
+            vertices: Sequence[Tuple[float, float]],
+            transform: Optional[Transform] = None,
     ) -> None:
         """Unsafe set the vertices of the poly.
 

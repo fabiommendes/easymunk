@@ -31,7 +31,7 @@ to be removed in the next Pymunk release.
 __docformat__ = "reStructuredText"
 
 from functools import partial
-from typing import List, Tuple
+from typing import List, Tuple, TypeVar
 
 from .math import sqrt
 from .vec2d import Vec2d
@@ -48,9 +48,11 @@ __all__ = [
     "triangulate",
     "convexise",
     "void",
+    "set_attrs",
 ]
 
 X, Y = 0, 1
+T = TypeVar("T")
 
 
 def is_clockwise(points):
@@ -449,3 +451,12 @@ def void(_) -> None:
     """Explicitly *do not* return a value. This is used to make the
     type checker happy.
     """
+
+
+def set_attrs(obj: T, **kwargs) -> T:
+    """
+    Set all given named attributes to object.
+    """
+    for k, v in kwargs.items():
+        setattr(obj, k, v)
+    return obj

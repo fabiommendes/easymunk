@@ -130,7 +130,8 @@ class Vec2d(NamedTuple):
             return Vec2d(self.x * other, self.y * other)
         return NotImplemented
 
-    __rmul__ = __mul__
+    def __rmul__(self, other: float) -> "Vec2d":
+        return self.__mul__(other)
 
     # Division
     def __floordiv__(self, other: float) -> "Vec2d":
@@ -355,7 +356,7 @@ class Vec2d(NamedTuple):
         return Vec2d(
             self.dot(x_vector) / Vec2d(*x_vector).get_length_sqrd(),
             self.dot(y_vector) / Vec2d(*y_vector).get_length_sqrd(),
-        )
+            )
 
     @property
     def int_tuple(self) -> Tuple[int, int]:

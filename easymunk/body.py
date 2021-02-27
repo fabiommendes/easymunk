@@ -1,21 +1,25 @@
 __docformat__ = "reStructuredText"
 
 import logging
-from typing import TYPE_CHECKING, Any, Callable, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Optional, Set, Tuple, Iterable, TypeVar
 from weakref import WeakSet
+
+import sidekick.api as sk
 
 if TYPE_CHECKING:
     from .space import Space
     from .constraints import Constraint
     from .shapes import Shape
+    from .bb import BB
 
 from ._chipmunk_cffi import ffi, lib
 from ._pickle import PickleMixin, _State
 from ._typing_attr import TypingAttrMixing
 from .arbiter import Arbiter
 from .vec2d import Vec2d, VecLike, vec2d_from_cffi
-from .util import void
+from .util import void, set_attrs
 
+T = TypeVar("T")
 _BodyType = int
 _PositionFunc = Callable[["Body", float], None]
 _VelocityFunc = Callable[["Body", Vec2d, float, float], None]
@@ -107,7 +111,7 @@ class Body(PickleMixin, TypingAttrMixing, object):
     #
     @staticmethod
     def update_velocity(
-            body: "Body", gravity: VecLike, damping: float, dt: float
+        body: "Body", gravity: VecLike, damping: float, dt: float
     ) -> None:
         """Default rigid body velocity integration function.
 
@@ -326,6 +330,9 @@ class Body(PickleMixin, TypingAttrMixing, object):
         live body wont prevent GC of the attached constraints"""
         return set(self._constraints)
 
+    #
+    # Bounding box and shape-related properties
+    #
     @property
     def shapes(self) -> Set["Shape"]:
         """Get the shapes attached to this body.
@@ -334,18 +341,158 @@ class Body(PickleMixin, TypingAttrMixing, object):
         body wont prevent GC of the attached shapes"""
         return set(self._shapes)
 
+    def _colliding_shapes(self) -> Iterable["Shape"]:
+        return filter(lambda s: not s.sensor, self._shapes)
+
+    @property
+    def bb(self) -> "BB":
+        """
+        Bounding box for all colliding body shapes.
+        """
+        merge = lambda a, b: a.merge(b)
+        return sk.reduce(merge, self._colliding_shapes())
+
+    @property
+    def left(self) -> float:
+        """
+        Right position (world coordinates) of body.
+
+        Exclude sensor shapes.
+        """
+        return max(s.bb.left for s in self._colliding_shapes())
+
+    @property
+    def right(self) -> float:
+        """
+        Right position (world coordinates) of body.
+
+        Exclude sensor shapes.
+        """
+        return max(s.bb.right for s in self._colliding_shapes())
+
+    @property
+    def bottom(self) -> float:
+        """
+        Bottom position (world coordinates) of body.
+
+        Exclude sensor shapes.
+        """
+        return max(s.bb.bottom for s in self._colliding_shapes())
+
+    @property
+    def top(self) -> float:
+        """
+        Top position (world coordinates) of body.
+
+        Exclude sensor shapes.
+        """
+        return max(s.bb.top for s in self._colliding_shapes())
+
+    @property
+    def arbiters(self) -> Set[Arbiter]:
+        """
+        Return list of arbiters on this body.
+        """
+        res = set()
+        self.each_arbiter(res.add)
+        return res
+
+    #
+    # Physical quantities
+    #
     @property
     def kinetic_energy(self) -> float:
-        """Get the kinetic energy of a body."""
-        # todo: use ffi method
+        """
+        Kinetic energy for angular and linear components.
+        """
+        # todo: use ffi method?
         # return lib._cpBodyKineticEnergy(self._body)
+        v2 = self.velocity.dot(self.velocity)
+        w2 = self.angular_velocity * self.angular_velocity
+        return 0.5 * (
+            (self.mass * v2 if v2 else 0.0) + (self.moment * w2 if w2 else 0.0)
+        )
 
-        vsq: float = self.velocity.dot(self.velocity)
-        wsq: float = self.angular_velocity * self.angular_velocity
-        return (vsq * self.mass if vsq else 0.0) + (wsq * self.moment if wsq else 0.0)
+    @property
+    def gravitational_energy(self) -> float:
+        """
+        Potential energy due to gravity.
+        """
+        gravity = self.space.gravity
+        return -self.mass * self.position.dot(gravity)
+
+    @property
+    def linear_momentum(self) -> Vec2d:
+        """
+        Body's linear momentum (mass times velocity).
+        """
+        return self.mass * self.velocity
+
+    @property
+    def angular_momentum(self) -> float:
+        """
+        Angular momentum around the center of mass.
+        """
+        return self.moment * self.angular_velocity
+
+    @property
+    def density(self) -> float:
+        """
+        Overall density of body. If a density value is assigned, it fixes the
+        density of all shapes in body.
+        """
+        mass = 0.0
+        area = 0.0
+        for s in self.shapes:
+            mass += s.mass
+            area += s.area
+        return mass / area
+
+    @density.setter
+    def density(self, value):
+        self.each_shape(density=value)
+        self.mass = sum(s.mass for s in self.shapes)
+
+    @property
+    def elasticity(self) -> Optional[float]:
+        """
+        Get/Set elasticity of shapes connected to body.
+
+        Elasticity is None if body has not connected shapes or if shapes have
+        different elasticities.
+        """
+        try:
+            value, *other = set(s.elasticity for s in self.shapes)
+        except IndexError:
+            return None
+        else:
+            return None if other else value
+
+    @elasticity.setter
+    def elasticity(self, value):
+        self.each_shape(elasticity=value)
+
+    @property
+    def friction(self) -> Optional[float]:
+        """
+        Get/Set friction of shapes connected to body.
+
+        friction is None if body has not connected shapes or if shapes have
+        different friction coefficients.
+        """
+        try:
+            value, *other = set(s.friction for s in self.shapes)
+        except IndexError:
+            return None
+        else:
+            return None if other else value
+
+    @friction.setter
+    def friction(self, value):
+        self.each_shape(friction=value)
 
     def __init__(
-            self, mass: float = 0, moment: float = 0, body_type: _BodyType = DYNAMIC
+        self, mass: float = 0, moment: float = 0, body_type: _BodyType = DYNAMIC
     ) -> None:
         """Create a new Body
 
@@ -482,7 +629,21 @@ class Body(PickleMixin, TypingAttrMixing, object):
         lib.cpBodySetUserData(self._body, ffi.cast("cpDataPointer", Body._id_counter))
         Body._id_counter += 1
 
-    def apply_force_at_world_point(self, force: VecLike, point: VecLike) -> None:
+    def apply_force(self: T, force) -> T:
+        """
+        Apply force to the center of mass (does not produce any resulting torque).
+        """
+        self.force += force
+        return self
+
+    def apply_torque(self: T, torque) -> T:
+        """
+        Apply toque to the center of mass (does not produce any resulting force).
+        """
+        self.torque += torque
+        return self
+
+    def apply_force_at_world_point(self: T, force: VecLike, point: VecLike) -> T:
         """Add the force force to body as if applied from the world point.
 
         People are sometimes confused by the difference between a force and
@@ -494,41 +655,50 @@ class Body(PickleMixin, TypingAttrMixing, object):
         the mass of the object will halve the effect.
         """
         lib.cpBodyApplyForceAtWorldPoint(self._body, force, point)
+        return self
 
-    def apply_force_at_local_point(self, force: VecLike, point: VecLike = (0, 0)) -> None:
+    def apply_force_at_local_point(
+        self: T, force: VecLike, point: VecLike = (0, 0)
+    ) -> T:
         """Add the local force force to body as if applied from the body
         local point.
         """
         lib.cpBodyApplyForceAtLocalPoint(self._body, force, point)
+        return self
 
-    def apply_impulse_at_world_point(self, impulse: VecLike, point: VecLike) -> None:
+    def apply_impulse_at_world_point(self: T, impulse: VecLike, point: VecLike) -> T:
         """Add the impulse impulse to body as if applied from the world point."""
         lib.cpBodyApplyImpulseAtWorldPoint(self._body, impulse, point)
+        return self
 
-    def apply_impulse_at_local_point(self, impulse: VecLike,
-                                     point: VecLike = (0, 0)) -> None:
+    def apply_impulse_at_local_point(
+        self: T, impulse: VecLike, point: VecLike = (0, 0)
+    ) -> T:
         """Add the local impulse impulse to body as if applied from the body
         local point.
         """
         lib.cpBodyApplyImpulseAtLocalPoint(self._body, impulse, point)
+        return self
 
-    def activate(self) -> None:
+    def activate(self: T) -> T:
         """Reset the idle timer on a body.
 
         If it was sleeping, wake it and any other bodies it was touching.
         """
         lib.cpBodyActivate(self._body)
+        return self
 
-    def sleep(self) -> None:
+    def sleep(self: T) -> T:
         """Forces a body to fall asleep immediately even if it's in midair.
 
         Cannot be called from a callback.
         """
-        if self._space == None:
+        if self._space is None:
             raise Exception("Body not added to space")
         lib.cpBodySleep(self._body)
+        return self
 
-    def sleep_with_group(self, body: "Body") -> None:
+    def sleep_with_group(self: T, body: "Body") -> T:
         """Force a body to fall asleep immediately along with other bodies
         in a group.
 
@@ -545,13 +715,11 @@ class Body(PickleMixin, TypingAttrMixing, object):
         if self._space is None:
             raise Exception("Body not added to space")
         lib.cpBodySleepWithGroup(self._body, body._body)
+        return self
 
     def each_arbiter(
-            self,
-            func: Callable[..., None],  # TODO: Fix me once PEP 612 is ready
-            *args: Any,
-            **kwargs: Any
-    ) -> None:
+        self: T, func: Callable[..., None] = set_attrs, *args: Any, **kwargs: Any
+    ) -> T:
         """Run func on each of the arbiters on this body.
 
             ``func(arbiter, *args, **kwargs) -> None``
@@ -563,6 +731,9 @@ class Body(PickleMixin, TypingAttrMixing, object):
                     Optional parameters passed to the callback function.
                 kwargs
                     Optional keyword parameters passed on to the callback function.
+
+        The default function is :py:func:`set_attrs` and simply set attributes
+        passed as keyword parameters.
 
         .. warning::
 
@@ -577,8 +748,50 @@ class Body(PickleMixin, TypingAttrMixing, object):
 
         data = ffi.new_handle(self)
         lib.cpBodyEachArbiter(self._body, cf, data)
+        return self
 
-    def local_to_world(self, v: Tuple[float, float]) -> Vec2d:
+    def _each(self: T, _col, _fn, args, kwargs) -> T:
+        for item in _col:
+            _fn(item, *args, **kwargs)
+        return self
+
+    def each_constraint(self: T, _fn=set_attrs, *args, **kwargs) -> T:
+        """Run func on each of the constraints on this body.
+
+            ``func(constraint, *args, **kwargs) -> None``
+
+            Callback Parameters
+                constraint : :py:class:`Constraint`
+                    The Constraint
+                args
+                    Optional parameters passed to the callback function.
+                kwargs
+                    Optional keyword parameters passed on to the callback function.
+
+        The default function is :py:func:`set_attrs` and simply set attributes
+        passed as keyword parameters.
+        """
+        return self._each(self._constraints, _fn, args, kwargs)
+
+    def each_shape(self: T, _fn=set_attrs, *args, **kwargs) -> T:
+        """Run func on each of the shapes on this body.
+
+            ``func(shape, *args, **kwargs) -> None``
+
+            Callback Parameters
+                shape : :py:class:`Shape`
+                    The Shape
+                args
+                    Optional parameters passed to the callback function.
+                kwargs
+                    Optional keyword parameters passed on to the callback function.
+
+        The default function is :py:func:`set_attrs` and simply set attributes
+        passed as keyword parameters.
+        """
+        return self._each(self._shapes, _fn, args, kwargs)
+
+    def local_to_world(self, v: VecLike) -> Vec2d:
         """Convert body local coordinates to world space coordinates
 
         Many things are defined in coordinates local to a body meaning that

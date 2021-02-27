@@ -30,13 +30,27 @@ to be removed in the next Pymunk release.
 """
 __docformat__ = "reStructuredText"
 
-from math import sqrt
+from functools import partial
+from typing import List, Tuple
 
+from .math import sqrt
 from .vec2d import Vec2d
 
-X, Y = 0, 1
+__all__ = [
+    "is_clockwise",
+    "reduce_poly",
+    "convex_hull",
+    "calc_area",
+    "calc_center",
+    "poly_vectors_around_center",
+    "is_convex",
+    "calc_perimeter",
+    "triangulate",
+    "convexise",
+    "void",
+]
 
-from functools import partial
+X, Y = 0, 1
 
 
 def is_clockwise(points):
@@ -46,7 +60,6 @@ def is_clockwise(points):
     :return: True if the points forms a clockwise polygon
     """
     a = 0
-    i, j = 0, 0
     for i in range(len(points)):
         j = i + 1
         if j == len(points):
@@ -55,7 +68,7 @@ def is_clockwise(points):
     return a <= 0  # or is it the other way around?
 
 
-def is_left(p0, p1, p2):
+def is_left(p0, p1, p2) -> int:
     """Test if p2 is left, on or right of the (infinite) line (p0,p1).
 
     :return: > 0 for p2 left of the line through p0 and p1
@@ -74,7 +87,7 @@ def is_left(p0, p1, p2):
         return 0
 
 
-def is_convex(points):
+def is_convex(points) -> bool:
     """Test if a polygon (list of (x,y)) is convex or not
 
     :return: True if the polygon is convex, False otherwise
@@ -101,7 +114,7 @@ def is_convex(points):
     return xc <= 2 and yc <= 2
 
 
-def sign(x):
+def sign(x) -> int:
     """Sign function.
 
     :return -1 if x < 0, else return 1
@@ -142,7 +155,7 @@ def convex_hull(points):
 
     assert len(points) > 2, "need at least 3 points to form a convex hull"
 
-    ### Find lowest rightmost point
+    # Find lowest rightmost point
     p0 = points[0]
     for p in points[1:]:
         if p[Y] < p0[Y]:
@@ -151,13 +164,13 @@ def convex_hull(points):
             p0 = p
     points.remove(p0)
 
-    ### Sort the points angularly about p0 as center
+    # Sort the points angularly about p0 as center
     f = partial(is_left, p0)
     points.sort(key=_cmp_to_key(f))
     points.reverse()
     points.insert(0, p0)
 
-    ### Find the hull points
+    # Find the hull points
     hull = [p0, points[1]]
 
     for p in points[2:]:
@@ -200,7 +213,7 @@ def calc_center(points):
     return c
 
 
-def poly_vectors_around_center(pointlist, points_as_Vec2d=True):
+def poly_vectors_around_center(pointlist, points_as_vec2d=True):
     """Rearranges vectors around the center
     If points_as_Vec2d, then return points are also Vec2d, else pos
 
@@ -210,7 +223,7 @@ def poly_vectors_around_center(pointlist, points_as_Vec2d=True):
     poly_points_center = []
     cx, cy = calc_center(pointlist)
 
-    if points_as_Vec2d:
+    if points_as_vec2d:
         for p in pointlist:
             x = p[X] - cx
             y = p[Y] - cy
@@ -241,7 +254,7 @@ def calc_area(points):
     for p2 in points[1:] + [points[0]]:
         a += p1[X] * p2[Y] - p2[X] * p1[Y]
         p1 = p2
-    a = 0.5 * a
+    a *= 0.5
 
     return a
 
@@ -263,14 +276,11 @@ def calc_perimeter(points):
     return c
 
 
-### "hidden" functions
-
-
 def _cmp_to_key(mycmp):
-    "Convert a cmp= function into a key= function, useful for python 3"
+    """Convert a cmp= function into a key= function, useful for python 3"""
 
     class K(object):
-        def __init__(self, obj, *args):
+        def __init__(self, obj, *_args):
             self.obj = obj
 
         def __lt__(self, other):
@@ -313,7 +323,7 @@ def _point_in_triangle(p, a, b, c):
     return (parta + partb + partc) < (whole + thresh)
 
 
-def _get_ear(poly):
+def _get_ear(poly: List[int]) -> Tuple[List[int], List[int]]:
     count = len(poly)
     # not even a poly
     if count < 3:
@@ -348,7 +358,8 @@ def _get_ear(poly):
                 # return the ear, and what's left of the polygon after the ear is clipped
                 return [a, b, c], remaining
 
-    # no ear was found, so something is wrong with the given poly (not anticlockwise? self-intersects?)
+    # no ear was found, so something is wrong with the given poly (not anticlockwise?
+    # self-intersects?)
     return [], []
 
 
@@ -379,7 +390,7 @@ def _reduce_hulls(hulls):
         for ib in range(ia + 1, count):
             # see if hulls can be reduced to one
             reduction = _attempt_reduction(hulls[ia], hulls[ib])
-            if reduction != None:
+            if reduction is not None:
                 # they can so return a new list of hulls and a True
                 newhulls = [reduction]
                 for j in range(count):
@@ -389,9 +400,6 @@ def _reduce_hulls(hulls):
 
     # nothing was reduced, send the original hull list back with a False
     return hulls, False
-
-
-### major functions
 
 
 def triangulate(poly):
@@ -404,6 +412,7 @@ def triangulate(poly):
     """
     triangles = []
     remaining = poly[:]
+
     # while the poly still needs clipping
     while len(remaining) > 2:
         # rotate the list:
@@ -412,9 +421,9 @@ def triangulate(poly):
         remaining = remaining[1:] + remaining[:1]
         # clip the ear, store it
         ear, remaining = _get_ear(remaining)
-        if ear != []:
+        if ear:
             triangles.append(ear)
-    # return stored triangles
+
     return triangles
 
 
@@ -436,15 +445,7 @@ def convexise(triangles):
     return hulls
 
 
-__all__ = [
-    "is_clockwise",
-    "reduce_poly",
-    "convex_hull",
-    "calc_area",
-    "calc_center",
-    "poly_vectors_around_center",
-    "is_convex",
-    "calc_perimeter",
-    "triangulate",
-    "convexise",
-]
+def void(_) -> None:
+    """Explicitly *do not* return a value. This is used to make the
+    type checker happy.
+    """

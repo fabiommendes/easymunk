@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from .body import Body
     from .space import Space
 
+from .util import void
 from ._chipmunk_cffi import ffi
 from ._chipmunk_cffi import lib as cp
 from ._pickle import PickleMixin, _State
@@ -19,12 +20,6 @@ from .query_info import PointQueryInfo, SegmentQueryInfo
 from .shape_filter import ShapeFilter, shape_filter_from_cffi
 from .transform import Transform
 from .vec2d import Vec2d, VecLike, vec2d_from_cffi
-
-
-def void(value) -> None:
-    """Explicitly *do not* return a value. This is used to make the
-    typechecker happy.
-    """
 
 
 class Shape(PickleMixin, TypingAttrMixing, object):
@@ -293,7 +288,7 @@ class Shape(PickleMixin, TypingAttrMixing, object):
         )
 
     def segment_query(
-        self, start: VecLike, end: VecLike, radius: float = 0
+            self, start: VecLike, end: VecLike, radius: float = 0
     ) -> SegmentQueryInfo:
         """Check if the line segment from start to end intersects the shape.
 
@@ -360,11 +355,11 @@ class Circle(Shape):
     _pickle_attrs_init = Shape._pickle_attrs_init + ["radius", "offset"]
 
     def __init__(
-        self,
-        body: Optional["Body"],
-        radius: float,
-        offset: VecLike = (0, 0),
-        **kwargs,
+            self,
+            body: Optional["Body"],
+            radius: float,
+            offset: VecLike = (0, 0),
+            **kwargs,
     ) -> None:
         """body is the body attach the circle to, offset is the offset from the
         body's center of gravity in body local coordinates.
@@ -423,12 +418,12 @@ class Segment(Shape):
     _pickle_attrs_init = Shape._pickle_attrs_init + ["a", "b", "radius"]
 
     def __init__(
-        self,
-        body: Optional["Body"],
-        a: VecLike,
-        b: VecLike,
-        radius: float,
-        **kwargs,
+            self,
+            body: Optional["Body"],
+            a: VecLike,
+            b: VecLike,
+            radius: float,
+            **kwargs,
     ) -> None:
         """Create a Segment
 
@@ -508,12 +503,12 @@ class Poly(Shape):
     """
 
     def __init__(
-        self,
-        body: Optional["Body"],
-        vertices: Sequence[VecLike],
-        transform: Optional[Transform] = None,
-        radius: float = 0,
-        **kwargs,
+            self,
+            body: Optional["Body"],
+            vertices: Sequence[VecLike],
+            transform: Optional[Transform] = None,
+            radius: float = 0,
+            **kwargs,
     ) -> None:
         """Create a polygon.
 
@@ -589,10 +584,10 @@ class Poly(Shape):
 
     @staticmethod
     def create_box(
-        body: Optional["Body"],
-        size: VecLike = (10, 10),
-        radius: float = 0,
-        **kwargs,
+            body: Optional["Body"],
+            size: VecLike = (10, 10),
+            radius: float = 0,
+            **kwargs,
     ) -> "Poly":
         """Convenience function to create a box given a width and height.
 
@@ -619,7 +614,7 @@ class Poly(Shape):
 
     @staticmethod
     def create_box_bb(
-        body: Optional["Body"], bb: BB, radius: float = 0, **kwargs
+            body: Optional["Body"], bb: BB, radius: float = 0, **kwargs
     ) -> "Poly":
         """Convenience function to create a box shape from a :py:class:`BB`.
 
@@ -645,12 +640,12 @@ class Poly(Shape):
 
     @staticmethod
     def create_regular_poly(
-        body: Optional["Body"],
-        n: int,
-        size: float,
-        radius: float = 0,
-        angle: float = 0,
-        **kwargs,
+            body: Optional["Body"],
+            n: int,
+            size: float,
+            radius: float = 0,
+            angle: float = 0,
+            **kwargs,
     ) -> "Poly":
         """Convenience function to create a regular polygon of n sides of a
         given size.
@@ -710,9 +705,9 @@ class Poly(Shape):
         return verts
 
     def unsafe_set_vertices(
-        self,
-        vertices: Sequence[VecLike],
-        transform: Optional[Transform] = None,
+            self,
+            vertices: Sequence[VecLike],
+            transform: Optional[Transform] = None,
     ) -> None:
         """Unsafe set the vertices of the poly.
 

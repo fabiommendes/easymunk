@@ -52,7 +52,7 @@ class SegmentQueryInfo(NamedTuple):
     """
 
     shape: Optional["Shape"]
-    """Shape that was hit, or None if no collision occured"""
+    """Shape that was hit, or None if no collision occurred"""
 
     point: "Vec2d"
     """The point of impact."""
@@ -70,6 +70,6 @@ class ShapeQueryInfo(NamedTuple):
     """
 
     shape: Optional["Shape"]
-    """Shape that was hit, or None if no collision occured"""
+    """Shape that was hit, or None if no collision occurred"""
 
     contact_point_set: "ContactPointSet"

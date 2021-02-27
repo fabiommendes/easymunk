@@ -1,12 +1,12 @@
 __docformat__ = "reStructuredText"
 
-from typing import NamedTuple, Tuple, Iterable
+from typing import NamedTuple, Iterable
 
 from . import _chipmunk_cffi
+from .vec2d import Vec2d, VecLike
 
 lib = _chipmunk_cffi.lib
 ffi = _chipmunk_cffi.ffi
-from .vec2d import Vec2d
 
 
 class BB(NamedTuple):
@@ -44,7 +44,7 @@ class BB(NamedTuple):
         return self.center()
 
     @staticmethod
-    def newForCircle(p: Tuple[float, float], r: float) -> "BB":
+    def newForCircle(p: VecLike, r: float) -> "BB":
         """Convenience constructor for making a BB fitting a circle at
         position p with radius r.
         """
@@ -66,9 +66,7 @@ class BB(NamedTuple):
         """Returns true if the bounding boxes intersect"""
         return bool(lib.cpBBIntersects(self, other))
 
-    def intersects_segment(
-            self, a: Tuple[float, float], b: Tuple[float, float]
-    ) -> bool:
+    def intersects_segment(self, a: VecLike, b: VecLike) -> bool:
         """Returns true if the segment defined by endpoints a and b
         intersect this bb."""
         assert len(a) == 2
@@ -79,7 +77,7 @@ class BB(NamedTuple):
         """Returns true if bb completely contains the other bb"""
         return bool(lib.cpBBContainsBB(self, other))
 
-    def contains_vect(self, v: Tuple[float, float]) -> bool:
+    def contains_vect(self, v: VecLike) -> bool:
         """Returns true if this bb contains the vector v"""
         assert len(v) == 2
         return bool(lib.cpBBContainsVect(self, v))
@@ -91,14 +89,14 @@ class BB(NamedTuple):
         cp_bb = lib.cpBBMerge(self, other)
         return BB(cp_bb.l, cp_bb.b, cp_bb.r, cp_bb.t)
 
-    def expand(self, v: Tuple[float, float]) -> "BB":
+    def expand(self, v: VecLike) -> "BB":
         """Return the minimal bounding box that contans both this bounding box
         and the vector v
         """
         cp_bb = lib.cpBBExpand(self, tuple(v))
         return BB(cp_bb.l, cp_bb.b, cp_bb.r, cp_bb.t)
 
-    def translate(self, delta: Tuple[float, float]) -> "BB":
+    def translate(self, delta: VecLike) -> "BB":
         """
         Displace BB to the given displacement vector.
         """
@@ -130,7 +128,7 @@ class BB(NamedTuple):
         """
         return lib.cpBBMergedArea(self, other)
 
-    def segment_query(self, a: Tuple[float, float], b: Tuple[float, float]) -> float:
+    def segment_query(self, a: VecLike, b: VecLike) -> float:
         """Returns the fraction along the segment query the BB is hit.
 
         Returns infinity if it doesnt hit
@@ -139,17 +137,13 @@ class BB(NamedTuple):
         assert len(b) == 2
         return lib.cpBBSegmentQuery(self, a, b)
 
-    def clamp_vect(self, v: Tuple[float, float]) -> Vec2d:
+    def clamp_vect(self, v: VecLike) -> Vec2d:
         """Returns a copy of the vector v clamped to the bounding box"""
         assert len(v) == 2
         v2 = lib.cpBBClampVect(self, v)
         return Vec2d(v2.x, v2.y)
 
-    '''
-    def wrap_vect(self, v):
+    def wrap_vect(self, v: VecLike) -> Vec2d:
         """Returns a copy of v wrapped to the bounding box.
-
-        That is, BB(0,0,10,10).wrap_vect((5,5)) == Vec2d._fromcffi(10,10)
         """
-        return lib._cpBBWrapVect(self.cp_bb[0], v)
-    '''
+        return lib._cpBBWrapVect(self, v)

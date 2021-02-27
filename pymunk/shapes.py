@@ -18,7 +18,7 @@ from .contact_point_set import ContactPointSet
 from .query_info import PointQueryInfo, SegmentQueryInfo
 from .shape_filter import ShapeFilter, shape_filter_from_cffi
 from .transform import Transform
-from .vec2d import Vec2d
+from .vec2d import Vec2d, VecLike, vec2d_from_cffi
 
 
 def void(value) -> None:
@@ -94,7 +94,7 @@ class Shape(PickleMixin, TypingAttrMixing, object):
         """Unique id of the Shape
 
         .. note::
-            Experimental API. Likely to change in future major, minor orpoint
+            Experimental API. Likely to change in future major, minor or point
             releases.
         """
         return int(ffi.cast("int", cp.cpShapeGetUserData(self._shape)))
@@ -136,7 +136,7 @@ class Shape(PickleMixin, TypingAttrMixing, object):
     )
 
     center_of_gravity: Vec2d = property(
-        lambda self: Vec2d(*cp.cpShapeGetCenterOfGravity(self._shape)),
+        lambda self: vec2d_from_cffi(cp.cpShapeGetCenterOfGravity(self._shape)),
         doc="""The calculated center of gravity of this shape.""",
     )
 
@@ -214,9 +214,10 @@ class Shape(PickleMixin, TypingAttrMixing, object):
     )
 
     surface_velocity: Vec2d = property(
-        lambda self: Vec2d(*cp.cpShapeGetSurfaceVelocity(self._shape)),
+        lambda self: vec2d_from_cffi(cp.cpShapeGetSurfaceVelocity(self._shape)),
         lambda self, surface_v: void(
-            cp.cpShapeSetSurfaceVelocity(self._shape, surface_v)),
+            cp.cpShapeSetSurfaceVelocity(self._shape, surface_v)
+        ),
         doc="""The surface velocity of the object.
 
         Useful for creating conveyor belts or players that move around. This
@@ -291,9 +292,7 @@ class Shape(PickleMixin, TypingAttrMixing, object):
             Vec2d(info.gradient.x, info.gradient.y),
         )
 
-    def segment_query(
-            self, start: Tuple[float, float], end: Tuple[float, float], radius: float = 0
-    ) -> SegmentQueryInfo:
+    def segment_query(self, start: VecLike, end: VecLike, radius: float = 0) -> SegmentQueryInfo:
         """Check if the line segment from start to end intersects the shape.
 
         :rtype: :py:class:`SegmentQueryInfo`
@@ -320,10 +319,7 @@ class Shape(PickleMixin, TypingAttrMixing, object):
             )
 
     def shapes_collide(self, b: "Shape") -> ContactPointSet:
-        """Get contact information about this shape and shape b.
-
-        :rtype: :py:class:`ContactPointSet`
-        """
+        """Get contact information about this shape and shape b."""
         _points = cp.cpShapesCollide(self._shape, b._shape)
         return ContactPointSet._from_cp(_points)
 
@@ -362,11 +358,11 @@ class Circle(Shape):
     _pickle_attrs_init = Shape._pickle_attrs_init + ["radius", "offset"]
 
     def __init__(
-            self,
-            body: Optional["Body"],
-            radius: float,
-            offset: Tuple[float, float] = (0, 0),
-            **kwargs,
+        self,
+        body: Optional["Body"],
+        radius: float,
+        offset: VecLike = (0, 0),
+        **kwargs,
     ) -> None:
         """body is the body attach the circle to, offset is the offset from the
         body's center of gravity in body local coordinates.
@@ -396,7 +392,7 @@ class Circle(Shape):
         """The Radius of the circle"""
         return cp.cpCircleShapeGetRadius(self._shape)
 
-    def unsafe_set_offset(self, o: Tuple[float, float]) -> None:
+    def unsafe_set_offset(self, o: VecLike) -> None:
         """Unsafe set the offset of the circle.
 
         .. note::
@@ -425,12 +421,12 @@ class Segment(Shape):
     _pickle_attrs_init = Shape._pickle_attrs_init + ["a", "b", "radius"]
 
     def __init__(
-            self,
-            body: Optional["Body"],
-            a: Tuple[float, float],
-            b: Tuple[float, float],
-            radius: float,
-            **kwargs,
+        self,
+        body: Optional["Body"],
+        a: VecLike,
+        b: VecLike,
+        radius: float,
+        **kwargs,
     ) -> None:
         """Create a Segment
 
@@ -451,17 +447,16 @@ class Segment(Shape):
         self._init(body, _shape, **kwargs)
 
     a: Vec2d = property(
-        lambda self: Vec2d(*cp.cpSegmentShapeGetA(self._shape)),
-        doc="The first of the two endpoints for this segment")
+        lambda self: vec2d_from_cffi(cp.cpSegmentShapeGetA(self._shape)),
+        doc="The first of the two endpoints for this segment",
+    )
 
     b: Vec2d = property(
-        lambda self: Vec2d(*cp.cpSegmentShapeGetB(self._shape)),
+        lambda self: vec2d_from_cffi(cp.cpSegmentShapeGetB(self._shape)),
         doc="The second of the two endpoints for this segment",
     )
 
-    def unsafe_set_endpoints(
-            self, a: Tuple[float, float], b: Tuple[float, float]
-    ) -> None:
+    def unsafe_set_endpoints(self, a: VecLike, b: VecLike) -> None:
         """Set the two endpoints for this segment
 
         .. note::
@@ -475,7 +470,7 @@ class Segment(Shape):
         cp.cpSegmentShapeSetEndpoints(self._shape, a, b)
 
     normal: Vec2d = property(
-        lambda self: Vec2d(*cp.cpSegmentShapeGetNormal(self._shape)),
+        lambda self: vec2d_from_cffi(cp.cpSegmentShapeGetNormal(self._shape)),
         doc="The normal",
     )
 
@@ -495,16 +490,12 @@ class Segment(Shape):
         """The radius/thickness of the segment"""
         return cp.cpSegmentShapeGetRadius(self._shape)
 
-    def set_neighbors(
-            self, prev: Tuple[float, float], next: Tuple[float, float]
-    ) -> None:
+    def set_neighbors(self, prev: VecLike, next: VecLike) -> None:
         """When you have a number of segment shapes that are all joined
         together, things can still collide with the "cracks" between the
         segments. By setting the neighbor segment endpoints you can tell
         Chipmunk to avoid colliding with the inner parts of the crack.
         """
-        assert len(prev) == 2
-        assert len(next) == 2
         cp.cpSegmentShapeSetNeighbors(self._shape, prev, next)
 
 
@@ -515,12 +506,12 @@ class Poly(Shape):
     """
 
     def __init__(
-            self,
-            body: Optional["Body"],
-            vertices: Sequence[Tuple[float, float]],
-            transform: Optional[Transform] = None,
-            radius: float = 0,
-            **kwargs,
+        self,
+        body: Optional["Body"],
+        vertices: Sequence[VecLike],
+        transform: Optional[Transform] = None,
+        radius: float = 0,
+        **kwargs,
     ) -> None:
         """Create a polygon.
 
@@ -596,8 +587,10 @@ class Poly(Shape):
 
     @staticmethod
     def create_box(
-            body: Optional["Body"], size: Tuple[float, float] = (10, 10),
-            radius: float = 0, **kwargs,
+        body: Optional["Body"],
+        size: VecLike = (10, 10),
+        radius: float = 0,
+        **kwargs,
     ) -> "Poly":
         """Convenience function to create a box given a width and height.
 
@@ -623,7 +616,9 @@ class Poly(Shape):
         return self
 
     @staticmethod
-    def create_box_bb(body: Optional["Body"], bb: BB, radius: float = 0, **kwargs) -> "Poly":
+    def create_box_bb(
+        body: Optional["Body"], bb: BB, radius: float = 0, **kwargs
+    ) -> "Poly":
         """Convenience function to create a box shape from a :py:class:`BB`.
 
         The boxes will always be centered at the center of gravity of the
@@ -647,8 +642,14 @@ class Poly(Shape):
         return self
 
     @staticmethod
-    def create_regular_poly(body: Optional["Body"], n: int, size: float,
-                            radius: float = 0, angle: float = 0, **kwargs) -> "Poly":
+    def create_regular_poly(
+        body: Optional["Body"],
+        n: int,
+        size: float,
+        radius: float = 0,
+        angle: float = 0,
+        **kwargs,
+    ) -> "Poly":
         """Convenience function to create a regular polygon of n sides of a
         given size.
 
@@ -698,7 +699,6 @@ class Poly(Shape):
             (4, 15)
 
         :return: The vertices in local coords
-        :rtype: [:py:class:`Vec2d`]
         """
         verts = []
         l = cp.cpPolyShapeGetCount(self._shape)
@@ -708,9 +708,9 @@ class Poly(Shape):
         return verts
 
     def unsafe_set_vertices(
-            self,
-            vertices: Sequence[Tuple[float, float]],
-            transform: Optional[Transform] = None,
+        self,
+        vertices: Sequence[VecLike],
+        transform: Optional[Transform] = None,
     ) -> None:
         """Unsafe set the vertices of the poly.
 

@@ -1,39 +1,38 @@
-Pymunk
-======
+Easymunk
+========
 
-.. image::  https://raw.githubusercontent.com/viblo/pymunk/master/docs/src/_static/pymunk_logo_animation.gif
+.. image::  https://raw.githubusercontent.com/fabiommendes/easymunk/master/docs/src/_static/easymunk_logo_animation.gif
 
-Pymunk is a easy-to-use pythonic 2d physics library that can be used whenever 
-you need 2d rigid body physics from Python. Perfect when you need 2d physics 
+Easymunk is a easy-to-use pythonic 2d physics library that can be used whenever
+you need 2d rigid body physics from Python. Perfect when you need 2d physics
 in your game, demo or other application! It is built on top of the very 
 capable 2d physics library `Chipmunk <http://chipmunk-physics.net>`_.
 
-The first version was released in 2007 and Pymunk is still actively developed 
-and maintained today, more than 10 years of active development!
 
-Pymunk has been used with success in many projects, big and small. For example: 
-3 Pyweek game competition winners, more than a dozen published scientific 
-papers and even in a self-driving car simulation! See the Showcases section on 
-the Pymunk webpage for some examples.
+Easymunk is a fork of the excellent Pymunk project, but it allows itself to deviate
+more from the original C-library. The goal is to explore a more Pythonic interface
+and tends to be easier to use.
 
-2007 - 2020, Victor Blomqvist - vb@viblo.se, MIT License
+The first version was released in 2021, based on Pymunk 6.0. It owns greatly from Pymunk's
+maturity and 10 years of active development! Easymunk is a laboratory and we hope to
+give back code to Pymunk upstream and collaborate with its development.
 
-This release is based on the latest Pymunk release (6.0.0), 
-using Chipmunk 7 rev 080c51480f018040b567e8f0440b121ae3acbae4 .
+Pymunk: 2007 - 2020, Victor Blomqvist - vb@viblo.se, MIT License
+Easymunk: 2021, Fábio Macêdo Mendes - fabiomacedomendese@gmail.com, MIT License
 
 
 Installation
 ------------
 
-In the normal case pymunk can be installed from PyPI with pip::
+In the normal case Easymunk can be installed from PyPI with pip::
 
-    > pip install pymunk
+    > pip install easymunk
 
 It has one direct dependency, CFFI.
 
-Pymunk can also be installed with conda, from the conda-forge channel::
+Easymunk can also be installed with conda, from the conda-forge channel::
 
-    > conda install -c conda-forge pymunk
+    > conda install -c conda-forge easymunk
 
 
 Example
@@ -41,44 +40,45 @@ Example
 
 Quick code example::
     
-    import pymunk               # Import pymunk..
+    import easymunk as mk       # Import easymunk.
 
-    space = pymunk.Space()      # Create a Space which contain the simulation
-    space.gravity = 0,-1000     # Set its gravity
+    space = mk.Space(           # Create a Space which contain the simulation
+        gravity=(0, -10),       # setting its gravity
+    )
 
-    body = pymunk.Body(1,1666)  # Create a Body with mass and moment
-    body.position = 50,100      # Set the position of the body
-
-    poly = pymunk.Poly.create_box(body) # Create a box shape and attach to body
-    space.add(body, poly)       # Add both body and shape to the simulation
-
-    print_options = pymunk.SpaceDebugDrawOptions() # For easy printing
+    body = space.add_box(       # Create a Body with mass, moment,
+        mass=10,                # position and shape.
+        moment=150,
+        position=(50,100),
+        width=10,
+        height=20,
+    )
 
     while True:                 # Infinite loop simulation
         space.step(0.02)        # Step the simulation one step forward
-        space.debug_draw(print_options) # Print the state of the simulation
+        space.debug_draw()      # Print the state of the simulation
     
 For more detailed and advanced examples, take a look at the included demos 
 (in examples/).
 
-Examples are not included if you install with `pip install pymunk`. Instead you
-need to download the source archive (pymunk-x.y.z.zip). Download available from 
-https://pypi.org/project/pymunk/#files
+Examples are not included if you install with `pip install easymunk`. Instead you
+need to download the source archive (easymunk-x.y.z.zip). Download available from
+https://pypi.org/project/easymunk/#files
 
 
 Documentation
 -------------
 
-The source distribution of Pymunk ships with a number of demos of different 
+The source distribution of Easymunk ships with a number of demos of different
 simulations in the examples directory, and it also contains the full 
 documentation including API reference.
 
 You can also find the full documentation including examples and API reference 
-on the Pymunk homepage, http://www.pymunk.org
+on the Easymunk homepage, http://fabiommendes.github.io/easymunk.
 
 
-The Pymunk Vision
------------------
+The Easymunk Vision
+-------------------
 
     "*Make 2d physics easy to include in your game*"
 
@@ -102,18 +102,15 @@ Contact & Support
 .. _contact-support:
 
 **Homepage**
-    http://www.pymunk.org/
+    http://fabiommendes.github.io/easymunk
 
 **Stackoverflow**
     You can ask questions/browse old ones at Stackoverflow, just look for 
-    the Pymunk tag. http://stackoverflow.com/questions/tagged/pymunk
-
-**E-Mail**
-    You can email me directly at vb@viblo.se
+    the Easymunk tag. http://stackoverflow.com/questions/tagged/easymunk
 
 **Issue Tracker**
     Please use the issue tracker at github to report any issues you find:
-    https://github.com/viblo/pymunk/issues
+    https://github.com/fabiommendes/easymunk/issues
     
 Regardless of the method you use I will try to answer your questions as soon 
 as I see them. (And if you ask on SO other people might help as well!)
@@ -122,48 +119,42 @@ as I see them. (And if you ask on SO other people might help as well!)
 Dependencies / Requirements
 ---------------------------
 
-Basically Pymunk have been made to be as easy to install and distribute as 
+Basically Easymunk have been made to be as easy to install and distribute as
 possible, usually `pip install` will take care of everything for you.
 
-- Python (Runs on CPython 3.6 and later and Pypy3)
+- Python (Runs on CPython 3.7 and later and Pypy3)
 - Chipmunk (Compiled library already included on common platforms)
 - CFFI (will be installed automatically by Pip)
 - Setuptools (should be included with Pip)
 
-* GCC and friends (optional, you need it to compile Pymunk from source. On 
+* GCC and friends (optional, you need it to compile Easymunk from source. On
   windows Visual Studio is required to compile)
 * Pygame (optional, you need it to run the Pygame based demos)
 * Pyglet (optional, you need it to run the Pyglet based demos)
+* Pyxel (optional, you need it to run the Pyxel based demos)
 * Matplotlib & Jupyter Notebook (optional, you need it to run the Matplotlib 
   based demos)
 * Sphinx & aafigure & sphinx_autodoc_typehints (optional, you need it to build 
   documentation)
 
 
-Python 2 Support
-----------------
-
-Support for Python 2 (and Python 3.0 - 3.5) has been dropped with Pymunk 6.0. 
-If you use these legacy versions of Python, please use Pymunk 5.x.
-
-
 Install from source / Chipmunk Compilation
 ------------------------------------------
 
-This section is only required in case you do not install pymunk from the 
+This section is only required in case you do not install easymunk from the
 prebuild binary wheels (normally if you do not use `pip install` or you are 
 on a uncommon platform).
 
-Pymunk is built on top of the c library Chipmunk. It uses CFFI to interface
+Easymunk is built on top of the c library Chipmunk. It uses CFFI to interface
 with the Chipmunk library file. Because of this Chipmunk has to be compiled
-together with Pymunk as an extension module. 
+together with Easymunk as an extension module.
 
 There are basically two options, either building it automatically as part of 
 installation using for example Pip::
 
-    > pip install pymunk-source-dist.zip
+    > pip install easymunk-source-dist.zip
 
-Or if you have the source unpacked / you got Pymunk by cloning its git repo, 
-you can explicitly tell Pymunk to compile it inplace::    
+Or if you have the source unpacked / you got Easymunk by cloning its git repo,
+you can explicitly tell Easymunk to compile it inplace::
 
     > python setup.py build_ext --inplace

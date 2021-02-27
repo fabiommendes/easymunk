@@ -18,3 +18,4 @@ pymunk/*.pyd
 *.whl
 .eggs/.idea
 .idea/
+.coverage

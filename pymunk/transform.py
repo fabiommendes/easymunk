@@ -125,45 +125,43 @@ class Transform(NamedTuple):
         s = math.sin(t)
         return Transform(a=c, b=s, c=-s, d=c)
 
-    @classmethod
-    def projection(cls, t, translation=(0, 0)):
+    @staticmethod
+    def projection(t, translation=(0, 0)):
         """
         Create a projection matrix.
         """
-        return cls.affine(Mat22.projection(t), translation)
+        return Transform.affine(Mat22.projection(t), translation)
 
-    @classmethod
-    def affine(cls, matrix=None, translation=(0, 0)):
+    @staticmethod
+    def affine(matrix=None, translation=(0, 0)):
         """
         Create transform from linear transformation encoded in matrix and
         translation.
         """
         a, b, c, d = Mat22.identity() if matrix is None else matrix
         tx, ty = translation
-        return cls(a, b, c, d, tx, ty)
+        return Transform(a, b, c, d, tx, ty)
 
-    @classmethod
-    def similarity(
-        cls, *, scale=None, angle=None, angle_degrees=None, translation=(0, 0)
-    ):
+    @staticmethod
+    def similarity(*, scale=None, angle=None, angle_degrees=None, translation=(0, 0)):
         """
         Create affine transform from similarity transformations..
         """
         if angle is not None:
-            M = Mat22.rotation(angle)
+            mat = Mat22.rotation(angle)
         elif angle_degrees is not None:
-            M = Mat22.rotation(angle_degrees)
+            mat = Mat22.rotation(angle_degrees)
         else:
-            M = Mat22.identity()
+            mat = Mat22.identity()
         vec = Vec2d(*translation)
 
         if scale is not None:
             vec *= scale
-            M = Mat22.scale(scale) * M
+            mat = Mat22.scale(scale) * mat
 
-        return cls.affine(M, vec)
+        return Transform.affine(mat, vec)
 
-    def transform(self, vec: Vec2d):
+    def transform(self, vec: VecLike) -> Vec2d:
         """
         Return transformed vector by affine transform.
         """
@@ -189,8 +187,8 @@ class Transform(NamedTuple):
         if isinstance(other, Mat22):
             return Transform.affine(other * self.matrix, other.T * self.vector)
         elif isinstance(other, Transform):
-            M = self.matrix
-            return Transform.affine(M * other.matrix, self.vector + M * other.vector)
+            mat = self.matrix
+            return Transform.affine(mat * other.matrix, self.vector + mat * other.vector)
         elif isinstance(other, (tuple, Vec2d)):
             return self.transform_vector(other)
         return NotImplemented
@@ -202,8 +200,8 @@ class Transform(NamedTuple):
 
     def __add__(self, other):
         if isinstance(other, (Vec2d, tuple)):
-            M = self.matrix
-            return Transform.affine(M, self.vector + M * other)
+            mat = self.matrix
+            return Transform.affine(mat, self.vector + mat * other)
         return NotImplemented
 
     def __radd__(self, other):

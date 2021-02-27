@@ -292,7 +292,9 @@ class Shape(PickleMixin, TypingAttrMixing, object):
             Vec2d(info.gradient.x, info.gradient.y),
         )
 
-    def segment_query(self, start: VecLike, end: VecLike, radius: float = 0) -> SegmentQueryInfo:
+    def segment_query(
+        self, start: VecLike, end: VecLike, radius: float = 0
+    ) -> SegmentQueryInfo:
         """Check if the line segment from start to end intersects the shape.
 
         :rtype: :py:class:`SegmentQueryInfo`

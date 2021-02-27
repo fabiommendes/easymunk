@@ -188,7 +188,9 @@ class Transform(NamedTuple):
             return Transform.affine(other * self.matrix, other.T * self.vector)
         elif isinstance(other, Transform):
             mat = self.matrix
-            return Transform.affine(mat * other.matrix, self.vector + mat * other.vector)
+            return Transform.affine(
+                mat * other.matrix, self.vector + mat * other.vector
+            )
         elif isinstance(other, (tuple, Vec2d)):
             return self.transform_vector(other)
         return NotImplemented

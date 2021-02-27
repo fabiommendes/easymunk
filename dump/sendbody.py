@@ -1,7 +1,7 @@
 import sys
 from ctypes import *
 
-sys.path.insert(0,'..')
+sys.path.insert(0, "..")
 
 import pymunk
 
@@ -18,10 +18,4 @@ b2 = pymunk.Body(10, 1)
 bodies = [b1._body, b2._body, b1._body]
 arr = (POINTER(cpBody) * len(bodies))(*bodies)
 
-print mass_sum(len(arr), arr)  
-
-
-
-
- 
-
+print mass_sum(len(arr), arr)

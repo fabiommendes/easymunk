@@ -144,6 +144,5 @@ class BB(NamedTuple):
         return Vec2d(v2.x, v2.y)
 
     def wrap_vect(self, v: VecLike) -> Vec2d:
-        """Returns a copy of v wrapped to the bounding box.
-        """
+        """Returns a copy of v wrapped to the bounding box."""
         return lib._cpBBWrapVect(self, v)

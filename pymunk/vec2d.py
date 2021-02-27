@@ -55,7 +55,7 @@ import math
 import numbers
 from typing import NamedTuple, Tuple
 
-__all__ = ["Vec2d", "VecLike"]
+__all__ = ["Vec2d", "VecLike", "vec2d_from_cffi"]
 
 VecLike = Tuple[float, float]
 

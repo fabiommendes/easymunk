@@ -24,7 +24,7 @@
 from numbers import Number, Real
 from typing import Union, Tuple, Iterable, NamedTuple
 
-from .math import sqrt, cos, sin, pi
+from .math import sqrt, cos, sin
 from .vec2d import Vec2d, VecLike
 
 MatLike = Union["Mat22", Tuple[Tuple[Number, Number], Tuple[Number, Number]]]

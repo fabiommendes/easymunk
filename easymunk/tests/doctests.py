@@ -4,7 +4,7 @@ import sys
 import unittest
 from typing import Any, List
 
-import pymunk
+import easymunk
 
 ignores = ["pymunk_extension_build"]
 all_dependencies = ["pygame", "pyglet", "matplotlib"]
@@ -13,7 +13,7 @@ all_dependencies = ["pygame", "pyglet", "matplotlib"]
 def load_tests(
     tests: unittest.TestSuite, dependencies: List[str] = []
 ) -> unittest.TestSuite:
-    for importer, modname, ispkg in pkgutil.iter_modules(pymunk.__path__):  # type: ignore  # mypy issue #1422
+    for importer, modname, ispkg in pkgutil.iter_modules(easymunk.__path__):  # type: ignore  # mypy issue #1422
         # try:
         skip = False
         if modname in ignores:
@@ -27,7 +27,7 @@ def load_tests(
 
         # except Exception as e:
         #    print("Skipping " + modname, e)
-    tests.addTests(doctest.DocTestSuite(pymunk))
+    tests.addTests(doctest.DocTestSuite(easymunk))
     return tests
 
 

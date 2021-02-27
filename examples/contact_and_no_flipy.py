@@ -8,8 +8,8 @@ import sys
 
 import pygame
 
-import pymunk as pm
-from pymunk import Vec2d
+import easymunk as pm
+from easymunk import Vec2d
 
 
 def draw_collision(arbiter, space, data):

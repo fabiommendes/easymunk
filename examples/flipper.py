@@ -7,9 +7,9 @@ import random
 
 import pygame
 
-import pymunk
-import pymunk.pygame_util
-from pymunk import Vec2d
+import easymunk
+import easymunk.pygame_util
+from easymunk import Vec2d
 
 pygame.init()
 screen = pygame.display.set_mode((600, 600))
@@ -17,20 +17,20 @@ clock = pygame.time.Clock()
 running = True
 
 ### Physics stuff
-space = pymunk.Space()
+space = easymunk.Space()
 space.gravity = (0.0, 900.0)
-draw_options = pymunk.pygame_util.DrawOptions(screen)
+draw_options = easymunk.pygame_util.DrawOptions(screen)
 
 ## Balls
 balls = []
 
 ### walls
 static_lines = [
-    pymunk.Segment(space.static_body, (150, 500), (50, 50), 1.0),
-    pymunk.Segment(space.static_body, (450, 500), (550, 50), 1.0),
-    pymunk.Segment(space.static_body, (50, 50), (300, 0), 1.0),
-    pymunk.Segment(space.static_body, (300, 0), (550, 50), 1.0),
-    pymunk.Segment(space.static_body, (300, 180), (400, 200), 1.0),
+    easymunk.Segment(space.static_body, (150, 500), (50, 50), 1.0),
+    easymunk.Segment(space.static_body, (450, 500), (550, 50), 1.0),
+    easymunk.Segment(space.static_body, (50, 50), (300, 0), 1.0),
+    easymunk.Segment(space.static_body, (300, 0), (550, 50), 1.0),
+    easymunk.Segment(space.static_body, (300, 180), (400, 200), 1.0),
 ]
 for line in static_lines:
     line.elasticity = 0.7
@@ -39,33 +39,33 @@ space.add(*static_lines)
 
 fp = [(20, -20), (-120, 0), (20, 20)]
 mass = 100
-moment = pymunk.moment_for_poly(mass, fp)
+moment = easymunk.moment_for_poly(mass, fp)
 
 # right flipper
-r_flipper_body = pymunk.Body(mass, moment)
+r_flipper_body = easymunk.Body(mass, moment)
 r_flipper_body.position = 450, 500
-r_flipper_shape = pymunk.Poly(r_flipper_body, fp)
+r_flipper_shape = easymunk.Poly(r_flipper_body, fp)
 space.add(r_flipper_body, r_flipper_shape)
 
-r_flipper_joint_body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
+r_flipper_joint_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
 r_flipper_joint_body.position = r_flipper_body.position
-j = pymunk.PinJoint(r_flipper_body, r_flipper_joint_body, (0, 0), (0, 0))
+j = easymunk.PinJoint(r_flipper_body, r_flipper_joint_body, (0, 0), (0, 0))
 # todo: tweak values of spring better
-s = pymunk.DampedRotarySpring(
+s = easymunk.DampedRotarySpring(
     r_flipper_body, r_flipper_joint_body, 0.15, 20000000, 900000
 )
 space.add(j, s)
 
 # left flipper
-l_flipper_body = pymunk.Body(mass, moment)
+l_flipper_body = easymunk.Body(mass, moment)
 l_flipper_body.position = 150, 500
-l_flipper_shape = pymunk.Poly(l_flipper_body, [(-x, y) for x, y in fp])
+l_flipper_shape = easymunk.Poly(l_flipper_body, [(-x, y) for x, y in fp])
 space.add(l_flipper_body, l_flipper_shape)
 
-l_flipper_joint_body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
+l_flipper_joint_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
 l_flipper_joint_body.position = l_flipper_body.position
-j = pymunk.PinJoint(l_flipper_body, l_flipper_joint_body, (0, 0), (0, 0))
-s = pymunk.DampedRotarySpring(
+j = easymunk.PinJoint(l_flipper_body, l_flipper_joint_body, (0, 0), (0, 0))
+s = easymunk.DampedRotarySpring(
     l_flipper_body, l_flipper_joint_body, -0.15, 20000000, 900000
 )
 space.add(j, s)
@@ -75,9 +75,9 @@ r_flipper_shape.elasticity = l_flipper_shape.elasticity = 0.4
 
 # "bumpers"
 for p in [(240, 100), (360, 100)]:
-    body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
+    body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
     body.position = p
-    shape = pymunk.Circle(body, 10)
+    shape = easymunk.Circle(body, 10)
     shape.elasticity = 1.5
     space.add(body, shape)
 
@@ -100,11 +100,11 @@ while running:
 
             mass = 1
             radius = 25
-            inertia = pymunk.moment_for_circle(mass, 0, radius, (0, 0))
-            body = pymunk.Body(mass, inertia)
+            inertia = easymunk.moment_for_circle(mass, 0, radius, (0, 0))
+            body = easymunk.Body(mass, inertia)
             x = random.randint(115, 350)
             body.position = x, 200
-            shape = pymunk.Circle(body, radius, (0, 0))
+            shape = easymunk.Circle(body, radius, (0, 0))
             shape.elasticity = 0.95
             space.add(body, shape)
             balls.append(shape)

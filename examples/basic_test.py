@@ -6,14 +6,14 @@ import math
 import random
 import sys
 
-import pymunk
-import pymunk.util
-from pymunk import Vec2d
+import easymunk
+import easymunk.util
+from easymunk import Vec2d
 
 
 def main():
-    print(f"basic example of pymunk {pymunk.version}")
-    space = pymunk.Space()
+    print(f"basic example of pymunk {easymunk.version}")
+    space = easymunk.Space()
     space.gravity = (0.0, -900.0)
 
     ## Balls
@@ -26,11 +26,11 @@ def main():
             ticks_to_next_ball = 10000
             mass = 10
             radius = 25
-            inertia = pymunk.moment_for_circle(mass, 0, radius, (0, 0))
-            body = pymunk.Body(mass, inertia)
+            inertia = easymunk.moment_for_circle(mass, 0, radius, (0, 0))
+            body = easymunk.Body(mass, inertia)
             x = random.randint(115, 350)
             body.position = x, 400
-            shape = pymunk.Circle(body, radius, Vec2d(0, 0))
+            shape = easymunk.Circle(body, radius, Vec2d(0, 0))
             space.add(body, shape)
             balls.append(shape)
 

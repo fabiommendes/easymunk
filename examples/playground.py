@@ -6,9 +6,9 @@ __docformat__ = "reStructuredText"
 
 import pygame
 
-import pymunk as pm
-import pymunk.util as u
-from pymunk import Vec2d
+import easymunk as pm
+import easymunk.util as u
+from easymunk import Vec2d
 
 # TODO: Clean up code
 

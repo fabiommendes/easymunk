@@ -5,8 +5,8 @@ __docformat__ = "reStructuredText"
 
 import pygame
 
-import pymunk
-from pymunk import Vec2d
+import easymunk
+from easymunk import Vec2d
 
 X, Y = 0, 1
 ### Physics collision types
@@ -35,15 +35,15 @@ def main():
     running = True
 
     ### Physics stuff
-    space = pymunk.Space()
+    space = easymunk.Space()
     space.gravity = 0.0, -900.0
 
     ## Balls
     balls = []
 
     ### Mouse
-    mouse_body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
-    mouse_shape = pymunk.Circle(mouse_body, 3, (0, 0))
+    mouse_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
+    mouse_shape = easymunk.Circle(mouse_body, 3, (0, 0))
     mouse_shape.collision_type = COLLTYPE_MOUSE
     space.add(mouse_body, mouse_shape)
 
@@ -66,9 +66,9 @@ def main():
                 pygame.image.save(screen, "balls_and_lines.png")
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 p = event.pos[X], flipy(event.pos[Y])
-                body = pymunk.Body(10, 100)
+                body = easymunk.Body(10, 100)
                 body.position = p
-                shape = pymunk.Circle(body, 10, (0, 0))
+                shape = easymunk.Circle(body, 10, (0, 0))
                 shape.friction = 0.5
                 shape.collision_type = COLLTYPE_BALL
                 space.add(body, shape)
@@ -81,7 +81,7 @@ def main():
                 if line_point1 is not None:
 
                     line_point2 = Vec2d(event.pos[X], flipy(event.pos[Y]))
-                    shape = pymunk.Segment(
+                    shape = easymunk.Segment(
                         space.static_body, line_point1, line_point2, 0.0
                     )
                     shape.friction = 0.99
@@ -97,9 +97,9 @@ def main():
         mouse_body.position = mouse_pos
 
         if pygame.key.get_mods() & pygame.KMOD_SHIFT and pygame.mouse.get_pressed()[0]:
-            body = pymunk.Body(10, 10)
+            body = easymunk.Body(10, 10)
             body.position = mouse_pos
-            shape = pymunk.Circle(body, 10, (0, 0))
+            shape = easymunk.Circle(body, 10, (0, 0))
             shape.collision_type = COLLTYPE_BALL
             space.add(body, shape)
             balls.append(shape)

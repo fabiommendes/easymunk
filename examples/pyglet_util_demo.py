@@ -10,13 +10,13 @@ import sys
 import pyglet
 import shapes_for_draw_demos
 
-import pymunk
-import pymunk.pyglet_util
-from pymunk.vec2d import Vec2d
+import easymunk
+import easymunk.pyglet_util
+from easymunk.vec2d import Vec2d
 
 window = pyglet.window.Window(1000, 700, vsync=False)
-space = pymunk.Space()
-draw_options = pymunk.pyglet_util.DrawOptions()
+space = easymunk.Space()
+draw_options = easymunk.pyglet_util.DrawOptions()
 captions = shapes_for_draw_demos.fill_space(space)
 
 

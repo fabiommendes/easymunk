@@ -42,8 +42,8 @@ elif sys.argv[1] == "/i":  # interactive
     is_interactive = True
 
 
-import pymunk as pm
-from pymunk import Vec2d
+import easymunk as pm
+from easymunk import Vec2d
 
 
 def drawcircle(image, colour, origin, radius, width=0):

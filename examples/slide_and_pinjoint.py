@@ -10,8 +10,8 @@ import sys
 
 import pygame
 
-import pymunk
-import pymunk.pygame_util
+import easymunk
+import easymunk.pygame_util
 
 random.seed(1)
 
@@ -20,11 +20,11 @@ def add_ball(space):
     """Add a ball to the given space at a random position"""
     mass = 1
     radius = 14
-    inertia = pymunk.moment_for_circle(mass, 0, radius, (0, 0))
-    body = pymunk.Body(mass, inertia)
+    inertia = easymunk.moment_for_circle(mass, 0, radius, (0, 0))
+    body = easymunk.Body(mass, inertia)
     x = random.randint(120, 380)
     body.position = x, 50
-    shape = pymunk.Circle(body, radius, (0, 0))
+    shape = easymunk.Circle(body, radius, (0, 0))
     shape.friction = 1
     space.add(body, shape)
     return shape
@@ -32,21 +32,21 @@ def add_ball(space):
 
 def add_L(space):
     """Add a inverted L shape with two joints"""
-    rotation_center_body = pymunk.Body(body_type=pymunk.Body.STATIC)
+    rotation_center_body = easymunk.Body(body_type=easymunk.Body.STATIC)
     rotation_center_body.position = (300, 300)
 
-    rotation_limit_body = pymunk.Body(body_type=pymunk.Body.STATIC)
+    rotation_limit_body = easymunk.Body(body_type=easymunk.Body.STATIC)
     rotation_limit_body.position = (200, 300)
 
-    body = pymunk.Body(10, 10000)
+    body = easymunk.Body(10, 10000)
     body.position = (300, 300)
-    l1 = pymunk.Segment(body, (-145, 0), (255.0, 0.0), 1)
-    l2 = pymunk.Segment(body, (-145, 0), (-145.0, -25.0), 1)
+    l1 = easymunk.Segment(body, (-145, 0), (255.0, 0.0), 1)
+    l2 = easymunk.Segment(body, (-145, 0), (-145.0, -25.0), 1)
     l1.friction = 1
     l2.friction = 1
-    rotation_center_joint = pymunk.PinJoint(body, rotation_center_body, (0, 0), (0, 0))
+    rotation_center_joint = easymunk.PinJoint(body, rotation_center_body, (0, 0), (0, 0))
     joint_limit = 25
-    rotation_limit_joint = pymunk.SlideJoint(
+    rotation_limit_joint = easymunk.SlideJoint(
         body, rotation_limit_body, (-100, 0), (0, 0), 0, joint_limit
     )
 
@@ -60,12 +60,12 @@ def main():
     pygame.display.set_caption("Joints. Just wait and the L will tip over")
     clock = pygame.time.Clock()
 
-    space = pymunk.Space()
+    space = easymunk.Space()
     space.gravity = (0.0, 900.0)
 
     lines = add_L(space)
     balls = []
-    draw_options = pymunk.pygame_util.DrawOptions(screen)
+    draw_options = easymunk.pygame_util.DrawOptions(screen)
 
     ticks_to_next_ball = 10
     while True:

@@ -2,8 +2,8 @@ import math
 import pickle
 import unittest
 
-import pymunk
-from pymunk.vec2d import Vec2d
+import easymunk
+from easymunk.vec2d import Vec2d
 
 
 class UnitTestVec2d(unittest.TestCase):
@@ -155,5 +155,5 @@ class UnitTestVec2d(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    print("testing pymunk.vec2d version " + pymunk.version)
+    print("testing pymunk.vec2d version " + easymunk.version)
     unittest.main()

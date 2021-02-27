@@ -1,8 +1,8 @@
 import pickle
 import unittest
 
-import pymunk as p
-from pymunk.vec2d import Vec2d
+import easymunk as p
+from easymunk.vec2d import Vec2d
 
 
 class UnitTestTransform(unittest.TestCase):

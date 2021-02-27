@@ -7,10 +7,10 @@ import sys
 
 import pygame
 
-import pymunk
-import pymunk.autogeometry
-import pymunk.pygame_util
-from pymunk import BB
+import easymunk
+import easymunk.autogeometry
+import easymunk.pygame_util
+from easymunk import BB
 
 
 def draw_helptext(screen):
@@ -42,17 +42,17 @@ def generate_geometry(surface, space):
             print(e)
             return 0
 
-    line_set = pymunk.autogeometry.march_soft(
+    line_set = easymunk.autogeometry.march_soft(
         BB(0, 0, 599, 599), 60, 60, 90, sample_func
     )
 
     for polyline in line_set:
-        line = pymunk.autogeometry.simplify_curves(polyline, 1.0)
+        line = easymunk.autogeometry.simplify_curves(polyline, 1.0)
 
         for i in range(len(line) - 1):
             p1 = line[i]
             p2 = line[i + 1]
-            shape = pymunk.Segment(space.static_body, p1, p2, 1)
+            shape = easymunk.Segment(space.static_body, p1, p2, 1)
             shape.friction = 0.5
             shape.color = pygame.Color("red")
             shape.generated = True
@@ -64,13 +64,13 @@ def main():
     screen = pygame.display.set_mode((600, 600))
     clock = pygame.time.Clock()
 
-    space = pymunk.Space()
+    space = easymunk.Space()
     space.gravity = 0, 980
     static = [
-        pymunk.Segment(space.static_body, (0, -50), (-50, 650), 5),
-        pymunk.Segment(space.static_body, (0, 650), (650, 650), 5),
-        pymunk.Segment(space.static_body, (650, 650), (650, -50), 5),
-        pymunk.Segment(space.static_body, (-50, -50), (650, -50), 5),
+        easymunk.Segment(space.static_body, (0, -50), (-50, 650), 5),
+        easymunk.Segment(space.static_body, (0, 650), (650, 650), 5),
+        easymunk.Segment(space.static_body, (650, 650), (650, -50), 5),
+        easymunk.Segment(space.static_body, (-50, -50), (650, -50), 5),
     ]
     for s in static:
         s.collision_type = 1
@@ -91,15 +91,15 @@ def main():
     generate_geometry(terrain_surface, space)
     for x in range(25):
         mass = 1
-        moment = pymunk.moment_for_circle(mass, 0, 10)
-        body = pymunk.Body(mass, moment)
+        moment = easymunk.moment_for_circle(mass, 0, 10)
+        body = easymunk.Body(mass, moment)
         body.position = 450, 120
-        shape = pymunk.Circle(body, 10)
+        shape = easymunk.Circle(body, 10)
         shape.friction = 0.5
         space.add(body, shape)
 
-    draw_options = pymunk.pygame_util.DrawOptions(screen)
-    pymunk.pygame_util.positive_y_is_up = False
+    draw_options = easymunk.pygame_util.DrawOptions(screen)
+    easymunk.pygame_util.positive_y_is_up = False
 
     fps = 60
     while True:
@@ -127,10 +127,10 @@ def main():
         if pygame.mouse.get_pressed()[0]:
             if pygame.key.get_mods() & pygame.KMOD_SHIFT:
                 mass = 1
-                moment = pymunk.moment_for_circle(mass, 0, 10)
-                body = pymunk.Body(mass, moment)
+                moment = easymunk.moment_for_circle(mass, 0, 10)
+                body = easymunk.Body(mass, moment)
                 body.position = pygame.mouse.get_pos()
-                shape = pymunk.Circle(body, 10)
+                shape = easymunk.Circle(body, 10)
                 shape.friction = 0.5
                 space.add(body, shape)
             else:

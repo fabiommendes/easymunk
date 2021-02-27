@@ -14,9 +14,9 @@ import sys
 
 import pygame
 
-import pymunk
-import pymunk.pygame_util
-from pymunk.vec2d import Vec2d
+import easymunk
+import easymunk.pygame_util
+from easymunk.vec2d import Vec2d
 
 
 def cpfclamp(f, min_, max_):
@@ -64,21 +64,21 @@ def main():
     img = pygame.image.load("xmasgirl1.png")
 
     ### Physics stuff
-    space = pymunk.Space()
+    space = easymunk.Space()
     space.gravity = Vec2d(0, -1000)
-    pymunk.pygame_util.positive_y_is_up = True
-    draw_options = pymunk.pygame_util.DrawOptions(screen)
+    easymunk.pygame_util.positive_y_is_up = True
+    draw_options = easymunk.pygame_util.DrawOptions(screen)
 
     # box walls
     static = [
-        pymunk.Segment(space.static_body, (10, 50), (300, 50), 3),
-        pymunk.Segment(space.static_body, (300, 50), (325, 50), 3),
-        pymunk.Segment(space.static_body, (325, 50), (350, 50), 3),
-        pymunk.Segment(space.static_body, (350, 50), (375, 50), 3),
-        pymunk.Segment(space.static_body, (375, 50), (680, 50), 3),
-        pymunk.Segment(space.static_body, (680, 50), (680, 370), 3),
-        pymunk.Segment(space.static_body, (680, 370), (10, 370), 3),
-        pymunk.Segment(space.static_body, (10, 370), (10, 50), 3),
+        easymunk.Segment(space.static_body, (10, 50), (300, 50), 3),
+        easymunk.Segment(space.static_body, (300, 50), (325, 50), 3),
+        easymunk.Segment(space.static_body, (325, 50), (350, 50), 3),
+        easymunk.Segment(space.static_body, (350, 50), (375, 50), 3),
+        easymunk.Segment(space.static_body, (375, 50), (680, 50), 3),
+        easymunk.Segment(space.static_body, (680, 50), (680, 370), 3),
+        easymunk.Segment(space.static_body, (680, 370), (10, 370), 3),
+        easymunk.Segment(space.static_body, (10, 370), (10, 50), 3),
     ]
     static[1].color = pygame.Color("red")
     static[2].color = pygame.Color("green")
@@ -86,22 +86,22 @@ def main():
 
     # rounded shape
     rounded = [
-        pymunk.Segment(space.static_body, (500, 50), (520, 60), 3),
-        pymunk.Segment(space.static_body, (520, 60), (540, 80), 3),
-        pymunk.Segment(space.static_body, (540, 80), (550, 100), 3),
-        pymunk.Segment(space.static_body, (550, 100), (550, 150), 3),
+        easymunk.Segment(space.static_body, (500, 50), (520, 60), 3),
+        easymunk.Segment(space.static_body, (520, 60), (540, 80), 3),
+        easymunk.Segment(space.static_body, (540, 80), (550, 100), 3),
+        easymunk.Segment(space.static_body, (550, 100), (550, 150), 3),
     ]
 
     # static platforms
     platforms = [
-        pymunk.Segment(space.static_body, (170, 50), (270, 150), 3)
+        easymunk.Segment(space.static_body, (170, 50), (270, 150), 3)
         # , pymunk.Segment(space.static_body, (270, 100), (300, 100), 5)
         ,
-        pymunk.Segment(space.static_body, (400, 150), (450, 150), 3),
-        pymunk.Segment(space.static_body, (400, 200), (450, 200), 3),
-        pymunk.Segment(space.static_body, (220, 200), (300, 200), 3),
-        pymunk.Segment(space.static_body, (50, 250), (200, 250), 3),
-        pymunk.Segment(space.static_body, (10, 370), (50, 250), 3),
+        easymunk.Segment(space.static_body, (400, 150), (450, 150), 3),
+        easymunk.Segment(space.static_body, (400, 200), (450, 200), 3),
+        easymunk.Segment(space.static_body, (220, 200), (300, 200), 3),
+        easymunk.Segment(space.static_body, (50, 250), (200, 250), 3),
+        easymunk.Segment(space.static_body, (10, 370), (50, 250), 3),
     ]
 
     for s in static + platforms + rounded:
@@ -112,20 +112,20 @@ def main():
     # moving platform
     platform_path = [(650, 100), (600, 200), (650, 300)]
     platform_path_index = 0
-    platform_body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
+    platform_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
     platform_body.position = 650, 100
-    s = pymunk.Segment(platform_body, (-25, 0), (25, 0), 5)
+    s = easymunk.Segment(platform_body, (-25, 0), (25, 0), 5)
     s.friction = 1.0
     s.group = 1
     s.color = pygame.Color("blue")
     space.add(platform_body, s)
 
     # pass through platform
-    passthrough = pymunk.Segment(space.static_body, (270, 100), (320, 100), 5)
+    passthrough = easymunk.Segment(space.static_body, (270, 100), (320, 100), 5)
     passthrough.color = pygame.Color("yellow")
     passthrough.friction = 1.0
     passthrough.collision_type = 2
-    passthrough.filter = pymunk.ShapeFilter(categories=0b1000)
+    passthrough.filter = easymunk.ShapeFilter(categories=0b1000)
     space.add(passthrough)
 
     def passthrough_handler(arbiter, space, data):
@@ -137,19 +137,19 @@ def main():
     space.add_collision_handler(1, 2).begin = passthrough_handler
 
     # player
-    body = pymunk.Body(5, float("inf"))
+    body = easymunk.Body(5, float("inf"))
     body.position = 100, 100
 
-    head = pymunk.Circle(body, 10, (0, 5))
-    head2 = pymunk.Circle(body, 10, (0, 13))
-    feet = pymunk.Circle(body, 10, (0, -5))
+    head = easymunk.Circle(body, 10, (0, 5))
+    head2 = easymunk.Circle(body, 10, (0, 13))
+    feet = easymunk.Circle(body, 10, (0, -5))
     # Since we use the debug draw we need to hide these circles. To make it
     # easy we just set their color to black.
     feet.color = 0, 0, 0, 0
     head.color = 0, 0, 0, 0
     head2.color = 0, 0, 0, 0
-    mask = pymunk.ShapeFilter.ALL_MASKS() ^ passthrough.filter.categories
-    sf = pymunk.ShapeFilter(mask=mask)
+    mask = easymunk.ShapeFilter.ALL_MASKS() ^ passthrough.filter.categories
+    sf = easymunk.ShapeFilter(mask=mask)
     head.filter = sf
     head2.filter = sf
     feet.collision_type = 1
@@ -292,7 +292,7 @@ def main():
         else:
             animation_offset = 32 * 0
         position = body.position + (-16, 28)
-        p = pymunk.pygame_util.to_pygame(position, screen)
+        p = easymunk.pygame_util.to_pygame(position, screen)
         screen.blit(img, p, (animation_offset, direction_offset, 32, 48))
 
         # Did we land?
@@ -303,7 +303,7 @@ def main():
         else:
             landed_previous = False
         if landing["n"] > 0:
-            p = pymunk.pygame_util.to_pygame(landing["p"], screen)
+            p = easymunk.pygame_util.to_pygame(landing["p"], screen)
             pygame.draw.circle(screen, pygame.Color("yellow"), p, 5)
             landing["n"] -= 1
 

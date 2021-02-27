@@ -30,9 +30,9 @@ from kivy.uix.scatter import Scatter
 from kivy.uix.scatterlayout import ScatterLayout
 from kivy.uix.widget import Widget
 
-import pymunk
-import pymunk.autogeometry
-from pymunk.vec2d import Vec2d
+import easymunk
+import easymunk.autogeometry
+from easymunk.vec2d import Vec2d
 
 
 class PymunkDemo(RelativeLayout):
@@ -40,9 +40,9 @@ class PymunkDemo(RelativeLayout):
         for x in range(10):
             mass = 3
             radius = 8
-            moment = pymunk.moment_for_circle(mass, 0, radius)
-            b = pymunk.Body(mass, moment)
-            c = pymunk.Circle(b, radius)
+            moment = easymunk.moment_for_circle(mass, 0, radius)
+            b = easymunk.Body(mass, moment)
+            c = easymunk.Circle(b, radius)
             c.friction = 1
             x = random.randint(100, 350)
             y = random.randint(300, 340)
@@ -57,9 +57,9 @@ class PymunkDemo(RelativeLayout):
     def big_ball(self, space):
         mass = 1000
         radius = 50
-        moment = pymunk.moment_for_circle(mass, 0, radius)
-        b = pymunk.Body(mass, moment)
-        c = pymunk.Circle(b, radius)
+        moment = easymunk.moment_for_circle(mass, 0, radius)
+        b = easymunk.Body(mass, moment)
+        c = easymunk.Circle(b, radius)
         c.friction = 1
         c.color = 255, 0, 0
         b.position = 800, 200
@@ -75,9 +75,9 @@ class PymunkDemo(RelativeLayout):
         mass = 10
         vs = [(-50, 30), (60, 22), (-50, 22)]
 
-        moment = pymunk.moment_for_poly(mass, vs)
-        b = pymunk.Body(mass, moment)
-        s = pymunk.Poly(b, vs)
+        moment = easymunk.moment_for_poly(mass, vs)
+        b = easymunk.Body(mass, moment)
+        s = easymunk.Poly(b, vs)
         s.friction = 1
         s.color = 0, 0, 0
         b.position = 600, 250
@@ -89,9 +89,9 @@ class PymunkDemo(RelativeLayout):
 
     def box(self, space):
         mass = 10
-        moment = pymunk.moment_for_box(mass, (40, 20))
-        b = pymunk.Body(mass, moment)
-        s = pymunk.Poly.create_box(b, (40, 20))
+        moment = easymunk.moment_for_box(mass, (40, 20))
+        b = easymunk.Body(mass, moment)
+        s = easymunk.Poly.create_box(b, (40, 20))
         s.friction = 1
         b.position = 600, self.box_y
         self.box_y += 30
@@ -108,31 +108,31 @@ class PymunkDemo(RelativeLayout):
         shovel_color = 0.86, 0.47, 0.2
         mass = 100
         radius = 25
-        moment = pymunk.moment_for_circle(mass, 20, radius)
-        wheel1_b = pymunk.Body(mass, moment)
-        wheel1_s = pymunk.Circle(wheel1_b, radius)
+        moment = easymunk.moment_for_circle(mass, 20, radius)
+        wheel1_b = easymunk.Body(mass, moment)
+        wheel1_s = easymunk.Circle(wheel1_b, radius)
         wheel1_s.friction = 1.5
         wheel1_s.color = wheel_color
         space.add(wheel1_b, wheel1_s)
 
         mass = 100
         radius = 25
-        moment = pymunk.moment_for_circle(mass, 20, radius)
-        wheel2_b = pymunk.Body(mass, moment)
-        wheel2_s = pymunk.Circle(wheel2_b, radius)
+        moment = easymunk.moment_for_circle(mass, 20, radius)
+        wheel2_b = easymunk.Body(mass, moment)
+        wheel2_s = easymunk.Circle(wheel2_b, radius)
         wheel2_s.friction = 1.5
         wheel2_s.color = wheel_color
         space.add(wheel2_b, wheel2_s)
 
         mass = 100
         size = (50, 30)
-        moment = pymunk.moment_for_box(mass, size)
-        chassi_b = pymunk.Body(mass, moment)
-        chassi_s = pymunk.Poly.create_box(chassi_b, size)
+        moment = easymunk.moment_for_box(mass, size)
+        chassi_b = easymunk.Body(mass, moment)
+        chassi_s = easymunk.Poly.create_box(chassi_b, size)
         space.add(chassi_b, chassi_s)
 
         vs = [(0, 0), (0, -45), (25, -45)]
-        shovel_s = pymunk.Poly(chassi_b, vs, transform=pymunk.Transform(tx=85))
+        shovel_s = easymunk.Poly(chassi_b, vs, transform=easymunk.Transform(tx=85))
         shovel_s.friction = 0.5
         shovel_s.color = shovel_color
         space.add(shovel_s)
@@ -142,16 +142,16 @@ class PymunkDemo(RelativeLayout):
         chassi_b.position = pos + (0, 25)
 
         space.add(
-            pymunk.PinJoint(wheel1_b, chassi_b, (0, 0), (-25, -15)),
-            pymunk.PinJoint(wheel1_b, chassi_b, (0, 0), (-25, 15)),
-            pymunk.PinJoint(wheel2_b, chassi_b, (0, 0), (25, -15)),
-            pymunk.PinJoint(wheel2_b, chassi_b, (0, 0), (25, 15)),
+            easymunk.PinJoint(wheel1_b, chassi_b, (0, 0), (-25, -15)),
+            easymunk.PinJoint(wheel1_b, chassi_b, (0, 0), (-25, 15)),
+            easymunk.PinJoint(wheel2_b, chassi_b, (0, 0), (25, -15)),
+            easymunk.PinJoint(wheel2_b, chassi_b, (0, 0), (25, 15)),
         )
 
         speed = -4
         space.add(
-            pymunk.SimpleMotor(wheel1_b, chassi_b, speed),
-            pymunk.SimpleMotor(wheel2_b, chassi_b, speed),
+            easymunk.SimpleMotor(wheel1_b, chassi_b, speed),
+            easymunk.SimpleMotor(wheel2_b, chassi_b, speed),
         )
         with self.canvas:
             Color(*wheel_color)
@@ -165,9 +165,9 @@ class PymunkDemo(RelativeLayout):
     def cannon(self, space):
         mass = 100
         radius = 15
-        moment = pymunk.moment_for_circle(mass, 0, radius)
-        b = pymunk.Body(mass, moment)
-        s = pymunk.Circle(b, radius)
+        moment = easymunk.moment_for_circle(mass, 0, radius)
+        b = easymunk.Body(mass, moment)
+        s = easymunk.Circle(b, radius)
         s.color = 0.86, 0.2, 0.6
         b.position = 700, 400
         space.add(b, s)
@@ -178,7 +178,7 @@ class PymunkDemo(RelativeLayout):
             s.ky = self.ellipse_from_circle(s)
 
     def create_logo_lines(self, logo_img):
-        logo_bb = pymunk.BB(0, 0, logo_img.width, logo_img.height)
+        logo_bb = easymunk.BB(0, 0, logo_img.width, logo_img.height)
 
         def sample_func(point):
             try:
@@ -187,7 +187,7 @@ class PymunkDemo(RelativeLayout):
             except Exception:
                 return 0
 
-        line_set = pymunk.autogeometry.march_soft(
+        line_set = easymunk.autogeometry.march_soft(
             logo_bb, logo_img.width, logo_img.height, 99, sample_func
         )
 
@@ -195,7 +195,7 @@ class PymunkDemo(RelativeLayout):
 
         lines = []
         for line in line_set:
-            line = pymunk.autogeometry.simplify_curves(line, 0.7)
+            line = easymunk.autogeometry.simplify_curves(line, 0.7)
 
             max_x = 0
             min_x = 1000
@@ -214,7 +214,7 @@ class PymunkDemo(RelativeLayout):
                 continue
 
             center = Vec2d(min_x + w / 2.0, min_y + h / 2.0)
-            t = pymunk.Transform(a=1.0, d=1.0, tx=-center.x, ty=-center.y)
+            t = easymunk.Transform(a=1.0, d=1.0, tx=-center.x, ty=-center.y)
 
             r += 30
             if r > 255:
@@ -226,7 +226,7 @@ class PymunkDemo(RelativeLayout):
     def create_logo(self, lines, space):
         for line in lines:
             for i in range(len(line) - 1):
-                shape = pymunk.Segment(space.static_body, line[i], line[i + 1], 1)
+                shape = easymunk.Segment(space.static_body, line[i], line[i + 1], 1)
                 shape.friction = 0.5
                 space.add(shape)
 
@@ -239,7 +239,7 @@ class PymunkDemo(RelativeLayout):
         self.start()
 
     def start(self):
-        self.space = space = pymunk.Space()
+        self.space = space = easymunk.Space()
         space.gravity = 0, -900
         space.sleep_time_threshold = 0.3
         space.steps = 0
@@ -251,7 +251,7 @@ class PymunkDemo(RelativeLayout):
                 size=self.logo_img.size,
             )
 
-        floor = pymunk.Segment(space.static_body, (-100, 0), (900, 62), 5)
+        floor = easymunk.Segment(space.static_body, (-100, 0), (900, 62), 5)
         floor.friction = 1.0
         space.add(floor)
         with self.canvas:
@@ -297,7 +297,7 @@ class PymunkDemo(RelativeLayout):
 
         for shape in self.space.shapes:
             if hasattr(shape, "ky") and not shape.body.is_sleeping:
-                if isinstance(shape, pymunk.Circle):
+                if isinstance(shape, easymunk.Circle):
                     body = shape.body
                     shape.ky[0].pos = body.position - (shape.radius, shape.radius)
                     circle_edge = body.position + Vec2d(shape.radius, 0).rotated(
@@ -309,12 +309,12 @@ class PymunkDemo(RelativeLayout):
                         circle_edge.x,
                         circle_edge.y,
                     ]
-                if isinstance(shape, pymunk.Segment):
+                if isinstance(shape, easymunk.Segment):
                     body = shape.body
                     p1 = body.position + shape.a.cpvrotate(body.rotation_vector)
                     p2 = body.position + shape.b.cpvrotate(body.rotation_vector)
                     shape.ky.points = p1.x, p1.y, p2.x, p2.y
-                if isinstance(shape, pymunk.Poly):
+                if isinstance(shape, easymunk.Poly):
                     shape.ky.points = self.points_from_poly(shape)
 
     def on_touch_up(self, touch):
@@ -328,9 +328,9 @@ class PymunkDemo(RelativeLayout):
 
             mass = 50
             radius = 15
-            moment = pymunk.moment_for_circle(mass, 0, radius)
-            b = pymunk.Body(mass, moment)
-            s = pymunk.Circle(b, radius)
+            moment = easymunk.moment_for_circle(mass, 0, radius)
+            b = easymunk.Body(mass, moment)
+            s = easymunk.Circle(b, radius)
             s.color = 0.86, 0.2, 0.6
             b.position = d["start"]
             self.space.add(b, s)

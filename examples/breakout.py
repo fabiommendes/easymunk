@@ -10,9 +10,9 @@ import sys
 
 import pygame
 
-import pymunk
-import pymunk.pygame_util
-from pymunk import Vec2d
+import easymunk
+import easymunk.pygame_util
+from easymunk import Vec2d
 
 width, height = 600, 600
 
@@ -26,10 +26,10 @@ collision_types = {
 
 
 def spawn_ball(space, position, direction):
-    ball_body = pymunk.Body(1, float("inf"))
+    ball_body = easymunk.Body(1, float("inf"))
     ball_body.position = position
 
-    ball_shape = pymunk.Circle(ball_body, 5)
+    ball_shape = easymunk.Circle(ball_body, 5)
     ball_shape.color = pygame.Color("green")
     ball_shape.elasticity = 1.0
     ball_shape.collision_type = collision_types["ball"]
@@ -49,7 +49,7 @@ def setup_level(space, player_body):
 
     # Remove balls and bricks
     for s in space.shapes[:]:
-        if s.body.body_type == pymunk.Body.DYNAMIC and s.body not in [player_body]:
+        if s.body.body_type == easymunk.Body.DYNAMIC and s.body not in [player_body]:
             space.remove(s.body, s)
 
     # Spawn a ball for the player to have something to play with
@@ -62,9 +62,9 @@ def setup_level(space, player_body):
         x = x * 20 + 100
         for y in range(0, 5):
             y = y * 10 + 400
-            brick_body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
+            brick_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
             brick_body.position = x, y
-            brick_shape = pymunk.Poly.create_box(brick_body, (20, 10))
+            brick_shape = easymunk.Poly.create_box(brick_body, (20, 10))
             brick_shape.elasticity = 1.0
             brick_shape.color = pygame.Color("blue")
             brick_shape.group = 1
@@ -88,16 +88,16 @@ def main():
     running = True
     font = pygame.font.SysFont("Arial", 16)
     ### Physics stuff
-    space = pymunk.Space()
-    pymunk.pygame_util.positive_y_is_up = True
-    draw_options = pymunk.pygame_util.DrawOptions(screen)
+    space = easymunk.Space()
+    easymunk.pygame_util.positive_y_is_up = True
+    draw_options = easymunk.pygame_util.DrawOptions(screen)
 
     ### Game area
     # walls - the left-top-right walls
     static_lines = [
-        pymunk.Segment(space.static_body, (50, 50), (50, 550), 2),
-        pymunk.Segment(space.static_body, (50, 550), (550, 550), 2),
-        pymunk.Segment(space.static_body, (550, 550), (550, 50), 2),
+        easymunk.Segment(space.static_body, (50, 50), (50, 550), 2),
+        easymunk.Segment(space.static_body, (50, 550), (550, 550), 2),
+        easymunk.Segment(space.static_body, (550, 550), (550, 50), 2),
     ]
     for line in static_lines:
         line.color = pygame.Color("lightgray")
@@ -106,7 +106,7 @@ def main():
     space.add(*static_lines)
 
     # bottom - a sensor that removes anything touching it
-    bottom = pymunk.Segment(space.static_body, (50, 50), (550, 50), 2)
+    bottom = easymunk.Segment(space.static_body, (50, 50), (550, 50), 2)
     bottom.sensor = True
     bottom.collision_type = collision_types["bottom"]
     bottom.color = pygame.Color("red")
@@ -121,10 +121,10 @@ def main():
     space.add(bottom)
 
     ### Player ship
-    player_body = pymunk.Body(500, float("inf"))
+    player_body = easymunk.Body(500, float("inf"))
     player_body.position = 300, 100
 
-    player_shape = pymunk.Segment(player_body, (-50, 0), (50, 0), 8)
+    player_shape = easymunk.Segment(player_body, (-50, 0), (50, 0), 8)
     player_shape.color = pygame.Color("red")
     player_shape.elasticity = 1.0
     player_shape.collision_type = collision_types["player"]
@@ -148,7 +148,7 @@ def main():
     h.pre_solve = pre_solve
 
     # restrict movement of player to a straigt line
-    move_joint = pymunk.GrooveJoint(
+    move_joint = easymunk.GrooveJoint(
         space.static_body, player_body, (100, 100), (500, 100), (0, 0)
     )
     space.add(player_body, player_shape, move_joint)

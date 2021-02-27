@@ -1,19 +1,19 @@
 import timeit
 from timeit import repeat
 
-import pymunk
+import easymunk
 
-print("pymunk.version", pymunk.version)
+print("pymunk.version", easymunk.version)
 
 s = None
 
 
 def setup(num_bodies=10):
     global s
-    s = pymunk.Space()
+    s = easymunk.Space()
 
     for x in range(num_bodies):
-        b = pymunk.Body()
+        b = easymunk.Body()
         b.position = x / 5, x / 2
         s.add(b)
     s.step(1)
@@ -28,11 +28,11 @@ def non_batched():
 
 
 def batched():
-    arr = pymunk.ffi.new("cpVectArr *", {"num": 0})
+    arr = easymunk.ffi.new("cpVectArr *", {"num": 0})
     arr.num = 0
     arr.max = 0
-    pymunk.cp.cpSpaceGetBodyPositions(s._space, arr)
-    buf = pymunk.ffi.buffer(arr.arr, pymunk.ffi.sizeof("cpVect") * arr.num)
+    easymunk.cp.cpSpaceGetBodyPositions(s._space, arr)
+    buf = easymunk.ffi.buffer(arr.arr, easymunk.ffi.sizeof("cpVect") * arr.num)
     mv = memoryview(buf)
     positions = list(mv.cast("d"))
 

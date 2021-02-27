@@ -3,8 +3,8 @@ example from an image.
 
 Example::
 
-    >>> import pymunk
-    >>> from pymunk.autogeometry import march_soft
+    >>> import easymunk
+    >>> from easymunk.autogeometry import march_soft
     >>> img = [
     ...     "  xx   ",
     ...     "  xx   ",
@@ -19,19 +19,19 @@ Example::
     ...     y = int(point[1])
     ...     return 1 if img[y][x] == "x" else 0
 
-    >>> pl_set = march_soft(pymunk.BB(0,0,6,6), 7, 7, .5, sample_func)
+    >>> pl_set = march_soft(easymunk.BB(0,0,6,6), 7, 7, .5, sample_func)
     >>> print(len(pl_set))
     2
 
 The information in segments can now be used to create geometry, for example as 
 a Pymunk Poly or Segment::
 
-    >>> s = pymunk.Space()
+    >>> s = easymunk.Space()
     >>> for poly_line in pl_set:
     ...     for i in range(len(poly_line) - 1):
     ...         a = poly_line[i]
     ...         b = poly_line[i + 1]
-    ...         segment = pymunk.Segment(s.static_body, a, b, 1)  
+    ...         segment = easymunk.Segment(s.static_body, a, b, 1)  
     ...         s.add(segment)
 
 

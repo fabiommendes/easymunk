@@ -6,9 +6,9 @@ import random
 
 import pygame
 
-import pymunk
-import pymunk.pygame_util
-from pymunk.vec2d import Vec2d
+import easymunk
+import easymunk.pygame_util
+from easymunk.vec2d import Vec2d
 
 
 def update(space, dt, surface):
@@ -16,7 +16,7 @@ def update(space, dt, surface):
     global tank_control_body
 
     mpos = pygame.mouse.get_pos()
-    mouse_pos = pymunk.pygame_util.from_pygame(Vec2d(*mpos), surface)
+    mouse_pos = easymunk.pygame_util.from_pygame(Vec2d(*mpos), surface)
 
     mouse_delta = mouse_pos - tank_body.position
     turn = tank_body.rotation_vector.cpvunrotate(mouse_delta).angle
@@ -39,7 +39,7 @@ def update(space, dt, surface):
 def add_box(space, size, mass):
     radius = Vec2d(size, size).length
 
-    body = pymunk.Body()
+    body = easymunk.Body()
     space.add(body)
 
     body.position = Vec2d(
@@ -47,7 +47,7 @@ def add_box(space, size, mass):
         random.random() * (480 - 2 * radius) + radius,
     )
 
-    shape = pymunk.Poly.create_box(body, (size, size), 0.0)
+    shape = easymunk.Poly.create_box(body, (size, size), 0.0)
     shape.mass = mass
     shape.friction = 0.7
     space.add(shape)
@@ -57,29 +57,29 @@ def add_box(space, size, mass):
 
 def init():
 
-    space = pymunk.Space()
+    space = easymunk.Space()
     space.iterations = 10
     space.sleep_time_threshold = 0.5
 
     static_body = space.static_body
 
     # Create segments around the edge of the screen.
-    shape = pymunk.Segment(static_body, (1, 1), (1, 480), 1.0)
+    shape = easymunk.Segment(static_body, (1, 1), (1, 480), 1.0)
     space.add(shape)
     shape.elasticity = 1
     shape.friction = 1
 
-    shape = pymunk.Segment(static_body, (640, 1), (640, 480), 1.0)
+    shape = easymunk.Segment(static_body, (640, 1), (640, 480), 1.0)
     space.add(shape)
     shape.elasticity = 1
     shape.friction = 1
 
-    shape = pymunk.Segment(static_body, (1, 1), (640, 1), 1.0)
+    shape = easymunk.Segment(static_body, (1, 1), (640, 1), 1.0)
     space.add(shape)
     shape.elasticity = 1
     shape.friction = 1
 
-    shape = pymunk.Segment(static_body, (1, 480), (640, 480), 1.0)
+    shape = easymunk.Segment(static_body, (1, 480), (640, 480), 1.0)
     space.add(shape)
     shape.elasticity = 1
     shape.friction = 1
@@ -87,19 +87,19 @@ def init():
     for _ in range(50):
         body = add_box(space, 20, 1)
 
-        pivot = pymunk.PivotJoint(static_body, body, (0, 0), (0, 0))
+        pivot = easymunk.PivotJoint(static_body, body, (0, 0), (0, 0))
         space.add(pivot)
         pivot.max_bias = 0  # disable joint correction
         pivot.max_force = 1000  # emulate linear friction
 
-        gear = pymunk.GearJoint(static_body, body, 0.0, 1.0)
+        gear = easymunk.GearJoint(static_body, body, 0.0, 1.0)
         space.add(gear)
         gear.max_bias = 0  # disable joint correction
         gear.max_force = 5000  # emulate angular friction
 
     # We joint the tank to the control body and control the tank indirectly by modifying the control body.
     global tank_control_body
-    tank_control_body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
+    tank_control_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
     tank_control_body.position = 320, 240
     space.add(tank_control_body)
     global tank_body
@@ -108,12 +108,12 @@ def init():
     for s in tank_body.shapes:
         s.color = (0, 255, 100, 255)
 
-    pivot = pymunk.PivotJoint(tank_control_body, tank_body, (0, 0), (0, 0))
+    pivot = easymunk.PivotJoint(tank_control_body, tank_body, (0, 0), (0, 0))
     space.add(pivot)
     pivot.max_bias = 0  # disable joint correction
     pivot.max_force = 10000  # emulate linear friction
 
-    gear = pymunk.GearJoint(tank_control_body, tank_body, 0.0, 1.0)
+    gear = easymunk.GearJoint(tank_control_body, tank_body, 0.0, 1.0)
     space.add(gear)
     gear.error_bias = 0  # attempt to fully correct the joint each step
     gear.max_bias = 1.2  # but limit it's angular correction rate
@@ -126,7 +126,7 @@ space = init()
 pygame.init()
 screen = pygame.display.set_mode((640, 480))
 clock = pygame.time.Clock()
-draw_options = pymunk.pygame_util.DrawOptions(screen)
+draw_options = easymunk.pygame_util.DrawOptions(screen)
 
 
 font = pygame.font.Font(None, 24)

@@ -43,9 +43,9 @@ from typing import List, Sequence, Tuple
 
 import pygame
 
-import pymunk
-from pymunk.space_debug_draw_options import SpaceDebugColor
-from pymunk.vec2d import Vec2d
+import easymunk
+from easymunk.space_debug_draw_options import SpaceDebugColor
+from easymunk.vec2d import Vec2d
 
 positive_y_is_up: bool = False
 """Make increasing values of y point upwards.
@@ -73,22 +73,22 @@ When False::
 """
 
 
-class DrawOptions(pymunk.SpaceDebugDrawOptions):
+class DrawOptions(easymunk.SpaceDebugDrawOptions):
     def __init__(self, surface: pygame.Surface) -> None:
         """Draw a pymunk.Space on a pygame.Surface object.
 
         Typical usage::
 
-        >>> import pymunk
+        >>> import easymunk
         >>> surface = pygame.Surface((10,10))
-        >>> space = pymunk.Space()
-        >>> options = pymunk.pygame_util.DrawOptions(surface)
+        >>> space = easymunk.Space()
+        >>> options = easymunk.pygame_util.DrawOptions(surface)
         >>> space.debug_draw(options)
 
         You can control the color of a shape by setting shape.color to the color
         you want it drawn in::
 
-        >>> c = pymunk.Circle(None, 10)
+        >>> c = easymunk.Circle(None, 10)
         >>> c.color = pygame.Color("pink")
 
         See pygame_util.demo.py for a full example
@@ -101,9 +101,9 @@ class DrawOptions(pymunk.SpaceDebugDrawOptions):
         way as Pygame does. In that way all coordinates used are in the same
         orientation and easy to reason about::
 
-        >>> space = pymunk.Space()
+        >>> space = easymunk.Space()
         >>> space.gravity = (0, -1000)
-        >>> body = pymunk.Body()
+        >>> body = easymunk.Body()
         >>> body.position = (0, 0) # will be positioned in the top left corner
         >>> space.debug_draw(options)
 
@@ -112,7 +112,7 @@ class DrawOptions(pymunk.SpaceDebugDrawOptions):
         the simulation upside down before drawing::
 
         >>> positive_y_is_up = True
-        >>> body = pymunk.Body()
+        >>> body = easymunk.Body()
         >>> body.position = (0, 0)
         >>> # Body will be position in bottom left corner
 

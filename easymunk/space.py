@@ -17,15 +17,15 @@ from typing import (
     Union,
 )
 
-from pymunk.shape_filter import ShapeFilter
-from pymunk.space_debug_draw_options import SpaceDebugDrawOptions
+from easymunk.shape_filter import ShapeFilter
+from easymunk.space_debug_draw_options import SpaceDebugDrawOptions
 
 from . import _chipmunk_cffi, _version
 
 cp = _chipmunk_cffi.lib
 ffi = _chipmunk_cffi.ffi
 
-from pymunk.constraints import Constraint
+from easymunk.constraints import Constraint
 
 from ._pickle import PickleMixin, _State
 from .body import Body
@@ -58,8 +58,8 @@ class Space(PickleMixin, object):
 
     Example::
 
-    >>> import pymunk, pickle
-    >>> space = pymunk.Space()
+    >>> import easymunk, pickle
+    >>> space = easymunk.Space()
     >>> space2 = space.copy()
     >>> space3 = pickle.loads(pickle.dumps(space))
     """
@@ -566,8 +566,8 @@ class Space(PickleMixin, object):
         simulation. Therefor it sometimes make sense to have a little for loop
         around the step call, like in this example:
 
-        >>> import pymunk
-        >>> s = pymunk.Space()
+        >>> import easymunk
+        >>> s = easymunk.Space()
         >>> steps = 10
         >>> for x in range(steps): # move simulation forward 0.1 seconds:
         ...     s.step(0.1 / steps)

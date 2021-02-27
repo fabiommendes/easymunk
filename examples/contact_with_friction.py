@@ -8,11 +8,11 @@ import sys
 
 import pygame
 
-import pymunk
-import pymunk.pygame_util
-from pymunk import Vec2d
+import easymunk
+import easymunk.pygame_util
+from easymunk import Vec2d
 
-pymunk.pygame_util.positive_y_is_up = True
+easymunk.pygame_util.positive_y_is_up = True
 
 
 def draw_collision(arbiter, space, data):
@@ -20,7 +20,7 @@ def draw_collision(arbiter, space, data):
         r = max(3, abs(c.distance * 5))
         r = int(r)
 
-        p = pymunk.pygame_util.to_pygame(c.point_a, data["surface"])
+        p = easymunk.pygame_util.to_pygame(c.point_a, data["surface"])
         pygame.draw.circle(data["surface"], pygame.Color("black"), p, r, 1)
 
 
@@ -32,20 +32,20 @@ def main():
     running = True
 
     ### Physics stuff
-    space = pymunk.Space()
+    space = easymunk.Space()
     space.gravity = (0.0, -900.0)
-    draw_options = pymunk.pygame_util.DrawOptions(screen)
+    draw_options = easymunk.pygame_util.DrawOptions(screen)
     # disable the build in debug draw of collision point since we use our own code.
     draw_options.flags = (
-        draw_options.flags ^ pymunk.pygame_util.DrawOptions.DRAW_COLLISION_POINTS
+            draw_options.flags ^ easymunk.pygame_util.DrawOptions.DRAW_COLLISION_POINTS
     )
     ## Balls
     balls = []
 
     ### walls
     static_lines = [
-        pymunk.Segment(space.static_body, (11.0, 280.0), (407.0, 246.0), 0.0),
-        pymunk.Segment(space.static_body, (407.0, 246.0), (407.0, 343.0), 0.0),
+        easymunk.Segment(space.static_body, (11.0, 280.0), (407.0, 246.0), 0.0),
+        easymunk.Segment(space.static_body, (407.0, 246.0), (407.0, 343.0), 0.0),
     ]
     for l in static_lines:
         l.friction = 0.5
@@ -71,11 +71,11 @@ def main():
             ticks_to_next_ball = 100
             mass = 0.1
             radius = 25
-            inertia = pymunk.moment_for_circle(mass, 0, radius, (0, 0))
-            body = pymunk.Body(mass, inertia)
+            inertia = easymunk.moment_for_circle(mass, 0, radius, (0, 0))
+            body = easymunk.Body(mass, inertia)
             x = random.randint(115, 350)
             body.position = x, 400
-            shape = pymunk.Circle(body, radius, (0, 0))
+            shape = easymunk.Circle(body, radius, (0, 0))
             shape.friction = 0.5
             space.add(body, shape)
             balls.append(shape)

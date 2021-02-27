@@ -2,11 +2,11 @@ import pickle
 import unittest
 from typing import List, Tuple
 
-import pymunk as p
-from pymunk.arbiter import Arbiter
-from pymunk.constraints import *
-from pymunk.shapes import Shape
-from pymunk.vec2d import Vec2d
+import easymunk as p
+from easymunk.arbiter import Arbiter
+from easymunk.constraints import *
+from easymunk.shapes import Shape
+from easymunk.vec2d import Vec2d
 
 ####################################################################
 

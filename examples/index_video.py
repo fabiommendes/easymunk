@@ -13,10 +13,10 @@ random.seed(5)  # try keep difference the random factor the same each run.
 
 import pygame
 
-import pymunk
-import pymunk.autogeometry
-import pymunk.pygame_util
-from pymunk import Vec2d
+import easymunk
+import easymunk.autogeometry
+import easymunk.pygame_util
+from easymunk import Vec2d
 
 fps = 60
 pygame.init()
@@ -26,21 +26,21 @@ clock = pygame.time.Clock()
 clock.tick(1)
 
 ### Physics stuff
-space = pymunk.Space()
+space = easymunk.Space()
 space.gravity = 0, 900
 space.sleep_time_threshold = 0.3
 
-draw_options = pymunk.pygame_util.DrawOptions(screen)
-pymunk.pygame_util.positive_y_is_up = False
+draw_options = easymunk.pygame_util.DrawOptions(screen)
+easymunk.pygame_util.positive_y_is_up = False
 
 ### Generate geometry from pymunk logo image
 logo_img = pygame.image.load("pymunk_logo_sphinx.png")
-logo_bb = pymunk.BB(0, 0, logo_img.get_width(), logo_img.get_height())
+logo_bb = easymunk.BB(0, 0, logo_img.get_width(), logo_img.get_height())
 
 
 def sample_func(point):
     try:
-        p = pymunk.pygame_util.to_pygame(point, logo_img)
+        p = easymunk.pygame_util.to_pygame(point, logo_img)
         color = logo_img.get_at(p)
 
         return color.a
@@ -50,7 +50,7 @@ def sample_func(point):
 
 
 logo_img.lock()
-line_set = pymunk.autogeometry.march_soft(
+line_set = easymunk.autogeometry.march_soft(
     logo_bb, logo_img.get_width(), logo_img.get_height(), 99, sample_func
 )
 logo_img.unlock()
@@ -59,7 +59,7 @@ r = 10
 
 letter_group = 0
 for line in line_set:
-    line = pymunk.autogeometry.simplify_curves(line, 0.7)
+    line = easymunk.autogeometry.simplify_curves(line, 0.7)
 
     max_x = 0
     min_x = 1000
@@ -78,7 +78,7 @@ for line in line_set:
         continue
 
     center = Vec2d(min_x + w / 2.0, min_y + h / 2.0)
-    t = pymunk.Transform(a=1.0, d=1.0, tx=-center.x, ty=-center.y)
+    t = easymunk.Transform(a=1.0, d=1.0, tx=-center.x, ty=-center.y)
 
     r += 30
     if r > 255:
@@ -86,13 +86,13 @@ for line in line_set:
 
     if True:
         for i in range(len(line) - 1):
-            shape = pymunk.Segment(space.static_body, line[i], line[i + 1], 1)
+            shape = easymunk.Segment(space.static_body, line[i], line[i + 1], 1)
             shape.friction = 0.5
             shape.color = (255, 255, 255, 255)
             space.add(shape)
 
 
-floor = pymunk.Segment(space.static_body, (-100, 300), (1000, 220), 5)
+floor = easymunk.Segment(space.static_body, (-100, 300), (1000, 220), 5)
 floor.friction = 1.0
 space.add(floor)
 
@@ -100,9 +100,9 @@ space.add(floor)
 def big_ball(space):
     mass = 1000
     radius = 50
-    moment = pymunk.moment_for_circle(mass, 0, radius)
-    b = pymunk.Body(mass, moment)
-    c = pymunk.Circle(b, radius)
+    moment = easymunk.moment_for_circle(mass, 0, radius)
+    b = easymunk.Body(mass, moment)
+    c = easymunk.Circle(b, radius)
     c.friction = 1
     c.color = 255, 0, 0, 255
     b.position = 800, 100
@@ -115,9 +115,9 @@ def boxfloor(space):
     mass = 10
     vs = [(-50, 30), (60, 22), (-50, 22)]
 
-    moment = pymunk.moment_for_poly(mass, vs)
-    b = pymunk.Body(mass, moment)
-    s = pymunk.Poly(b, vs)
+    moment = easymunk.moment_for_poly(mass, vs)
+    b = easymunk.Body(mass, moment)
+    s = easymunk.Poly(b, vs)
     s.friction = 1
     s.color = 0, 0, 0, 255
     b.position = 600, 50
@@ -132,9 +132,9 @@ def box(space):
     global box_y
 
     mass = 10
-    moment = pymunk.moment_for_box(mass, (40, 20))
-    b = pymunk.Body(mass, moment)
-    s = pymunk.Poly.create_box(b, (40, 20))
+    moment = easymunk.moment_for_box(mass, (40, 20))
+    b = easymunk.Body(mass, moment)
+    s = easymunk.Poly.create_box(b, (40, 20))
     s.friction = 1
     b.position = 600, box_y
     box_y -= 30
@@ -148,31 +148,31 @@ def car(space):
     shovel_color = 219, 119, 52, 255
     mass = 100
     radius = 25
-    moment = pymunk.moment_for_circle(mass, 20, radius)
-    wheel1_b = pymunk.Body(mass, moment)
-    wheel1_s = pymunk.Circle(wheel1_b, radius)
+    moment = easymunk.moment_for_circle(mass, 20, radius)
+    wheel1_b = easymunk.Body(mass, moment)
+    wheel1_s = easymunk.Circle(wheel1_b, radius)
     wheel1_s.friction = 1.5
     wheel1_s.color = wheel_color
     space.add(wheel1_b, wheel1_s)
 
     mass = 100
     radius = 25
-    moment = pymunk.moment_for_circle(mass, 20, radius)
-    wheel2_b = pymunk.Body(mass, moment)
-    wheel2_s = pymunk.Circle(wheel2_b, radius)
+    moment = easymunk.moment_for_circle(mass, 20, radius)
+    wheel2_b = easymunk.Body(mass, moment)
+    wheel2_s = easymunk.Circle(wheel2_b, radius)
     wheel2_s.friction = 1.5
     wheel2_s.color = wheel_color
     space.add(wheel2_b, wheel2_s)
 
     mass = 100
     size = (50, 30)
-    moment = pymunk.moment_for_box(mass, size)
-    chassi_b = pymunk.Body(mass, moment)
-    chassi_s = pymunk.Poly.create_box(chassi_b, size)
+    moment = easymunk.moment_for_box(mass, size)
+    chassi_b = easymunk.Body(mass, moment)
+    chassi_s = easymunk.Poly.create_box(chassi_b, size)
     space.add(chassi_b, chassi_s)
 
     vs = [(0, 0), (25, 45), (0, 45)]
-    shovel_s = pymunk.Poly(chassi_b, vs, transform=pymunk.Transform(tx=85))
+    shovel_s = easymunk.Poly(chassi_b, vs, transform=easymunk.Transform(tx=85))
     shovel_s.friction = 0.5
     shovel_s.color = shovel_color
     space.add(shovel_s)
@@ -182,25 +182,25 @@ def car(space):
     chassi_b.position = pos + (0, -25)
 
     space.add(
-        pymunk.PinJoint(wheel1_b, chassi_b, (0, 0), (-25, -15)),
-        pymunk.PinJoint(wheel1_b, chassi_b, (0, 0), (-25, 15)),
-        pymunk.PinJoint(wheel2_b, chassi_b, (0, 0), (25, -15)),
-        pymunk.PinJoint(wheel2_b, chassi_b, (0, 0), (25, 15)),
+        easymunk.PinJoint(wheel1_b, chassi_b, (0, 0), (-25, -15)),
+        easymunk.PinJoint(wheel1_b, chassi_b, (0, 0), (-25, 15)),
+        easymunk.PinJoint(wheel2_b, chassi_b, (0, 0), (25, -15)),
+        easymunk.PinJoint(wheel2_b, chassi_b, (0, 0), (25, 15)),
     )
 
     speed = 4
     space.add(
-        pymunk.SimpleMotor(wheel1_b, chassi_b, speed),
-        pymunk.SimpleMotor(wheel2_b, chassi_b, speed),
+        easymunk.SimpleMotor(wheel1_b, chassi_b, speed),
+        easymunk.SimpleMotor(wheel2_b, chassi_b, speed),
     )
 
 
 def cannon(space):
     mass = 100
     radius = 15
-    moment = pymunk.moment_for_circle(mass, 0, radius)
-    b = pymunk.Body(mass, moment)
-    s = pymunk.Circle(b, radius)
+    moment = easymunk.moment_for_circle(mass, 0, radius)
+    b = easymunk.Body(mass, moment)
+    s = easymunk.Circle(b, radius)
     s.color = 219, 52, 152, 255
     b.position = 700, -50
     space.add(b, s)
@@ -239,9 +239,9 @@ while True:
                 small_balls -= 1
                 mass = 3
                 radius = 8
-                moment = pymunk.moment_for_circle(mass, 0, radius)
-                b = pymunk.Body(mass, moment)
-                c = pymunk.Circle(b, radius)
+                moment = easymunk.moment_for_circle(mass, 0, radius)
+                b = easymunk.Body(mass, moment)
+                c = easymunk.Circle(b, radius)
                 c.friction = 1
                 x = random.randint(100, 400)
                 b.position = x, 0
@@ -261,7 +261,7 @@ while True:
     screen.blit(logo_img, (0, 0))
 
     for b in space.bodies:
-        p = pymunk.pygame_util.to_pygame(b.position, screen)
+        p = easymunk.pygame_util.to_pygame(b.position, screen)
 
     pygame.display.flip()
 

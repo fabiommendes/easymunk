@@ -8,10 +8,10 @@ import unittest
 import warnings
 from typing import Any, Callable, Sequence
 
-import pymunk as p
-from pymunk import *
-from pymunk.constraints import *
-from pymunk.vec2d import Vec2d
+import easymunk as p
+from easymunk import *
+from easymunk.constraints import *
+from easymunk.vec2d import Vec2d
 
 ####################################################################
 

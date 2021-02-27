@@ -13,15 +13,15 @@ from typing import TYPE_CHECKING, Any, Sequence
 
 import matplotlib.pyplot as plt  # type: ignore
 
-import pymunk
-from pymunk.space_debug_draw_options import SpaceDebugColor
-from pymunk.vec2d import Vec2d
+import easymunk
+from easymunk.space_debug_draw_options import SpaceDebugColor
+from easymunk.vec2d import Vec2d
 
 if TYPE_CHECKING:
     import matplotlib as mpl  # type: ignore
 
 
-class DrawOptions(pymunk.SpaceDebugDrawOptions):
+class DrawOptions(easymunk.SpaceDebugDrawOptions):
     def __init__(self, ax: Any) -> None:
         """DrawOptions for space.debug_draw() to draw a space on a ax object.
 
@@ -29,17 +29,17 @@ class DrawOptions(pymunk.SpaceDebugDrawOptions):
 
         >>> import matplotlib as mpl
         >>> import matplotlib.pyplot as plt
-        >>> import pymunk
-        >>> import pymunk.matplotlib_util
-        >>> space = pymunk.Space()
+        >>> import easymunk
+        >>> import easymunk.matplotlib_util
+        >>> space = easymunk.Space()
         >>> ax = plt.subplot()
-        >>> options = pymunk.matplotlib_util.DrawOptions(ax)
+        >>> options = easymunk.matplotlib_util.DrawOptions(ax)
         >>> space.debug_draw(options)
 
         You can control the color of a Shape by setting shape.color to the color
         you want it drawn in.
 
-        >>> shape = pymunk.Circle(space.static_body, 10)
+        >>> shape = easymunk.Circle(space.static_body, 10)
         >>> shape.color = (1, 0, 0, 1) # will draw shape in red
 
         See matplotlib_util.demo.py for a full example

@@ -1,7 +1,7 @@
 import pickle
 import unittest
 
-import pymunk as p
+import easymunk as p
 
 
 class UnitTestShapeFilter(unittest.TestCase):

@@ -8,9 +8,9 @@ import pyglet
 from pyglet.gl import *
 from pyglet.window import key, mouse
 
-import pymunk
-import pymunk.pyglet_util
-from pymunk import Vec2d
+import easymunk
+import easymunk.pyglet_util
+from easymunk import Vec2d
 
 
 class Main(pyglet.window.Window):
@@ -27,17 +27,17 @@ class Main(pyglet.window.Window):
         )
         self.create_world()
 
-        self.draw_options = pymunk.pyglet_util.DrawOptions()
+        self.draw_options = easymunk.pyglet_util.DrawOptions()
         self.draw_options.flags = self.draw_options.DRAW_SHAPES
 
     def create_world(self):
-        self.space = pymunk.Space()
+        self.space = easymunk.Space()
         self.space.gravity = Vec2d(0.0, -900.0)
         self.space.sleep_time_threshold = 0.3
 
         static_lines = [
-            pymunk.Segment(self.space.static_body, Vec2d(20, 55), Vec2d(600, 55), 1),
-            pymunk.Segment(self.space.static_body, Vec2d(550, 55), Vec2d(550, 400), 1),
+            easymunk.Segment(self.space.static_body, Vec2d(20, 55), Vec2d(600, 55), 1),
+            easymunk.Segment(self.space.static_body, Vec2d(550, 55), Vec2d(550, 400), 1),
         ]
         for l in static_lines:
             l.friction = 0.3
@@ -47,10 +47,10 @@ class Main(pyglet.window.Window):
             for y in range(10):
                 size = 20
                 mass = 10.0
-                moment = pymunk.moment_for_box(mass, (size, size))
-                body = pymunk.Body(mass, moment)
+                moment = easymunk.moment_for_box(mass, (size, size))
+                body = easymunk.Body(mass, moment)
                 body.position = Vec2d(300 + x * 50, 105 + y * (size + 0.1))
-                shape = pymunk.Poly.create_box(body, (size, size))
+                shape = easymunk.Poly.create_box(body, (size, size))
                 shape.friction = 0.3
                 self.space.add(body, shape)
 
@@ -67,10 +67,10 @@ class Main(pyglet.window.Window):
         if symbol == key.SPACE:
             mass = 100
             r = 15
-            moment = pymunk.moment_for_circle(mass, 0, r, (0, 0))
-            body = pymunk.Body(mass, moment)
+            moment = easymunk.moment_for_circle(mass, 0, r, (0, 0))
+            body = easymunk.Body(mass, moment)
             body.position = (0, 165)
-            shape = pymunk.Circle(body, r, (0, 0))
+            shape = easymunk.Circle(body, r, (0, 0))
             shape.friction = 0.3
             shape.color = (255, 150, 150, 255)
             self.space.add(body, shape)

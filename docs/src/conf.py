@@ -127,9 +127,9 @@ copyright = u"2013-2020, Victor Blomqvist"
 # The full version, including alpha/beta/rc tags.
 # release = '3.0.0'
 
-import pymunk
+import easymunk
 
-version = pymunk.version
+version = easymunk.version
 release = version
 
 print("Documentation for Pymunk", version)

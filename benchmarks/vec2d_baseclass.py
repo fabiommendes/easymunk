@@ -7,9 +7,9 @@ Compares:
 
 from typing import NamedTuple
 
-import pymunk
+import easymunk
 
-print("pymunk.version", pymunk.version)
+print("pymunk.version", easymunk.version)
 
 s = None
 g = None
@@ -22,9 +22,9 @@ def setup():
     global g
     global vec_obj
     global vec_ntuple
-    s = pymunk.Space()
+    s = easymunk.Space()
     s.gravity = 123, 456
-    g = pymunk.cp.cpSpaceGetGravity(s._space)
+    g = easymunk.cp.cpSpaceGetGravity(s._space)
     vec_obj = Vec2dObject(123, 456)
     vec_ntuple = Vec2dNamedTuple(123, 456)
 
@@ -131,16 +131,16 @@ def bench_creation_usingnew():
 
 
 def bench_set_vec_obj():
-    pymunk.cp.cpSpaceSetGravity(s._space, tuple(vec_obj))
+    easymunk.cp.cpSpaceSetGravity(s._space, tuple(vec_obj))
 
 
 def bench_set_vec_ntuple_wrapped():
-    pymunk.cp.cpSpaceSetGravity(s._space, tuple(vec_ntuple))
+    easymunk.cp.cpSpaceSetGravity(s._space, tuple(vec_ntuple))
 
 
 def bench_set_vec_ntuple():
     assert len(vec_ntuple) == 2
-    pymunk.cp.cpSpaceSetGravity(s._space, vec_ntuple)
+    easymunk.cp.cpSpaceSetGravity(s._space, vec_ntuple)
 
 
 def run_bench(func):

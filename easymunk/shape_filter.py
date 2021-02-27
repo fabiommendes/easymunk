@@ -60,21 +60,21 @@ class ShapeFilter(NamedTuple):
     Example of how category and mask can be used to filter out player from
     enemy object:
 
-    >>> import pymunk
-    >>> s = pymunk.Space()
-    >>> player_b = pymunk.Body(1,1)
-    >>> player_c = pymunk.Circle(player_b, 10)
+    >>> import easymunk
+    >>> s = easymunk.Space()
+    >>> player_b = easymunk.Body(1,1)
+    >>> player_c = easymunk.Circle(player_b, 10)
     >>> s.add(player_b, player_c)
-    >>> player_c.filter = pymunk.ShapeFilter(categories=0b1)
-    >>> hit = s.point_query_nearest((0,0), 0, pymunk.ShapeFilter())
+    >>> player_c.filter = easymunk.ShapeFilter(categories=0b1)
+    >>> hit = s.point_query_nearest((0,0), 0, easymunk.ShapeFilter())
     >>> hit != None
     True
-    >>> filter = pymunk.ShapeFilter(mask=pymunk.ShapeFilter.ALL_MASKS() ^ 0b1)
+    >>> filter = easymunk.ShapeFilter(mask=easymunk.ShapeFilter.ALL_MASKS() ^ 0b1)
     >>> hit = s.point_query_nearest((0,0), 0, filter)
     >>> hit == None
     True
-    >>> enemy_b = pymunk.Body(1,1)
-    >>> enemy_c = pymunk.Circle(enemy_b, 10)
+    >>> enemy_b = easymunk.Body(1,1)
+    >>> enemy_c = easymunk.Circle(enemy_b, 10)
     >>> s.add(enemy_b, enemy_c)
     >>> hit = s.point_query_nearest((0,0), 0, filter)
     >>> hit != None

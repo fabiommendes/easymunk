@@ -8,12 +8,12 @@ __docformat__ = "reStructuredText"
 
 import pyglet
 
-import pymunk
-from pymunk.vec2d import Vec2d
+import easymunk
+from easymunk.vec2d import Vec2d
 
 config = pyglet.gl.Config(sample_buffers=1, samples=2, double_buffer=True)
 window = pyglet.window.Window(config=config, vsync=False)
-space = pymunk.Space()
+space = easymunk.Space()
 
 space.gravity = 0, -900
 space.damping = 0.999
@@ -24,16 +24,16 @@ web_group = 1
 bs = []
 dist = 0.3
 
-cb = pymunk.Body(1, 1)
+cb = easymunk.Body(1, 1)
 cb.position = c
-s = pymunk.Circle(cb, 15)  # to have something to grab
-s.filter = pymunk.ShapeFilter(group=web_group)
+s = easymunk.Circle(cb, 15)  # to have something to grab
+s.filter = easymunk.ShapeFilter(group=web_group)
 s.ignore_draw = True
 space.add(cb, s)
 
 # generate each crossing in the net
 for x in range(0, 101):
-    b = pymunk.Body(1, 1)
+    b = easymunk.Body(1, 1)
     v = Vec2d(1, 0).rotated_degrees(x * 18)
     scale = window.height / 2.0 / 6.0 * 0.5
 
@@ -49,8 +49,8 @@ for x in range(0, 101):
     v = v.scale_to_length(scale * (dist + offset))
 
     b.position = c + v
-    s = pymunk.Circle(b, 15)
-    s.filter = pymunk.ShapeFilter(group=web_group)
+    s = easymunk.Circle(b, 15)
+    s.filter = easymunk.ShapeFilter(group=web_group)
     s.ignore_draw = True
     space.add(b, s)
     bs.append(b)
@@ -60,7 +60,7 @@ def add_joint(a, b):
     rl = a.position.get_distance(b.position) * 0.9
     stiffness = 5000.0
     damping = 100
-    j = pymunk.DampedSpring(a, b, (0, 0), (0, 0), rl, stiffness, damping)
+    j = easymunk.DampedSpring(a, b, (0, 0), (0, 0), rl, stiffness, damping)
     j.max_bias = 1000
     # j.max_force = 50000
     space.add(j)
@@ -80,12 +80,12 @@ for i in range(len(bs) - 1):
 ### WEB ATTACH POINTS
 static_bs = []
 for b in bs[-17::4]:
-    static_body = pymunk.Body(body_type=pymunk.Body.STATIC)
+    static_body = easymunk.Body(body_type=easymunk.Body.STATIC)
     static_body.position = b.position
     static_bs.append(static_body)
 
     # j = pymunk.PivotJoint(static_body, b, static_body.position)
-    j = pymunk.DampedSpring(static_body, b, (0, 0), (0, 0), 0, 0, 0)
+    j = easymunk.DampedSpring(static_body, b, (0, 0), (0, 0), 0, 0, 0)
     j.damping = 100
     j.stiffness = 20000
     space.add(j)
@@ -106,20 +106,20 @@ pyglet.clock.schedule_interval(update, 1 / 30.0)
 
 selected = None
 selected_joint = None
-mouse_body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
+mouse_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
 
 
 @window.event
 def on_mouse_press(x, y, button, modifiers):
     mouse_body.position = Vec2d(x, y)
-    hit = space.point_query_nearest((x, y), 10, pymunk.ShapeFilter())
+    hit = space.point_query_nearest((x, y), 10, easymunk.ShapeFilter())
     if hit != None:
         global selected
         body = hit.shape.body
         rest_length = mouse_body.position.get_distance(body.position)
         stiffness = 1000
         damping = 10
-        selected = pymunk.DampedSpring(
+        selected = easymunk.DampedSpring(
             mouse_body, body, (0, 0), (0, 0), rest_length, stiffness, damping
         )
         space.add(selected)

@@ -4,9 +4,9 @@ Remake of the pyramid demo from the box2d testbed.
 
 import pygame
 
-import pymunk
-import pymunk.pygame_util
-from pymunk import Vec2d
+import easymunk
+import easymunk.pygame_util
+from easymunk import Vec2d
 
 
 class PyramidDemo:
@@ -18,11 +18,11 @@ class PyramidDemo:
         self.clock = pygame.time.Clock()
 
         ### Init pymunk and create space
-        self.space = pymunk.Space()
+        self.space = easymunk.Space()
         self.space.gravity = (0.0, -900.0)
         self.space.sleep_time_threshold = 0.3
         ### ground
-        shape = pymunk.Segment(self.space.static_body, (5, 100), (595, 100), 1.0)
+        shape = easymunk.Segment(self.space.static_body, (5, 100), (595, 100), 1.0)
         shape.friction = 1.0
         self.space.add(shape)
 
@@ -38,10 +38,10 @@ class PyramidDemo:
                 size = 10
                 points = [(-size, -size), (-size, size), (size, size), (size, -size)]
                 mass = 1.0
-                moment = pymunk.moment_for_poly(mass, points, (0, 0))
-                body = pymunk.Body(mass, moment)
+                moment = easymunk.moment_for_poly(mass, points, (0, 0))
+                body = easymunk.Body(mass, moment)
                 body.position = y
-                shape = pymunk.Poly(body, points)
+                shape = easymunk.Poly(body, points)
                 shape.friction = 1
                 self.space.add(body, shape)
 
@@ -50,8 +50,8 @@ class PyramidDemo:
             x += deltaX
 
         ### draw options for drawing
-        pymunk.pygame_util.positive_y_is_up = True
-        self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
+        easymunk.pygame_util.positive_y_is_up = True
+        self.draw_options = easymunk.pygame_util.DrawOptions(self.screen)
 
     def run(self):
         while self.running:

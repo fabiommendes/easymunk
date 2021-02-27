@@ -10,9 +10,9 @@ import sys
 
 import pygame
 
-import pymunk
-import pymunk.pygame_util
-from pymunk import Vec2d
+import easymunk
+import easymunk.pygame_util
+from easymunk import Vec2d
 
 
 def main():
@@ -22,16 +22,16 @@ def main():
     running = True
 
     ### Physics stuff
-    space = pymunk.Space()
+    space = easymunk.Space()
     space.gravity = Vec2d(0.0, 900.0)
-    draw_options = pymunk.pygame_util.DrawOptions(screen)
+    draw_options = easymunk.pygame_util.DrawOptions(screen)
     ## Balls
     balls = []
 
     ### walls
     static_lines = [
-        pymunk.Segment(space.static_body, Vec2d(111, 320), Vec2d(407, 354), 1.0),
-        pymunk.Segment(space.static_body, Vec2d(407, 354), Vec2d(407, 257), 1.0),
+        easymunk.Segment(space.static_body, Vec2d(111, 320), Vec2d(407, 354), 1.0),
+        easymunk.Segment(space.static_body, Vec2d(407, 354), Vec2d(407, 257), 1.0),
     ]
     space.add(*static_lines)
 
@@ -51,11 +51,11 @@ def main():
             ticks_to_next_ball = 100
             mass = 10
             radius = 25
-            inertia = pymunk.moment_for_circle(mass, 0, radius, (0, 0))
-            body = pymunk.Body(mass, inertia)
+            inertia = easymunk.moment_for_circle(mass, 0, radius, (0, 0))
+            body = easymunk.Body(mass, inertia)
             x = random.randint(115, 350)
             body.position = x, 200
-            shape = pymunk.Circle(body, radius, Vec2d(0, 0))
+            shape = easymunk.Circle(body, radius, Vec2d(0, 0))
             shape.color = pygame.Color("lightgrey")
             space.add(body, shape)
             balls.append(shape)
@@ -75,14 +75,14 @@ def main():
             space.remove(ball, ball.body)
             balls.remove(ball)
 
-        mouse_pos = pymunk.pygame_util.get_mouse_pos(screen)
+        mouse_pos = easymunk.pygame_util.get_mouse_pos(screen)
 
         shape = space.point_query_nearest(
-            mouse_pos, float("inf"), pymunk.ShapeFilter()
+            mouse_pos, float("inf"), easymunk.ShapeFilter()
         ).shape
-        if shape is not None and isinstance(shape, pymunk.Circle):
+        if shape is not None and isinstance(shape, easymunk.Circle):
             r = shape.radius + 4
-            p = pymunk.pygame_util.to_pygame(shape.body.position, screen)
+            p = easymunk.pygame_util.to_pygame(shape.body.position, screen)
             pygame.draw.circle(screen, pygame.Color("red"), p, int(r), 2)
 
         ### Update physics

@@ -532,23 +532,23 @@ class Poly(Shape):
 
             Either directly place the vertices like the below example:
 
-            >>> import pymunk
+            >>> import easymunk
             >>> w, h = 10, 20
             >>> vs = [(-w/2,-h/2), (w/2,-h/2), (w/2,h/2), (-w/2,h/2)]
-            >>> poly_good = pymunk.Poly(None, vs)
+            >>> poly_good = easymunk.Poly(None, vs)
             >>> print(poly_good.center_of_gravity)
             Vec2d(0.0, 0.0)
 
             Or use a transform to move them:
 
-            >>> import pymunk
+            >>> import easymunk
             >>> width, height = 10, 20
             >>> vs = [(0, 0), (width, 0), (width, height), (0, height)]
-            >>> poly_bad = pymunk.Poly(None, vs)
+            >>> poly_bad = easymunk.Poly(None, vs)
             >>> print(poly_bad.center_of_gravity)
             Vec2d(5.0, 10.0)
-            >>> t = pymunk.Transform(tx=-width/2, ty=-height/2)
-            >>> poly_good = pymunk.Poly(None, vs, transform=t)
+            >>> t = easymunk.Transform(tx=-width/2, ty=-height/2)
+            >>> poly_good = easymunk.Poly(None, vs, transform=t)
             >>> print(poly_good.center_of_gravity)
             Vec2d(0.0, 0.0)
 
@@ -688,11 +688,11 @@ class Poly(Shape):
         transformed by adding the body position and each vertex rotated by the
         body rotation in the following way::
 
-            >>> import pymunk
-            >>> b = pymunk.Body()
+            >>> import easymunk
+            >>> b = easymunk.Body()
             >>> b.position = 1,2
             >>> b.angle = 0.5
-            >>> shape = pymunk.Poly(b, [(0,0), (10,0), (10,10)])
+            >>> shape = easymunk.Poly(b, [(0,0), (10,0), (10,10)])
             >>> for v in shape.get_vertices():
             ...     x,y = v.rotated(shape.body.angle) + shape.body.position
             ...     (int(x), int(y))

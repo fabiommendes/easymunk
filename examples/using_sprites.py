@@ -12,8 +12,8 @@ from typing import List
 
 import pygame
 
-import pymunk
-from pymunk import Vec2d
+import easymunk
+from easymunk import Vec2d
 
 
 def flipy(y):
@@ -29,17 +29,17 @@ def main():
     running = True
 
     ### Physics stuff
-    space = pymunk.Space()
+    space = easymunk.Space()
     space.gravity = Vec2d(0.0, -900.0)
 
     ## logo
     logo_img = pygame.image.load("pymunk_logo_googlecode.png")
-    logos: List[pymunk.Shape] = []
+    logos: List[easymunk.Shape] = []
 
     ### Static line
     static_lines = [
-        pymunk.Segment(space.static_body, (11.0, 280.0), (407.0, 246.0), 0.0),
-        pymunk.Segment(space.static_body, (407.0, 246.0), (407.0, 343.0), 0.0),
+        easymunk.Segment(space.static_body, (11.0, 280.0), (407.0, 246.0), 0.0),
+        easymunk.Segment(space.static_body, (407.0, 246.0), (407.0, 343.0), 0.0),
     ]
     for l in static_lines:
         l.friction = 0.5
@@ -64,9 +64,9 @@ def main():
             angle = random.random() * math.pi
             vs = [(-23, 26), (23, 26), (0, -26)]
             mass = 10
-            moment = pymunk.moment_for_poly(mass, vs)
-            body = pymunk.Body(mass, moment)
-            shape = pymunk.Poly(body, vs)
+            moment = easymunk.moment_for_poly(mass, vs)
+            body = easymunk.Body(mass, moment)
+            shape = easymunk.Poly(body, vs)
             shape.friction = 0.5
             body.position = x, y
             body.angle = angle

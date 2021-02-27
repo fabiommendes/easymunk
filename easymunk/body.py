@@ -129,7 +129,7 @@ class Body(PickleMixin, TypingAttrMixing, object):
 
         Examples of the different ways to set up the mass and moment:
 
-        >>> import pymunk
+        >>> import easymunk
         >>> radius = 2
         >>> mass = 3
         >>> density = 3
@@ -137,9 +137,9 @@ class Body(PickleMixin, TypingAttrMixing, object):
         ...    print("mass={:.0f} moment={:.0f}".format(b.mass, b.moment))
 
         >>> # Using Shape.density
-        >>> s = pymunk.Space()
-        >>> b = pymunk.Body()
-        >>> c = pymunk.Circle(b, radius)
+        >>> s = easymunk.Space()
+        >>> b = easymunk.Body()
+        >>> c = easymunk.Circle(b, radius)
         >>> c.density = density
         >>> print_mass_moment(b)
         mass=0 moment=0
@@ -148,8 +148,8 @@ class Body(PickleMixin, TypingAttrMixing, object):
         mass=38 moment=75
 
         >>> # Using Shape.mass
-        >>> b = pymunk.Body()
-        >>> c = pymunk.Circle(b, radius)
+        >>> b = easymunk.Body()
+        >>> c = easymunk.Circle(b, radius)
         >>> c.mass = mass
         >>> print_mass_moment(b)
         mass=0 moment=0
@@ -158,9 +158,9 @@ class Body(PickleMixin, TypingAttrMixing, object):
         mass=3 moment=6
 
         >>> # Using Body constructor
-        >>> moment = pymunk.moment_for_circle(mass, 0, radius)
-        >>> b = pymunk.Body()
-        >>> c = pymunk.Circle(b, radius)
+        >>> moment = easymunk.moment_for_circle(mass, 0, radius)
+        >>> b = easymunk.Body()
+        >>> c = easymunk.Circle(b, radius)
         >>> c.mass = mass
         >>> print_mass_moment(b)
         mass=0 moment=0
@@ -173,10 +173,10 @@ class Body(PickleMixin, TypingAttrMixing, object):
         example with density:
 
         >>> # Using multiple Shape.density
-        >>> b = pymunk.Body()
-        >>> c1 = pymunk.Circle(b, radius, offset=(10,0))
+        >>> b = easymunk.Body()
+        >>> c1 = easymunk.Circle(b, radius, offset=(10,0))
         >>> c1.density = density
-        >>> c2 = pymunk.Circle(b, radius, offset=(0,10))
+        >>> c2 = easymunk.Circle(b, radius, offset=(0,10))
         >>> c2.density = density
         >>> s.add(b, c1, c2)
         >>> print_mass_moment(b)

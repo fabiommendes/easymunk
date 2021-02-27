@@ -8,10 +8,10 @@ import sys
 
 import pygame
 
-import pymunk
-import pymunk.constraints
-import pymunk.pygame_util
-from pymunk import Vec2d
+import easymunk
+import easymunk.constraints
+import easymunk.pygame_util
+from easymunk import Vec2d
 
 
 def main():
@@ -21,22 +21,22 @@ def main():
     running = True
 
     ### Physics stuff
-    space = pymunk.Space()
-    draw_options = pymunk.pygame_util.DrawOptions(screen)
+    space = easymunk.Space()
+    draw_options = easymunk.pygame_util.DrawOptions(screen)
 
-    pointer_body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
+    pointer_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
 
     ps = [(80, 0), (0, 20), (0, -20)]
-    moment = pymunk.moment_for_poly(1, ps)
-    gun_body = pymunk.Body(1, moment)
+    moment = easymunk.moment_for_poly(1, ps)
+    gun_body = easymunk.Body(1, moment)
     gun_body.position = Vec2d(300, 300)
-    gun_shape = pymunk.Poly(gun_body, ps)
+    gun_shape = easymunk.Poly(gun_body, ps)
 
     rest_angle = 0
     stiffness = 125000.0
     damping = 6000.0
 
-    rotary_spring = pymunk.constraints.DampedRotarySpring(
+    rotary_spring = easymunk.constraints.DampedRotarySpring(
         pointer_body, gun_body, rest_angle, stiffness, damping
     )
 
@@ -51,7 +51,7 @@ def main():
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_p:
                 pygame.image.save(screen, "damped_rotary_sprint_pointer.png")
             elif event.type == pygame.MOUSEMOTION:
-                mouse_pos = pymunk.pygame_util.get_mouse_pos(screen)
+                mouse_pos = easymunk.pygame_util.get_mouse_pos(screen)
                 pointer_body.position = mouse_pos
                 pointer_body.angle = (pointer_body.position - gun_body.position).angle
 

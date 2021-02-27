@@ -13,8 +13,8 @@ from typing import List
 import pygame
 
 # pymunk imports
-import pymunk
-import pymunk.pygame_util
+import easymunk
+import easymunk.pygame_util
 
 
 class BouncyBalls(object):
@@ -25,7 +25,7 @@ class BouncyBalls(object):
 
     def __init__(self) -> None:
         # Space
-        self._space = pymunk.Space()
+        self._space = easymunk.Space()
         self._space.gravity = (0.0, 900.0)
 
         # Physics
@@ -39,13 +39,13 @@ class BouncyBalls(object):
         self._screen = pygame.display.set_mode((600, 600))
         self._clock = pygame.time.Clock()
 
-        self._draw_options = pymunk.pygame_util.DrawOptions(self._screen)
+        self._draw_options = easymunk.pygame_util.DrawOptions(self._screen)
 
         # Static barrier walls (lines) that the balls bounce off of
         self._add_static_scenery()
 
         # Balls that exist in the world
-        self._balls: List[pymunk.Circle] = []
+        self._balls: List[easymunk.Circle] = []
 
         # Execution control and time until the next ball spawns
         self._running = True
@@ -78,8 +78,8 @@ class BouncyBalls(object):
         """
         static_body = self._space.static_body
         static_lines = [
-            pymunk.Segment(static_body, (111.0, 600 - 280), (407.0, 600 - 246), 0.0),
-            pymunk.Segment(static_body, (407.0, 600 - 246), (407.0, 600 - 343), 0.0),
+            easymunk.Segment(static_body, (111.0, 600 - 280), (407.0, 600 - 246), 0.0),
+            easymunk.Segment(static_body, (407.0, 600 - 246), (407.0, 600 - 343), 0.0),
         ]
         for line in static_lines:
             line.elasticity = 0.95
@@ -121,11 +121,11 @@ class BouncyBalls(object):
         """
         mass = 10
         radius = 25
-        inertia = pymunk.moment_for_circle(mass, 0, radius, (0, 0))
-        body = pymunk.Body(mass, inertia)
+        inertia = easymunk.moment_for_circle(mass, 0, radius, (0, 0))
+        body = easymunk.Body(mass, inertia)
         x = random.randint(115, 350)
         body.position = x, 200
-        shape = pymunk.Circle(body, radius, (0, 0))
+        shape = easymunk.Circle(body, radius, (0, 0))
         shape.elasticity = 0.95
         shape.friction = 0.9
         self._space.add(body, shape)

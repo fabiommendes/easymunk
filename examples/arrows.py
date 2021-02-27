@@ -6,18 +6,18 @@ from typing import List
 
 import pygame
 
-import pymunk
-import pymunk.pygame_util
-from pymunk.vec2d import Vec2d
+import easymunk
+import easymunk.pygame_util
+from easymunk.vec2d import Vec2d
 
 
 def create_arrow():
     vs = [(-30, 0), (0, 3), (10, 0), (0, -3)]
     # mass = 1
     # moment = pymunk.moment_for_poly(mass, vs)
-    arrow_body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
+    arrow_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
 
-    arrow_shape = pymunk.Poly(arrow_body, vs)
+    arrow_shape = easymunk.Poly(arrow_body, vs)
     arrow_shape.friction = 0.5
     arrow_shape.collision_type = 1
     arrow_shape.density = 0.1
@@ -25,9 +25,9 @@ def create_arrow():
 
 
 def stick_arrow_to_target(space, arrow_body, target_body, position, flying_arrows):
-    pivot_joint = pymunk.PivotJoint(arrow_body, target_body, position)
+    pivot_joint = easymunk.PivotJoint(arrow_body, target_body, position)
     phase = target_body.angle - arrow_body.angle
-    gear_joint = pymunk.GearJoint(arrow_body, target_body, phase, 1)
+    gear_joint = easymunk.GearJoint(arrow_body, target_body, phase, 1)
     space.add(pivot_joint)
     space.add(gear_joint)
     try:
@@ -65,20 +65,20 @@ def main():
     font = pygame.font.SysFont("Arial", 16)
 
     ### Physics stuff
-    space = pymunk.Space()
+    space = easymunk.Space()
     space.gravity = 0, 1000
-    draw_options = pymunk.pygame_util.DrawOptions(screen)
+    draw_options = easymunk.pygame_util.DrawOptions(screen)
 
     # walls - the left-top-right walls
-    static: List[pymunk.Shape] = [
-        pymunk.Segment(space.static_body, (50, 550), (50, 50), 5),
-        pymunk.Segment(space.static_body, (50, 50), (650, 50), 5),
-        pymunk.Segment(space.static_body, (650, 50), (650, 550), 5),
-        pymunk.Segment(space.static_body, (50, 550), (650, 550), 5),
+    static: List[easymunk.Shape] = [
+        easymunk.Segment(space.static_body, (50, 550), (50, 50), 5),
+        easymunk.Segment(space.static_body, (50, 50), (650, 50), 5),
+        easymunk.Segment(space.static_body, (650, 50), (650, 550), 5),
+        easymunk.Segment(space.static_body, (50, 550), (650, 550), 5),
     ]
 
-    b2 = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
-    static.append(pymunk.Circle(b2, 30))
+    b2 = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
+    static.append(easymunk.Circle(b2, 30))
     b2.position = 300, 200
 
     for s in static:
@@ -87,8 +87,8 @@ def main():
     space.add(b2, *static)
 
     # "Cannon" that can fire arrows
-    cannon_body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
-    cannon_shape = pymunk.Circle(cannon_body, 25)
+    cannon_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
+    cannon_shape = easymunk.Circle(cannon_body, 25)
     cannon_shape.sensor = True
     cannon_shape.color = (255, 50, 50, 255)
     cannon_body.position = 100, 500
@@ -97,7 +97,7 @@ def main():
     arrow_body, arrow_shape = create_arrow()
     space.add(arrow_body, arrow_shape)
 
-    flying_arrows: List[pymunk.Body] = []
+    flying_arrows: List[easymunk.Body] = []
     handler = space.add_collision_handler(0, 1)
     handler.data["flying_arrows"] = flying_arrows
     handler.post_solve = post_solve_arrow_hit
@@ -121,7 +121,7 @@ def main():
                 power = max(min(diff, 1000), 10) * 13.5
                 impulse = power * Vec2d(1, 0)
                 impulse = impulse.rotated(arrow_body.angle)
-                arrow_body.body_type = pymunk.Body.DYNAMIC
+                arrow_body.body_type = easymunk.Body.DYNAMIC
                 arrow_body.apply_impulse_at_world_point(impulse, arrow_body.position)
 
                 # space.add(arrow_body)
@@ -142,7 +142,7 @@ def main():
         if keys[pygame.K_RIGHT]:
             cannon_body.position += Vec2d(1, 0) * speed
 
-        mouse_position = pymunk.pygame_util.from_pygame(
+        mouse_position = easymunk.pygame_util.from_pygame(
             Vec2d(*pygame.mouse.get_pos()), screen
         )
         cannon_body.angle = (mouse_position - cannon_body.position).angle

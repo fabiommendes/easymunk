@@ -1,9 +1,9 @@
 import unittest
 from typing import List, Tuple
 
-import pymunk.autogeometry as a
-from pymunk.bb import BB
-from pymunk.vec2d import Vec2d
+import easymunk.autogeometry as a
+from easymunk.bb import BB
+from easymunk.vec2d import Vec2d
 
 
 class UnitTestPolylineSet(unittest.TestCase):

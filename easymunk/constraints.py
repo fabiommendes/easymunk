@@ -44,11 +44,11 @@ http://www.youtube.com/watch?v=ZgJJZTS0aMM
 
 Example::
 
->>> import pymunk
->>> import pymunk.constraints
->>> s = pymunk.Space()
->>> a,b = pymunk.Body(10,10), pymunk.Body(10,10)
->>> c = pymunk.constraints.PivotJoint(a, b, (0,0))
+>>> import easymunk
+>>> import easymunk.constraints
+>>> s = easymunk.Space()
+>>> a,b = easymunk.Body(10,10), easymunk.Body(10,10)
+>>> c = easymunk.constraints.PivotJoint(a, b, (0,0))
 >>> s.add(c)
 
 """
@@ -219,8 +219,8 @@ class Constraint(PickleMixin, TypingAttrMixing, object):
 
         Note that None can be used to reset it to default value.
 
-        >>> import pymunk
-        >>> j = pymunk.PinJoint(pymunk.Body(1,2), pymunk.Body(3,4), (0,0))
+        >>> import easymunk
+        >>> j = easymunk.PinJoint(easymunk.Body(1,2), easymunk.Body(3,4), (0,0))
         >>> def pre_solve_func(constraint, space):
         ...     print("Hello from pre-solve")
         >>> j.pre_solve = pre_solve_func
@@ -254,8 +254,8 @@ class Constraint(PickleMixin, TypingAttrMixing, object):
 
         Note that None can be used to reset it to default value.
 
-        >>> import pymunk
-        >>> j = pymunk.PinJoint(pymunk.Body(1,2), pymunk.Body(3,4), (0,0))
+        >>> import easymunk
+        >>> j = easymunk.PinJoint(easymunk.Body(1,2), easymunk.Body(3,4), (0,0))
         >>> def post_solve_func(constraint, space):
         ...     print("Hello from pre-solve")
         >>> j.post_solve = post_solve_func

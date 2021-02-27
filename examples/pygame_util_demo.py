@@ -10,9 +10,9 @@ import sys
 import pygame
 import shapes_for_draw_demos
 
-import pymunk
-import pymunk.pygame_util
-from pymunk.vec2d import Vec2d
+import easymunk
+import easymunk.pygame_util
+from easymunk.vec2d import Vec2d
 
 
 def main():
@@ -21,15 +21,15 @@ def main():
     clock = pygame.time.Clock()
     font = pygame.font.SysFont("Arial", 16)
 
-    pymunk.pygame_util.positive_y_is_up = True
-    space = pymunk.Space()
+    easymunk.pygame_util.positive_y_is_up = True
+    space = easymunk.Space()
 
     captions = shapes_for_draw_demos.fill_space(space)
 
     ### Draw it
     screen.fill(pygame.Color("white"))
 
-    options = pymunk.pygame_util.DrawOptions(screen)
+    options = easymunk.pygame_util.DrawOptions(screen)
     space.debug_draw(options)
     # pymunk.pygame_util.draw(screen, space)
 

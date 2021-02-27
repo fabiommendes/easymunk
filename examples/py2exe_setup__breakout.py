@@ -8,11 +8,11 @@ from distutils.core import setup
 
 import py2exe
 
-import pymunk
+import easymunk
 
 setup(
     windows=["breakout.py"],
-    data_files=[("", [pymunk.chipmunk_path])],
+    data_files=[("", [easymunk.chipmunk_path])],
     zipfile=None,
     options={"py2exe": {"bundle_files": 1}},
 )

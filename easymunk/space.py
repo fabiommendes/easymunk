@@ -11,37 +11,38 @@ from typing import (
     Hashable,
     List,
     Optional,
-    Sequence,
     Set,
     Tuple,
     Union,
+    TypeVar,
 )
 
-from easymunk.shape_filter import ShapeFilter
-from easymunk.space_debug_draw_options import SpaceDebugDrawOptions
+import sidekick.api as sk
 
-from . import _chipmunk_cffi, _version
-
-cp = _chipmunk_cffi.lib
-ffi = _chipmunk_cffi.ffi
-
-from easymunk.constraints import Constraint
-
-from ._pickle import PickleMixin, _State
+from . import _chipmunk_cffi, _version, vec2d
+from ._mixins import PickleMixin, FilterElementsMixin, _State
 from .body import Body
 from .collision_handler import CollisionHandler
+from .constraints import Constraint
 from .contact_point_set import ContactPointSet
 from .query_info import PointQueryInfo, SegmentQueryInfo, ShapeQueryInfo
+from .shape_filter import ShapeFilter
 from .shapes import Shape
-from .vec2d import Vec2d
+from .space_debug_draw_options import SpaceDebugDrawOptions
+from .util import void
+from .vec2d import Vec2d, vec2d_from_cffi
 
 if TYPE_CHECKING:
     from .bb import BB
 
+cp = _chipmunk_cffi.lib
+ffi = _chipmunk_cffi.ffi
+
 _AddableObjects = Union[Body, Shape, Constraint]
+T = TypeVar("T")
 
 
-class Space(PickleMixin, object):
+class Space(PickleMixin, FilterElementsMixin):
     """Spaces are the basic unit of simulation. You add rigid bodies, shapes
     and joints to it and then step them all forward together through time.
 
@@ -64,8 +65,12 @@ class Space(PickleMixin, object):
     >>> space3 = pickle.loads(pickle.dumps(space))
     """
 
-    _pickle_attrs_init = PickleMixin._pickle_attrs_init + ["threaded"]
-    _pickle_attrs_general = PickleMixin._pickle_attrs_general + [
+    _pickle_attrs_init = [
+        *PickleMixin._pickle_attrs_init,
+        "threaded",
+    ]
+    _pickle_attrs_general = [
+        *PickleMixin._pickle_attrs_general,
         "iterations",
         "gravity",
         "damping",
@@ -76,96 +81,131 @@ class Space(PickleMixin, object):
         "collision_persistence",
         "threads",
     ]
+    _init_kwargs = set(_pickle_attrs_general)
 
-    def __init__(self, threaded: bool = False) -> None:
-        """Create a new instance of the Space.
+    iterations: int = property(
+        lambda self: cp.cpSpaceGetIterations(self._space),
+        lambda self, value: void(cp.cpSpaceSetIterations(self._space, value)),
+        doc="""Iterations allow you to control the accuracy of the solver.
 
-        If you set threaded=True the step function will run in threaded mode
-        which might give a speedup. Note that even when you set threaded=True
-        you still have to set Space.threads=2 to actually use more than one
-        thread.
+        Defaults to 10.
 
-        Also note that threaded mode is not available on Windows, and setting
-        threaded=True has no effect on that platform.
-        """
+        Pymunk uses an iterative solver to figure out the forces between
+        objects in the space. What this means is that it builds a big list of
+        all of the collisions, joints, and other constraints between the
+        bodies and makes several passes over the list considering each one
+        individually. The number of passes it makes is the iteration count,
+        and each iteration makes the solution more accurate. If you use too
+        many iterations, the physics should look nice and solid, but may use
+        up too much CPU time. If you use too few iterations, the simulation
+        may seem mushy or bouncy when the objects should be solid. Setting
+        the number of iterations lets you balance between CPU usage and the
+        accuracy of the physics. Pymunk's default of 10 iterations is
+        sufficient for most simple games.
+        """,
+    )
+    gravity: Vec2d = property(
+        lambda self: vec2d_from_cffi(cp.cpSpaceGetGravity(self._space)),
+        lambda self, g: void(cp.cpSpaceSetGravity(self._space, g)),
+        doc="""Global gravity applied to the space.
 
-        self.threaded = threaded and platform.system() != "Windows"
+        Defaults to (0,0). Can be overridden on a per body basis by writing
+        custom integration functions and set it on the body:
+        :py:meth:`pymunk.Body.velocity_func`.
+        """,
+    )
+    damping: float = property(
+        lambda self: cp.cpSpaceGetDamping(self._space),
+        lambda self, damping: void(cp.cpSpaceSetDamping(self._space, damping)),
+        doc="""Amount of simple damping to apply to the space.
 
-        if self.threaded:
-            cp_space = cp.cpHastySpaceNew()
-            freefunc = cp.cpHastySpaceFree
-        else:
-            cp_space = cp.cpSpaceNew()
-            freefunc = cp.cpSpaceFree
+        A value of 0.9 means that each body will lose 10% of its velocity per
+        second. Defaults to 1. Like gravity, it can be overridden on a per
+        body basis.
+        """,
+    )
+    idle_speed_threshold = property(
+        lambda self: cp.cpSpaceGetIdleSpeedThreshold(self._space),
+        lambda self, value: void(cp.cpSpaceSetIdleSpeedThreshold(self._space, value)),
+        doc="""Speed threshold for a body to be considered idle.
 
-        def spacefree(cp_space):  # type: ignore
-            logging.debug("spacefree start %s", cp_space)
-            cp_shapes = []
+        The default value of 0 means the space estimates a good threshold
+        based on gravity.
+        """,
+    )
+    sleep_time_threshold = property(
+        lambda self: cp.cpSpaceGetSleepTimeThreshold(self._space),
+        lambda self, value: void(cp.cpSpaceSetSleepTimeThreshold(self._space, value)),
+        doc="""Time a group of bodies must remain idle in order to fall
+        asleep.
 
-            @ffi.callback("cpSpaceShapeIteratorFunc")
-            def cf1(cp_shape, data):  # type: ignore
-                # print("spacefree shapecallback")
-                cp_shapes.append(cp_shape)
-                # cp_space = cp.cpShapeGetSpace(cp_shape)
-                # cp.cpSpaceRemoveShape(cp_space, cp_shape)
+        The default value of `inf` disables the sleeping algorithm.
+        """,
+    )
+    collision_slop: float = property(
+        lambda self: cp.cpSpaceGetCollisionSlop(self._space),
+        lambda self, value: void(cp.cpSpaceSetCollisionSlop(self._space, value)),
+        doc="""Amount of overlap between shapes that is allowed.
 
-            # print("spacefree shapes", cp_space)
-            cp.cpSpaceEachShape(cp_space, cf1, ffi.NULL)
-            for cp_shape in cp_shapes:
-                logging.debug("spacefree remove shape %s %s", cp_space, cp_shape)
-                cp.cpSpaceRemoveShape(cp_space, cp_shape)
-                cp.cpShapeSetBody(cp_shape, ffi.NULL)
+        To improve stability, set this as high as you can without noticeable
+        overlapping. It defaults to 0.1.
+        """,
+    )
+    collision_bias = property(
+        lambda self: cp.cpSpaceGetCollisionBias(self._space),
+        lambda self, value: void(cp.cpSpaceSetCollisionBias(self._space, value)),
+        doc="""Determines how fast overlapping shapes are pushed apart.
 
-            cp_constraints = []
+        Pymunk allows fast moving objects to overlap, then fixes the overlap
+        over time. Overlapping objects are unavoidable even if swept
+        collisions are supported, and this is an efficient and stable way to
+        deal with overlapping objects. The bias value controls what
+        percentage of overlap remains unfixed after a second and defaults
+        to ~0.2%. Valid values are in the range from 0 to 1, but using 0 is
+        not recommended for stability reasons. The default value is
+        calculated as cpfpow(1.0f - 0.1f, 60.0f) meaning that pymunk attempts
+        to correct 10% of error ever 1/60th of a second.
 
-            @ffi.callback("cpSpaceConstraintIteratorFunc")
-            def cf2(cp_constraint, data):  # type: ignore
-                # print("spacefree shapecallback")
-                cp_constraints.append(cp_constraint)
+        ..Note::
+            Very very few games will need to change this value.
+        """,
+    )
+    collision_persistence: int = property(
+        lambda self: cp.cpSpaceGetCollisionPersistence(self._space),
+        lambda self, value: void(cp.cpSpaceSetCollisionPersistence(self._space, value)),
+        doc="""The number of frames the space keeps collision solutions
+        around for.
 
-            cp.cpSpaceEachConstraint(cp_space, cf2, ffi.NULL)
-            for cp_constraint in cp_constraints:
-                logging.debug(
-                    "spacefree remove constraint %s %s", cp_space, cp_constraint
-                )
-                cp.cpSpaceRemoveConstraint(cp_space, cp_constraint)
+        Helps prevent jittering contacts from getting worse. This defaults
+        to 3.
 
-            cp_bodies = []
-
-            @ffi.callback("cpSpaceBodyIteratorFunc")
-            def cf3(cp_body, data):  # type:ignore
-                # print("spacefree shapecallback")
-                cp_bodies.append(cp_body)
-
-            cp.cpSpaceEachBody(cp_space, cf3, ffi.NULL)
-            for cp_body in cp_bodies:
-                logging.debug("spacefree remove body %s %s", cp_space, cp_body)
-                cp.cpSpaceRemoveBody(cp_space, cp_body)
-
-            logging.debug("spacefree free %s", cp_space)
-            freefunc(cp_space)
-
-        self._space = ffi.gc(cp_space, spacefree)
-
-        self._handlers: Dict[
-            Any, CollisionHandler
-        ] = {}  # To prevent the gc to collect the callbacks.
-
-        self._post_step_callbacks: Dict[Any, Callable[["Space"], None]] = {}
-        self._removed_shapes: Dict[int, Shape] = {}
-
-        self._shapes: Dict[int, Shape] = {}
-        self._bodies: Dict[Body, None] = {}
-        self._static_body: Optional[Body] = None
-        self._constraints: Dict[Constraint, None] = {}
-
-        self._locked = False
-
-        self._add_later: Set[_AddableObjects] = set()
-        self._remove_later: Set[_AddableObjects] = set()
-
-    def _get_self(self) -> "Space":
-        return self
+        ..Note::
+            Very very few games will need to change this value.
+        """,
+    )
+    current_time_step: int = property(
+        lambda self: cp.cpSpaceGetCurrentTimeStep(self._space),
+        doc="""Retrieves the current (if you are in a callback from
+        Space.step()) or most recent (outside of a Space.step() call)
+        timestep.
+        """,
+    )
+    threads: int = property(
+        lambda self: int(cp.cpHastySpaceGetThreads(self._space))
+        if self.threaded
+        else 1,
+        lambda self, n: void(
+            self.threaded and cp.cpHastySpaceSetThreads(self._space, n)
+        ),
+        doc="""The number of threads to use for running the step function. 
+        
+        Only valid when the Space was created with threaded=True. Currently the 
+        max limit is 2, setting a higher value wont have any effect. The 
+        default is 1 regardless if the Space was created with threaded=True, 
+        to keep determinism in the simulation. Note that Windows does not 
+        support the threaded solver.
+        """,
+    )
 
     @property
     def shapes(self) -> List[Shape]:
@@ -185,198 +225,215 @@ class Space(PickleMixin, object):
         """A list of the constraints added to this space"""
         return list(self._constraints)
 
-    def _setup_static_body(self, static_body: Body) -> None:
-        static_body._space = weakref.proxy(self)  # type: ignore
-        cp.cpSpaceAddBody(self._space, static_body._body)
-
-    @property
+    @sk.lazy
     def static_body(self) -> Body:
         """A dedicated static body for the space.
 
         You don't have to use it, but many times it can be convenient to have
         a static body together with the space.
         """
-        if self._static_body is None:
-            self._static_body = Body(body_type=Body.STATIC)
-            self._setup_static_body(self._static_body)
-            # self.add(self._static_body)
+        body = Body(body_type=Body.STATIC)
+        body._space = weakref.proxy(self)
+        cp.cpSpaceAddBody(self._space, body._body)
+        return body
 
-            # b = cp.cpSpaceGetStaticBody(self._space)
-            # self._static_body = Body._init_with_body(b)
-            # self._static_body._space = self
-            # assert self._static_body is not None
-        return self._static_body
+    @property
+    def kinetic_energy(self):
+        """
+        Total kinetic energy of dynamic bodies.
+        """
+        bodies = self.filter_bodies(body_type=Body.DYNAMIC)
+        return sum(b.kinetic_energy for b in bodies)
 
-    def _set_iterations(self, value: int) -> None:
-        cp.cpSpaceSetIterations(self._space, value)
+    @property
+    def gravitational_energy(self):
+        """
+        Potential energy of dynamic bodies due to gravity.
+        """
+        bodies = self.filter_bodies(body_type=Body.DYNAMIC)
+        return sum(b.gravitational_energy for b in bodies)
 
-    def _get_iterations(self) -> int:
-        return cp.cpSpaceGetIterations(self._space)
+    @property
+    def potential_energy(self):
+        """
+        Sum of gravitational energy and all tracked sources of potential
+        energies.
+        """
+        energy = self.gravitational_energy
+        for force in self._forces:
+            try:
+                acc = force.potential_energy
+            except AttributeError:
+                pass
+            else:
+                energy += acc
+        return energy
 
-    iterations = property(
-        _get_iterations,
-        _set_iterations,
-        doc="""Iterations allow you to control the accuracy of the solver.
+    @property
+    def energy(self):
+        """
+        The sum of kinetic and potential energy.
+        """
+        return self.potential_energy + self.kinetic_energy
 
-        Defaults to 10.
+    @property
+    def center_of_mass(self):
+        """
+        Center of mass position of all dynamic objects.
+        """
+        m_acc = 0.0
+        pos_m_acc = Vec2d(0, 0)
+        for o in self.filter_bodies(body_type=Body.DYNAMIC):
+            m_acc += o.mass
+            pos_m_acc += o.mass * o.local_to_world(o.center_of_mass)
+        return pos_m_acc / m_acc
 
-        Pymunk uses an iterative solver to figure out the forces between
-        objects in the space. What this means is that it builds a big list of
-        all of the collisions, joints, and other constraints between the
-        bodies and makes several passes over the list considering each one
-        individually. The number of passes it makes is the iteration count,
-        and each iteration makes the solution more accurate. If you use too
-        many iterations, the physics should look nice and solid, but may use
-        up too much CPU time. If you use too few iterations, the simulation
-        may seem mushy or bouncy when the objects should be solid. Setting
-        the number of iterations lets you balance between CPU usage and the
-        accuracy of the physics. Pymunk's default of 10 iterations is
-        sufficient for most simple games.
-        """,
-    )
+    @property
+    def linear_momentum(self):
+        """
+        Total Linear momentum assigned to dynamic objects.
+        """
+        momentum = Vec2d(0, 0)
+        for o in self.filter_bodies(body_type=Body.DYNAMIC):
+            momentum += o.mass * o.velocity
+        return momentum
 
-    def _set_gravity(self, gravity_vector: Tuple[float, float]) -> None:
-        assert len(gravity_vector) == 2
-        cp.cpSpaceSetGravity(self._space, gravity_vector)
+    @property
+    def angular_momentum(self):
+        """
+        Total angular momentum assigned to dynamic objects.
+        """
+        momentum = 0
+        for o in self.filter_bodies(body_type=Body.DYNAMIC):
+            momentum += o.moment * o.angular_velocity
+            momentum += o.local_to_world(o.center_of_mass).cross(o.velocity)
+        return momentum
 
-    def _get_gravity(self) -> Vec2d:
-        v = cp.cpSpaceGetGravity(self._space)
-        return Vec2d(v.x, v.y)
+    def __init__(self, threaded: bool = False, **kwargs) -> None:
+        """Create a new instance of the Space.
 
-    gravity = property(
-        _get_gravity,
-        _set_gravity,
-        doc="""Global gravity applied to the space.
+        If you set threaded=True the step function will run in threaded mode
+        which might give a speedup. Note that even when you set threaded=True
+        you still have to set Space.threads=2 to actually use more than one
+        thread.
 
-        Defaults to (0,0). Can be overridden on a per body basis by writing
-        custom integration functions and set it on the body:
-        :py:meth:`pymunk.Body.velocity_func`.
-        """,
-    )
+        Also note that threaded mode is not available on Windows, and setting
+        threaded=True has no effect on that platform.
+        """
 
-    def _set_damping(self, damping: float) -> None:
-        cp.cpSpaceSetDamping(self._space, damping)
+        self.threaded = threaded and platform.system() != "Windows"
 
-    def _get_damping(self) -> float:
-        return cp.cpSpaceGetDamping(self._space)
+        if self.threaded:
+            cp_space = cp.cpHastySpaceNew()
+            freefunc = cp.cpHastySpaceFree
+        else:
+            cp_space = cp.cpSpaceNew()
+            freefunc = cp.cpSpaceFree
+        self._space = ffi.gc(cp_space, cffi_free_space(freefunc))
 
-    damping = property(
-        _get_damping,
-        _set_damping,
-        doc="""Amount of simple damping to apply to the space.
+        # To prevent the gc to collect the callbacks.
+        self._handlers: Dict[Any, CollisionHandler] = {}
+        self._post_step_callbacks: Dict[Any, Callable[["Space"], None]] = {}
 
-        A value of 0.9 means that each body will lose 10% of its velocity per
-        second. Defaults to 1. Like gravity, it can be overridden on a per
-        body basis.
-        """,
-    )
+        self._removed_shapes: Dict[int, Shape] = {}
+        self._shapes: Dict[int, Shape] = {}
+        self._bodies: Dict[Body, None] = {}
+        self._constraints: Dict[Constraint, None] = {}
+        self._add_later: Set[_AddableObjects] = set()
+        self._remove_later: Set[_AddableObjects] = set()
+        self._locked = False
+        self._forces = []
 
-    def _set_idle_speed_threshold(self, idle_speed_threshold: float) -> None:
-        cp.cpSpaceSetIdleSpeedThreshold(self._space, idle_speed_threshold)
+        # Save attributes
+        if not self._init_kwargs.issuperset(kwargs):
+            keys = self._init_kwargs.difference(kwargs)
+            raise TypeError(f"invalid parameters: {keys}")
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
-    def _get_idle_speed_threshold(self) -> float:
-        return cp.cpSpaceGetIdleSpeedThreshold(self._space)
+    def _get_self(self) -> "Space":
+        return self
 
-    idle_speed_threshold = property(
-        _get_idle_speed_threshold,
-        _set_idle_speed_threshold,
-        doc="""Speed threshold for a body to be considered idle.
+    def __getstate__(self) -> _State:
+        """Return the state of this object
 
-        The default value of 0 means the space estimates a good threshold
-        based on gravity.
-        """,
-    )
+        This method allows the usage of the :mod:`copy` and :mod:`pickle`
+        modules with this class.
+        """
+        d = super(Space, self).__getstate__()
 
-    def _set_sleep_time_threshold(self, sleep_time_threshold: float) -> None:
-        cp.cpSpaceSetSleepTimeThreshold(self._space, sleep_time_threshold)
+        d["special"].append(("easymunk_version", _version.version))
+        d["special"].append(("bodies", self.bodies))
+        if "static_body" in self.__dict__:
+            d["special"].append(("static_body", self.static_body))
 
-    def _get_sleep_time_threshold(self) -> float:
-        return cp.cpSpaceGetSleepTimeThreshold(self._space)
+        d["special"].append(("shapes", self.shapes))
+        d["special"].append(("constraints", self.constraints))
 
-    sleep_time_threshold = property(
-        _get_sleep_time_threshold,
-        _set_sleep_time_threshold,
-        doc="""Time a group of bodies must remain idle in order to fall
-        asleep.
+        handlers = []
+        for k, v in self._handlers.items():
+            h: Dict[str, Any] = {}
+            if v._begin_base is not None:
+                h["_begin_base"] = v._begin_base
+            if v._pre_solve_base is not None:
+                h["_pre_solve_base"] = v._pre_solve_base
+            if v._post_solve_base is not None:
+                h["_post_solve_base"] = v._post_solve_base
+            if v._separate_base is not None:
+                h["_separate_base"] = v._separate_base
+            handlers.append((k, h))
 
-        The default value of `inf` disables the sleeping algorithm.
-        """,
-    )
+        d["special"].append(("_handlers", handlers))
 
-    def _set_collision_slop(self, collision_slop: float) -> None:
-        cp.cpSpaceSetCollisionSlop(self._space, collision_slop)
+        return d
 
-    def _get_collision_slop(self) -> float:
-        return cp.cpSpaceGetCollisionSlop(self._space)
+    def __setstate__(self, state: _State) -> None:
+        """Unpack this object from a saved state.
 
-    collision_slop = property(
-        _get_collision_slop,
-        _set_collision_slop,
-        doc="""Amount of overlap between shapes that is allowed.
+        This method allows the usage of the :mod:`copy` and :mod:`pickle`
+        modules with this class.
+        """
+        super(Space, self).__setstate__(state)
 
-        To improve stability, set this as high as you can without noticeable
-        overlapping. It defaults to 0.1.
-        """,
-    )
+        for k, v in state["special"]:
+            if k == "easymunk_version":
+                assert _version.version == v, (
+                    f"Pymunk version {v} of pickled object does not match current Pymunk "
+                    f""
+                    f""
+                    f""
+                    f""
+                    f""
+                    f"version {_version.version}"
+                )
+            elif k == "bodies":
+                self.add(*v)
+            elif k == "static_body":
+                self.static_body = v
+                v._space = weakref.proxy(self)
+                cp.cpSpaceAddBody(self._space, v._body)
+            elif k == "shapes":
+                self.add(*v)
+            elif k == "constraints":
+                self.add(*v)
+            elif k == "_handlers":
+                for k2, hd in v:
+                    if k2 == None:
+                        h = self.add_default_collision_handler()
+                    elif isinstance(k2, tuple):
+                        h = self.add_collision_handler(k2[0], k2[1])
+                    else:
+                        h = self.add_wildcard_collision_handler(k2)
+                    if "_begin_base" in hd:
+                        h.begin = hd["_begin_base"]
+                    if "_pre_solve_base" in hd:
+                        h.pre_solve = hd["_pre_solve_base"]
+                    if "_post_solve_base" in hd:
+                        h.post_solve = hd["_post_solve_base"]
+                    if "_separate_base" in hd:
+                        h.separate = hd["_separate_base"]
 
-    def _set_collision_bias(self, collision_bias: float) -> None:
-        cp.cpSpaceSetCollisionBias(self._space, collision_bias)
-
-    def _get_collision_bias(self) -> float:
-        return cp.cpSpaceGetCollisionBias(self._space)
-
-    collision_bias = property(
-        _get_collision_bias,
-        _set_collision_bias,
-        doc="""Determines how fast overlapping shapes are pushed apart.
-
-        Pymunk allows fast moving objects to overlap, then fixes the overlap
-        over time. Overlapping objects are unavoidable even if swept
-        collisions are supported, and this is an efficient and stable way to
-        deal with overlapping objects. The bias value controls what
-        percentage of overlap remains unfixed after a second and defaults
-        to ~0.2%. Valid values are in the range from 0 to 1, but using 0 is
-        not recommended for stability reasons. The default value is
-        calculated as cpfpow(1.0f - 0.1f, 60.0f) meaning that pymunk attempts
-        to correct 10% of error ever 1/60th of a second.
-
-        ..Note::
-            Very very few games will need to change this value.
-        """,
-    )
-
-    def _set_collision_persistence(self, collision_persistence: float) -> None:
-        cp.cpSpaceSetCollisionPersistence(self._space, collision_persistence)
-
-    def _get_collision_persistence(self) -> float:
-        return cp.cpSpaceGetCollisionPersistence(self._space)
-
-    collision_persistence = property(
-        _get_collision_persistence,
-        _set_collision_persistence,
-        doc="""The number of frames the space keeps collision solutions
-        around for.
-
-        Helps prevent jittering contacts from getting worse. This defaults
-        to 3.
-
-        ..Note::
-            Very very few games will need to change this value.
-        """,
-    )
-
-    def _get_current_time_step(self) -> int:
-        return cp.cpSpaceGetCurrentTimeStep(self._space)
-
-    current_time_step = property(
-        _get_current_time_step,
-        doc="""Retrieves the current (if you are in a callback from
-        Space.step()) or most recent (outside of a Space.step() call)
-        timestep.
-        """,
-    )
-
-    def add(self, *objs: _AddableObjects) -> None:
+    def add(self: T, *objs: _AddableObjects) -> T:
         """Add one or many shapes, bodies or constraints (joints) to the space
 
         Unlike Chipmunk and earlier versions of pymunk its now allowed to add
@@ -386,7 +443,7 @@ class Space(PickleMixin, object):
 
         if self._locked:
             self._add_later.update(objs)
-            return
+            return self
 
         # add bodies first, since the shapes require their bodies to be
         # already added. This allows code like space.add(shape, body).
@@ -404,7 +461,9 @@ class Space(PickleMixin, object):
             else:
                 raise Exception(f"Unsupported type  {type(o)} of {o}.")
 
-    def remove(self, *objs: _AddableObjects) -> None:
+        return self
+
+    def remove(self: T, *objs: _AddableObjects) -> T:
         """Remove one or many shapes, bodies or constraints from the space
 
         Unlike Chipmunk and earlier versions of Pymunk its now allowed to
@@ -418,7 +477,7 @@ class Space(PickleMixin, object):
         """
         if self._locked:
             self._remove_later.update(objs)
-            return
+            return self
 
         for o in objs:
             if isinstance(o, Body):
@@ -429,97 +488,84 @@ class Space(PickleMixin, object):
                 self._remove_constraint(o)
             else:
                 raise Exception(f"Unsupported type  {type(o)} of {o}.")
+        return self
 
     def _add_shape(self, shape: "Shape") -> None:
-        """Adds a shape to the space"""
-        # print("addshape", self._space, shape)
-        assert shape._id not in self._shapes, "shape already added to space"
+        if shape._id in self._shapes:
+            raise ValueError("shape already added to space")
 
         shape._space = weakref.proxy(self)
         self._shapes[shape._id] = shape
         cp.cpSpaceAddShape(self._space, shape._shape)
 
     def _add_body(self, body: "Body") -> None:
-        """Adds a body to the space"""
-        assert body not in self._bodies, "body already added to space"
+        if body in self._bodies:
+            raise ValueError("body already added to space")
+
         body._space = weakref.proxy(self)
         self._bodies[body] = None
         cp.cpSpaceAddBody(self._space, body._body)
 
     def _add_constraint(self, constraint: "Constraint") -> None:
-        """Adds a constraint to the space"""
-        assert constraint not in self._constraints, "constraint already added to space"
+        if constraint in self._constraints:
+            ValueError("constraint already added to space")
+
         self._constraints[constraint] = None
         cp.cpSpaceAddConstraint(self._space, constraint._constraint)
 
     def _remove_shape(self, shape: "Shape") -> None:
-        """Removes a shape from the space"""
-        assert shape._id in self._shapes, "shape not in space, already removed?"
+        if shape._id not in self._shapes:
+            raise ValueError("shape not in space, already removed?")
         self._removed_shapes[shape._id] = shape
-        # During GC at program exit sometimes the shape might already be removed. Then skip this step.
+
+        # During GC at program exit sometimes the shape might already be removed. Then
+        # skip this step.
         if cp.cpSpaceContainsShape(self._space, shape._shape):
             cp.cpSpaceRemoveShape(self._space, shape._shape)
         del self._shapes[shape._id]
 
     def _remove_body(self, body: "Body") -> None:
-        """Removes a body from the space"""
-        assert body in self._bodies, "body not in space, already removed?"
+        if body not in self._bodies:
+            raise ValueError("body not in space, already removed?")
         body._space = None
-        # During GC at program exit sometimes the shape might already be removed. Then skip this step.
+
+        # During GC at program exit sometimes the shape might already be removed. Then
+        # skip this step.
         if cp.cpSpaceContainsBody(self._space, body._body):
             cp.cpSpaceRemoveBody(self._space, body._body)
         del self._bodies[body]
 
     def _remove_constraint(self, constraint: "Constraint") -> None:
         """Removes a constraint from the space"""
-        assert (
-            constraint in self._constraints
-        ), "constraint not in space, already removed?"
-        # print("remove", constraint, constraint._constraint, self._constraints)
-        # During GC at program exit sometimes the constraint might already be removed. Then skip this steip.
+        if constraint not in self._constraints:
+            raise ValueError("constraint not in space, already removed?")
+
+        # During GC at program exit sometimes the constraint might already be removed.
+        # Then skip this steip.
         if cp.cpSpaceContainsConstraint(self._space, constraint._constraint):
             cp.cpSpaceRemoveConstraint(self._space, constraint._constraint)
         del self._constraints[constraint]
 
-    def reindex_shape(self, shape: Shape) -> None:
+    def reindex_shape(self: T, shape: Shape) -> T:
         """Update the collision detection data for a specific shape in the
         space.
         """
         cp.cpSpaceReindexShape(self._space, shape._shape)
+        return self
 
-    def reindex_shapes_for_body(self, body: Body) -> None:
+    def reindex_shapes_for_body(self: T, body: Body) -> T:
         """Reindex all the shapes for a certain body."""
         cp.cpSpaceReindexShapesForBody(self._space, body._body)
+        return self
 
-    def reindex_static(self) -> None:
+    def reindex_static(self: T) -> T:
         """Update the collision detection info for the static shapes in the
         space. You only need to call this if you move one of the static shapes.
         """
         cp.cpSpaceReindexStatic(self._space)
+        return self
 
-    def _get_threads(self) -> int:
-        if self.threaded:
-            return int(cp.cpHastySpaceGetThreads(self._space))
-        return 1
-
-    def _set_threads(self, n: int) -> None:
-        if self.threaded:
-            cp.cpHastySpaceSetThreads(self._space, n)
-
-    threads = property(
-        _get_threads,
-        _set_threads,
-        doc="""The number of threads to use for running the step function. 
-        
-        Only valid when the Space was created with threaded=True. Currently the 
-        max limit is 2, setting a higher value wont have any effect. The 
-        default is 1 regardless if the Space was created with threaded=True, 
-        to keep determinism in the simulation. Note that Windows does not 
-        support the threaded solver.
-        """,
-    )
-
-    def use_spatial_hash(self, dim: float, count: int) -> None:
+    def use_spatial_hash(self: T, dim: float, count: int) -> T:
         """Switch the space to use a spatial hash instead of the bounding box
         tree.
 
@@ -551,6 +597,7 @@ class Space(PickleMixin, object):
         :param count: the suggested minimum number of cells in the hash table
         """
         cp.cpSpaceUseSpatialHash(self._space, dim, count)
+        return self
 
     def step(self, dt: float) -> None:
         """Update the space for the given time step.
@@ -768,7 +815,6 @@ class Space(PickleMixin, object):
             return None
 
         shapeid = int(ffi.cast("int", cp.cpShapeGetUserData(_shape)))
-        # return self._shapes[hashid_private]
 
         if shapeid in self._shapes:
             return self._shapes[shapeid]
@@ -857,7 +903,6 @@ class Space(PickleMixin, object):
             p = SegmentQueryInfo(
                 shape, Vec2d(point.x, point.y), Vec2d(normal.x, normal.y), alpha
             )
-            nonlocal query_hits
             query_hits.append(p)
 
         data = ffi.new_handle(self)
@@ -986,94 +1031,41 @@ class Space(PickleMixin, object):
             for shape in self.shapes:
                 options.draw_shape(shape)
 
-    # def get_batched_bodies(self, shape_filter):
-    #     """Return a memoryview for use when the non-batch api is not performant enough.
 
-    #     .. note::
-    #         Experimental API. Likely to change in future major, minor orpoint
-    #         releases.
-    #     """
-    #     pass
+@sk.curry(2)
+def cffi_free_space(free_cb, cp_space):
+    logging.debug("spacefree start %s", cp_space)
+    cp_shapes = []
+    cp_constraints = []
+    cp_bodies = []
 
-    def __getstate__(self) -> _State:
-        """Return the state of this object
+    @ffi.callback("cpSpaceShapeIteratorFunc")
+    def cf1(shape, _):
+        cp_shapes.append(shape)
 
-        This method allows the usage of the :mod:`copy` and :mod:`pickle`
-        modules with this class.
-        """
-        d = super(Space, self).__getstate__()
+    @ffi.callback("cpSpaceConstraintIteratorFunc")
+    def cf2(constraint, _):
+        cp_constraints.append(constraint)
 
-        d["special"].append(("pymunk_version", _version.version))
-        # bodies needs to be added to the state before their shapes.
-        d["special"].append(("bodies", self.bodies))
-        if self._static_body != None:
-            # print("getstate", self._static_body)
-            d["special"].append(("_static_body", self._static_body))
+    @ffi.callback("cpSpaceBodyIteratorFunc")
+    def cf3(body, _):
+        cp_bodies.append(body)
 
-        d["special"].append(("shapes", self.shapes))
-        d["special"].append(("constraints", self.constraints))
+    cp.cpSpaceEachShape(cp_space, cf1, ffi.NULL)
+    for cp_shape in cp_shapes:
+        logging.debug("free %s %s", cp_space, cp_shape)
+        cp.cpSpaceRemoveShape(cp_space, cp_shape)
+        cp.cpShapeSetBody(cp_shape, ffi.NULL)
 
-        handlers = []
-        for k, v in self._handlers.items():
-            h: Dict[str, Any] = {}
-            if v._begin_base is not None:
-                h["_begin_base"] = v._begin_base
-            if v._pre_solve_base is not None:
-                h["_pre_solve_base"] = v._pre_solve_base
-            if v._post_solve_base is not None:
-                h["_post_solve_base"] = v._post_solve_base
-            if v._separate_base is not None:
-                h["_separate_base"] = v._separate_base
-            handlers.append((k, h))
+    cp.cpSpaceEachConstraint(cp_space, cf2, ffi.NULL)
+    for cp_constraint in cp_constraints:
+        logging.debug("free %s %s", cp_space, cp_constraint)
+        cp.cpSpaceRemoveConstraint(cp_space, cp_constraint)
 
-        d["special"].append(("_handlers", handlers))
+    cp.cpSpaceEachBody(cp_space, cf3, ffi.NULL)
+    for cp_body in cp_bodies:
+        logging.debug("free %s %s", cp_space, cp_body)
+        cp.cpSpaceRemoveBody(cp_space, cp_body)
 
-        return d
-
-    def __setstate__(self, state: _State) -> None:
-        """Unpack this object from a saved state.
-
-        This method allows the usage of the :mod:`copy` and :mod:`pickle`
-        modules with this class.
-        """
-        super(Space, self).__setstate__(state)
-
-        for k, v in state["special"]:
-            if k == "pymunk_version":
-                assert (
-                    _version.version == v
-                ), f"Pymunk version {v} of pickled object does not match current Pymunk version {_version.version}"
-            elif k == "bodies":
-                self.add(*v)
-            elif k == "_static_body":
-                # _ = cp.cpSpaceSetStaticBody(self._space, v._body)
-                # v._space = self
-                # self._static_body = v
-                # print("setstate", v, self._static_body)
-                self._static_body = v
-                self._setup_static_body(v)
-                # self._static_body._space = weakref.proxy(self)
-                # cp.cpSpaceAddBody(self._space, v._body)
-                # self.add(v)
-
-            elif k == "shapes":
-                # print("setstate shapes", v)
-                self.add(*v)
-            elif k == "constraints":
-                self.add(*v)
-            elif k == "_handlers":
-                for k2, hd in v:
-                    if k2 == None:
-                        h = self.add_default_collision_handler()
-                    elif isinstance(k2, tuple):
-                        h = self.add_collision_handler(k2[0], k2[1])
-                    else:
-                        h = self.add_wildcard_collision_handler(k2)
-                    if "_begin_base" in hd:
-                        h.begin = hd["_begin_base"]
-                    if "_pre_solve_base" in hd:
-                        h.pre_solve = hd["_pre_solve_base"]
-                    if "_post_solve_base" in hd:
-                        h.post_solve = hd["_post_solve_base"]
-                    if "_separate_base" in hd:
-                        h.separate = hd["_separate_base"]
+    logging.debug("spacefree free %s", cp_space)
+    free_cb(cp_space)

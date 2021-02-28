@@ -17,14 +17,14 @@ with (open("README.rst")) as f:
     long_description = f.read()
 
 setup(
-    name="pymunk",
-    url="http://www.pymunk.org",
-    author="Victor Blomqvist",
-    author_email="vb@viblo.se",
-    version="6.0.0",  # remember to change me for new versions!
-    description="Pymunk is a easy-to-use pythonic 2d physics library",
+    name="easymunk",
+    url="http://fabiommendes.github.io/easymunk/",
+    author="Fábio Mendes",
+    author_email="fabiomacedomendes@gmail.com",
+    version="1.0.0",  # remember to change me for new versions!
+    description="Easymunk is a easy-to-use pythonic 2d physics library",
     long_description=long_description,
-    packages=["pymunk", "pymunk.tests"],
+    packages=["easymunk", "easymunk.tests"],
     include_package_data=True,
     license="MIT License",
     classifiers=classifiers,
@@ -35,12 +35,13 @@ setup(
         }
     },
     python_requires=">=3.6",
-    # Require >1.14.0 since that (and older) has problem with returing structs from functions.
+    # Require >1.14.0 since that (and older) has problem with returning structs
+    # from functions.
     setup_requires=["cffi > 1.14.0"],
-    install_requires=["cffi > 1.14.0"],
-    cffi_modules=["pymunk/pymunk_extension_build.py:ffibuilder"],
+    install_requires=["cffi > 1.14.0", "sidekick"],
+    cffi_modules=["easymunk/pymunk_extension_build.py:ffibuilder"],
     extras_require={
         "dev": ["pyglet", "pygame", "sphinx", "aafigure", "wheel", "matplotlib"]
     },
-    test_suite="pymunk.tests",
+    test_suite="easymunk.tests",
 )

@@ -21,20 +21,29 @@
 # SOFTWARE.
 # ----------------------------------------------------------------------------
 
-"""This submodule contains utility functions, mainly to help with polygon
-creation.
-
-.. note:: this submodule is deprectade by the autogeometry submodule. Expect it 
-to be removed in the next Pymunk release. 
-
-"""
 __docformat__ = "reStructuredText"
 
+from _weakrefset import WeakSet
 from functools import partial
-from typing import List, Tuple, TypeVar
+from typing import (
+    List,
+    Tuple,
+    TypeVar,
+    Iterable,
+    Callable,
+    TYPE_CHECKING,
+    Optional,
+    Union,
+)
 
+from ._chipmunk_cffi import ffi
 from .math import sqrt
 from .vec2d import Vec2d
+
+if TYPE_CHECKING:
+    from .space import Space
+    from .body import Body
+    from .shapes import Shape
 
 __all__ = [
     "is_clockwise",
@@ -49,6 +58,11 @@ __all__ = [
     "convexise",
     "void",
     "set_attrs",
+    "single_query",
+    "compose_filters",
+    "py_space",
+    "cffi_body",
+    "inner_shapes",
 ]
 
 X, Y = 0, 1
@@ -460,3 +474,70 @@ def set_attrs(obj: T, **kwargs) -> T:
     for k, v in kwargs.items():
         setattr(obj, k, v)
     return obj
+
+
+def single_query(seq: Iterable[T], *, name: str = None, first=False):
+    """
+    Return first element of sequence and raise ValueError if sequence has more
+    than one element.
+    """
+    seq = iter(seq)
+
+    try:
+        item = next(seq)
+        if first:
+            return item
+    except StopIteration:
+        raise ValueError("no element found")
+
+    try:
+        next(seq)
+    except StopIteration:
+        return item
+    else:
+        if name is None:
+            name = type(item).__name__
+        raise ValueError(f"more than one {name} was found!")
+
+
+def compose_filters(filters: Iterable[Callable[..., bool]]) -> Callable[..., bool]:
+    """
+    Compose a sequence of filter functions.
+
+    The resulting function returns True if all arguments also return True.
+    """
+
+    filters = tuple(filters)
+    if not filters:
+        return lambda *args: True
+    elif len(filters) == 1:
+        return filters[0]
+    else:
+        return lambda *args: all(fn(*args) for fn in filters)
+
+
+#
+# Normalize and fetch objects
+#
+def py_space(sp) -> "Space":
+    """
+    Return Space object from Space, weakrefs or CFFI references.
+    """
+    # noinspection PyProtectedMember
+    return sp._get_self()
+
+
+def cffi_body(body: Optional["Body"]):
+    """
+    Return the C reference to body or a null pointer if body is None.
+    """
+    # noinspection PyProtectedMember
+    return ffi.NULL if body is None else body._body
+
+
+def inner_shapes(obj: Union["Body"]) -> WeakSet["Shape"]:
+    """
+    Return the mutable set of shapes from object.
+    """
+    # noinspection PyProtectedMember
+    return obj._shapes

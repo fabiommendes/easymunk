@@ -31,18 +31,18 @@ def main():
     clock = pygame.time.Clock()
     running = True
 
-    ### Physics stuff
+    # Physics stuff
     space = easymunk.Space()
     space.gravity = (0.0, -900.0)
     draw_options = easymunk.pygame_util.DrawOptions(screen)
     # disable the build in debug draw of collision point since we use our own code.
     draw_options.flags = (
-            draw_options.flags ^ easymunk.pygame_util.DrawOptions.DRAW_COLLISION_POINTS
+        draw_options.flags ^ easymunk.pygame_util.DrawOptions.DRAW_COLLISION_POINTS
     )
     ## Balls
     balls = []
 
-    ### walls
+    # walls
     static_lines = [
         easymunk.Segment(space.static_body, (11.0, 280.0), (407.0, 246.0), 0.0),
         easymunk.Segment(space.static_body, (407.0, 246.0), (407.0, 343.0), 0.0),
@@ -80,10 +80,10 @@ def main():
             space.add(body, shape)
             balls.append(shape)
 
-        ### Clear screen
+        # Clear screen
         screen.fill(pygame.Color("white"))
 
-        ### Draw stuff
+        # Draw stuff
         space.debug_draw(draw_options)
 
         balls_to_remove = []
@@ -94,12 +94,12 @@ def main():
             space.remove(ball, ball.body)
             balls.remove(ball)
 
-        ### Update physics
+        # Update physics
         dt = 1.0 / 60.0
         for x in range(1):
             space.step(dt)
 
-        ### Flip screen
+        # Flip screen
         pygame.display.flip()
         clock.tick(50)
         pygame.display.set_caption("fps: " + str(clock.get_fps()))

@@ -21,14 +21,14 @@ def main():
     clock = pygame.time.Clock()
     running = True
 
-    ### Physics stuff
+    # Physics stuff
     space = easymunk.Space()
     space.gravity = Vec2d(0.0, 900.0)
     draw_options = easymunk.pygame_util.DrawOptions(screen)
     ## Balls
     balls = []
 
-    ### walls
+    # walls
     static_lines = [
         easymunk.Segment(space.static_body, Vec2d(111, 320), Vec2d(407, 354), 1.0),
         easymunk.Segment(space.static_body, Vec2d(407, 354), Vec2d(407, 257), 1.0),
@@ -60,10 +60,10 @@ def main():
             space.add(body, shape)
             balls.append(shape)
 
-        ### Clear screen
+        # Clear screen
         screen.fill(pygame.Color("white"))
 
-        ### Draw stuff
+        # Draw stuff
         space.debug_draw(draw_options)
 
         balls_to_remove = []
@@ -85,12 +85,12 @@ def main():
             p = easymunk.pygame_util.to_pygame(shape.body.position, screen)
             pygame.draw.circle(screen, pygame.Color("red"), p, int(r), 2)
 
-        ### Update physics
+        # Update physics
         dt = 1.0 / 60.0
         for x in range(1):
             space.step(dt)
 
-        ### Flip screen
+        # Flip screen
         pygame.display.flip()
         clock.tick(50)
         pygame.display.set_caption("fps: " + str(clock.get_fps()))

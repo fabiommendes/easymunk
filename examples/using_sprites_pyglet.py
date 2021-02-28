@@ -24,11 +24,11 @@ logo_img.anchor_y = logo_img.height / 2
 logos: List[easymunk.Shape] = []
 batch = pyglet.graphics.Batch()
 
-### Physics stuff
+# Physics stuff
 space = easymunk.Space()
 space.gravity = Vec2d(0.0, -900.0)
 
-### Static line
+# Static line
 static_lines = [
     easymunk.Segment(space.static_body, (11.0, 280.0), (407.0, 246.0), 0.0),
     easymunk.Segment(space.static_body, (407.0, 246.0), (407.0, 343.0), 0.0),

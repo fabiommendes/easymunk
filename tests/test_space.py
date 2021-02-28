@@ -13,8 +13,6 @@ from easymunk import *
 from easymunk.constraints import *
 from easymunk.vec2d import Vec2d
 
-####################################################################
-
 
 class UnitTestSpace(unittest.TestCase):
     def _setUp(self) -> None:
@@ -420,7 +418,7 @@ class UnitTestSpace(unittest.TestCase):
         s.add(b1, c1)
         s.add(b2, s2)
 
-        s2.unsafe_set_endpoints((-10, 0), (100, 0))
+        s2.endpoints = (-10, 0), (100, 0)
         s.gravity = 0, -100
 
         for _ in range(10):
@@ -935,9 +933,3 @@ class UnitTestSpace(unittest.TestCase):
 
 def f1(*args: Any, **kwargs: Any) -> None:
     pass
-
-
-####################################################################
-if __name__ == "__main__":
-    print("testing pymunk version " + p.version)
-    unittest.main()

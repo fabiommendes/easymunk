@@ -27,14 +27,14 @@ def main():
     clock = pygame.time.Clock()
     running = True
 
-    ### Physics stuff
+    # Physics stuff
     space = pm.Space()
     space.gravity = (0.0, 900.0)
 
     ## Balls
     balls = []
 
-    ### walls
+    # walls
     static_lines = [
         pm.Segment(space.static_body, (111.0, 320.0), (407.0, 354.0), 0.0),
         pm.Segment(space.static_body, (407.0, 354.0), (407.0, 257.0), 0.0),
@@ -69,10 +69,10 @@ def main():
             space.add(body, shape)
             balls.append(shape)
 
-        ### Clear screen
+        # Clear screen
         screen.fill(pygame.Color("white"))
 
-        ### Draw stuff
+        # Draw stuff
         balls_to_remove = []
         for ball in balls:
             if ball.body.position.y > 400:
@@ -90,12 +90,12 @@ def main():
             p2 = tuple(map(int, body.position + line.b.rotated(body.angle)))
             pygame.draw.lines(screen, pygame.Color("lightgray"), False, [p1, p2])
 
-        ### Update physics
+        # Update physics
         dt = 1.0 / 60.0
         for x in range(1):
             space.step(dt)
 
-        ### Flip screen
+        # Flip screen
         pygame.display.flip()
         clock.tick(50)
         pygame.display.set_caption("fps: " + str(clock.get_fps()))

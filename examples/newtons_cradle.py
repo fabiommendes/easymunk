@@ -11,7 +11,7 @@ description = """
 A screensaver version of Newton's Cradle with an interactive mode
 
 /s - Run in fullscreen screensaver mode
-/p #### - Display a preview of the screensaver using a window handler
+/p - Display a preview of the screensaver using a window handler
 /i - Interactive mode
 """
 
@@ -28,7 +28,7 @@ if sys.argv[1] == "/p":  # preview mode
     is_interactive = False
 
 
-### We must set OS env before the pygame imports..
+# We must set OS env before the pygame imports..
 import pygame
 
 if sys.argv[1] == "/s":  # fullscreen screensaver mode
@@ -109,7 +109,7 @@ def main():
     running = True
     font = pygame.font.Font(None, 16)
 
-    ### Physics stuff
+    # Physics stuff
     space = pm.Space()
     space.gravity = (0.0, -1900.0)
     space.damping = 0.999  # to prevent it from blowing up.
@@ -198,10 +198,10 @@ def main():
         p = from_pygame(Vec2d(*mpos))
         mouse_body.position = p
 
-        ### Clear screen
+        # Clear screen
         screen.fill(pygame.Color("black"))
 
-        ### Draw stuff
+        # Draw stuff
         for c in space.constraints:
             pv1 = c.a.position + c.anchor_a
             pv2 = c.b.position + c.anchor_b
@@ -214,14 +214,14 @@ def main():
             drawcircle(screen, ball.color, p, int(ball.radius), 0)
             # pygame.draw.circle(screen, ball.color, p, int(ball.radius), 0)
 
-        ### Update physics
+        # Update physics
         fps = 50
         iterations = 25
         dt = 1.0 / float(fps) / float(iterations)
         for x in range(iterations):  # 10 iterations to get a more stable simulation
             space.step(dt)
 
-        ### Flip screen
+        # Flip screen
         if is_interactive:
             screen.blit(
                 font.render(

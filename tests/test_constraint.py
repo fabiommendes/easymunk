@@ -6,7 +6,6 @@ from easymunk.constraints import *
 from easymunk.vec2d import Vec2d
 
 
-####################################################################
 class UnitTestConstraint(unittest.TestCase):
     def testA(self) -> None:
         a, b = p.Body(10, 10), p.Body(10, 10)
@@ -510,9 +509,3 @@ def pre_solve(c: Constraint, s: p.Space) -> None:
 
 def post_solve(c: Constraint, s: p.Space) -> None:
     pass
-
-
-####################################################################
-if __name__ == "__main__":
-    print("testing pymunk version " + p.version)
-    unittest.main()

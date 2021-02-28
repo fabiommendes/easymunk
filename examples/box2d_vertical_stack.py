@@ -37,7 +37,9 @@ class Main(pyglet.window.Window):
 
         static_lines = [
             easymunk.Segment(self.space.static_body, Vec2d(20, 55), Vec2d(600, 55), 1),
-            easymunk.Segment(self.space.static_body, Vec2d(550, 55), Vec2d(550, 400), 1),
+            easymunk.Segment(
+                self.space.static_body, Vec2d(550, 55), Vec2d(550, 400), 1
+            ),
         ]
         for l in static_lines:
             l.friction = 0.3

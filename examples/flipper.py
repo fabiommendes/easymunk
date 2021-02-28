@@ -16,15 +16,15 @@ screen = pygame.display.set_mode((600, 600))
 clock = pygame.time.Clock()
 running = True
 
-### Physics stuff
+# Physics stuff
 space = easymunk.Space()
 space.gravity = (0.0, 900.0)
 draw_options = easymunk.pygame_util.DrawOptions(screen)
 
-## Balls
+# Balls
 balls = []
 
-### walls
+# walls
 static_lines = [
     easymunk.Segment(space.static_body, (150, 500), (50, 50), 1.0),
     easymunk.Segment(space.static_body, (450, 500), (550, 50), 1.0),
@@ -97,7 +97,6 @@ while running:
         elif event.type == pygame.KEYDOWN and event.key == pygame.K_f:
             l_flipper_body.apply_impulse_at_local_point(Vec2d.unit() * 40000, (-100, 0))
         elif event.type == pygame.KEYDOWN and event.key == pygame.K_b:
-
             mass = 1
             radius = 25
             inertia = easymunk.moment_for_circle(mass, 0, radius, (0, 0))
@@ -109,17 +108,17 @@ while running:
             space.add(body, shape)
             balls.append(shape)
 
-    ### Clear screen
+    # Clear screen
     screen.fill(pygame.Color("white"))
 
-    ### Draw stuff
+    # Draw stuff
     space.debug_draw(draw_options)
 
     r_flipper_body.position = 450, 500
     l_flipper_body.position = 150, 500
     r_flipper_body.velocity = l_flipper_body.velocity = 0, 0
 
-    ### Remove any balls outside
+    # Remove any balls outside
     to_remove = []
     for ball in balls:
         if ball.body.position.get_distance((300, 300)) > 1000:
@@ -129,12 +128,12 @@ while running:
         space.remove(ball.body, ball)
         balls.remove(ball)
 
-    ### Update physics
+    # Update physics
     dt = 1.0 / 60.0 / 5.0
     for x in range(5):
         space.step(dt)
 
-    ### Flip screen
+    # Flip screen
     pygame.display.flip()
     clock.tick(50)
     pygame.display.set_caption("fps: " + str(clock.get_fps()))

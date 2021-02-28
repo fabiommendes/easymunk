@@ -8,7 +8,7 @@ import easymunk
 def fill_space(space, custom_color=(255, 255, 0, 255)):
     captions = []
 
-    ### Static
+    # Static
     captions.append(((50, 680), "Static Shapes"))
 
     # Static Segments
@@ -76,7 +76,7 @@ def fill_space(space, custom_color=(255, 255, 0, 255)):
     )
     space.add(b, s)
 
-    ### Kinematic
+    # Kinematic
     captions.append(((220, 680), "Kinematic Shapes"))
 
     # Kinematic Segments
@@ -144,7 +144,7 @@ def fill_space(space, custom_color=(255, 255, 0, 255)):
     )
     space.add(b, s)
 
-    ### Dynamic
+    # Dynamic
     captions.append(((390, 680), "Dynamic Shapes"))
 
     # Dynamic Segments
@@ -198,11 +198,13 @@ def fill_space(space, custom_color=(255, 255, 0, 255)):
     b = easymunk.Body(1, 1)
     b.position = (400, 430)
     s = easymunk.Poly(
-        b, [(0, -50), (50, 0), (30, 50), (-30, 50), (-50, 0)], easymunk.Transform(ty=-100)
+        b,
+        [(0, -50), (50, 0), (30, 50), (-30, 50), (-50, 0)],
+        easymunk.Transform(ty=-100),
     )
     space.add(b, s)
 
-    ###Constraints
+    # Constraints
 
     # PinJoints
     captions.append(((560, 660), "Pin Joint"))
@@ -299,7 +301,7 @@ def fill_space(space, custom_color=(255, 255, 0, 255)):
 
     # TODO: more stuff here :)
 
-    ### Other
+    # Other
 
     # Objects in custom color
     captions.append(((150, 150), "Custom Color (static, kinematic & dynamic)"))

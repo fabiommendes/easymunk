@@ -46,10 +46,7 @@ class PickleMixin:
         modules with this class.
         """
 
-        init_attrs: List[str] = []
-
-        init_args = [v for k, v in state["init"]]
-        self.__init__(*init_args)  # type: ignore
+        self.__init__(*(v for k, v in state["init"]))
 
         for k, v in state["general"]:
             self.__setattr__(k, v)

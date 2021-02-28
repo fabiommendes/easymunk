@@ -8,12 +8,15 @@ __docformat__ = "reStructuredText"
 
 import math
 import random
+from pathlib import Path
 from typing import List
 
 import pygame
 
 import easymunk
 from easymunk import Vec2d
+
+PATH = Path(__file__).parent
 
 
 def flipy(y):
@@ -22,21 +25,19 @@ def flipy(y):
 
 
 def main():
-
     pygame.init()
     screen = pygame.display.set_mode((600, 600))
     clock = pygame.time.Clock()
     running = True
 
-    ### Physics stuff
-    space = easymunk.Space()
-    space.gravity = Vec2d(0.0, -900.0)
+    # Physics stuff
+    space = easymunk.Space(gravity=(0.0, -900.0))
 
-    ## logo
-    logo_img = pygame.image.load("pymunk_logo_googlecode.png")
+    # logo
+    logo_img = pygame.image.load(PATH / "pymunk_logo_googlecode.png")
     logos: List[easymunk.Shape] = []
 
-    ### Static line
+    # Static line
     static_lines = [
         easymunk.Segment(space.static_body, (11.0, 280.0), (407.0, 246.0), 0.0),
         easymunk.Segment(space.static_body, (407.0, 246.0), (407.0, 343.0), 0.0),
@@ -74,12 +75,12 @@ def main():
             space.add(body, shape)
             logos.append(shape)
 
-        ### Update physics
+        # Update physics
         dt = 1.0 / 60.0
         for x in range(1):
             space.step(dt)
 
-        ### Draw stuff
+        # Draw stuff
         screen.fill(pygame.Color("black"))
 
         for logo_shape in logos:
@@ -114,7 +115,7 @@ def main():
             p2 = round(pv2.x), round(flipy(pv2.y))
             pygame.draw.lines(screen, pygame.Color("lightgray"), False, [p1, p2], 2)
 
-        ### Flip screen
+        # Flip screen
         pygame.display.flip()
         clock.tick(50)
         pygame.display.set_caption("fps: " + str(clock.get_fps()))

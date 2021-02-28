@@ -4,8 +4,6 @@ from typing import Any
 import easymunk as p
 from easymunk.vec2d import Vec2d
 
-####################################################################
-
 
 class UnitTestGeneral(unittest.TestCase):
     def testGeneral(self) -> None:
@@ -90,9 +88,3 @@ class UnitTestBugs(unittest.TestCase):
         space.step(1.0 / 60)
         b2.position = 22, 0
         space.step(1.0 / 60)
-
-
-####################################################################
-if __name__ == "__main__":
-    print("testing pymunk version " + p.version)
-    unittest.main()

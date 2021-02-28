@@ -20,7 +20,7 @@ def main():
     clock = pygame.time.Clock()
     running = True
 
-    ### Physics stuff
+    # Physics stuff
     space = easymunk.Space()
     draw_options = easymunk.pygame_util.DrawOptions(screen)
 
@@ -71,18 +71,18 @@ def main():
                 rotary_spring.damping *= 2
                 print(rotary_spring.stiffness, rotary_spring.damping)
 
-        ### Clear screen
+        # Clear screen
         screen.fill(pygame.Color("white"))
 
-        ### Draw stuff
+        # Draw stuff
         space.debug_draw(draw_options)
 
-        ### Update physics
+        # Update physics
         dt = 1.0 / 60.0
         for x in range(1):
             space.step(dt)
 
-        ### Flip screen
+        # Flip screen
         pygame.display.flip()
         clock.tick(50)
 

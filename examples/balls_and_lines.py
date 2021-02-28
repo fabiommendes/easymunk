@@ -9,7 +9,6 @@ import easymunk
 from easymunk import Vec2d
 
 X, Y = 0, 1
-### Physics collision types
 COLLTYPE_DEFAULT = 0
 COLLTYPE_MOUSE = 1
 COLLTYPE_BALL = 2
@@ -23,25 +22,20 @@ def flipy(y):
 def mouse_coll_func(arbiter, space, data):
     """Simple callback that increases the radius of circles touching the mouse"""
     s1, s2 = arbiter.shapes
-    s2.unsafe_set_radius(s2.radius + 0.15)
+    s2.radius += 0.15
     return False
 
 
 def main():
-
     pygame.init()
     screen = pygame.display.set_mode((600, 600))
     clock = pygame.time.Clock()
     running = True
 
-    ### Physics stuff
-    space = easymunk.Space()
-    space.gravity = 0.0, -900.0
-
-    ## Balls
+    space = easymunk.Space(gravity=(0.0, -900.0))
     balls = []
 
-    ### Mouse
+    # Mouse
     mouse_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
     mouse_shape = easymunk.Circle(mouse_body, 3, (0, 0))
     mouse_shape.collision_type = COLLTYPE_MOUSE
@@ -51,7 +45,7 @@ def main():
         COLLTYPE_MOUSE, COLLTYPE_BALL
     ).pre_solve = mouse_coll_func
 
-    ### Static line
+    # Static line
     line_point1 = None
     static_lines = []
     run_physics = True
@@ -104,13 +98,13 @@ def main():
             space.add(body, shape)
             balls.append(shape)
 
-        ### Update physics
+        # Update physics
         if run_physics:
             dt = 1.0 / 60.0
             for x in range(1):
                 space.step(dt)
 
-        ### Draw stuff
+        # Draw stuff
         screen.fill(pygame.Color("white"))
 
         # Display some text
@@ -149,7 +143,6 @@ Space: Pause physics simulation"""
             p2 = int(pv2.x), int(flipy(pv2.y))
             pygame.draw.lines(screen, pygame.Color("lightgray"), False, [p1, p2])
 
-        ### Flip screen
         pygame.display.flip()
         clock.tick(50)
         pygame.display.set_caption("fps: " + str(clock.get_fps()))

@@ -8,8 +8,6 @@ from easymunk.constraints import *
 from easymunk.shapes import Shape
 from easymunk.vec2d import Vec2d
 
-####################################################################
-
 
 class UnitTestBody(unittest.TestCase):
     def testProperties(self) -> None:
@@ -155,7 +153,7 @@ class UnitTestBody(unittest.TestCase):
         b = p.Body(1, 10)
         self.assertEqual(b.kinetic_energy, 0)
         b.apply_impulse_at_local_point((10, 0))
-        self.assertEqual(b.kinetic_energy, 100)
+        self.assertEqual(b.kinetic_energy, 50)
 
     def testDynamic(self) -> None:
         b1 = p.Body(1, 1)
@@ -317,7 +315,6 @@ def vf(body: p.Body, gravity: Tuple[float, float], damping: float, dt: float) ->
     body.vf = True
 
 
-####################################################################
 if __name__ == "__main__":
     print("testing pymunk version " + p.version)
     unittest.main()

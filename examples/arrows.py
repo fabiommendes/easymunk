@@ -57,14 +57,14 @@ width, height = 690, 600
 
 
 def main():
-    ### PyGame init
+    # PyGame init
     pygame.init()
     screen = pygame.display.set_mode((width, height))
     clock = pygame.time.Clock()
     running = True
     font = pygame.font.SysFont("Arial", 16)
 
-    ### Physics stuff
+    # Physics stuff
     space = easymunk.Space()
     space.gravity = 0, 1000
     draw_options = easymunk.pygame_util.DrawOptions(screen)
@@ -177,10 +177,10 @@ def main():
 
             flying_arrow.angular_velocity *= 0.5
 
-        ### Clear screen
+        # Clear screen
         screen.fill(pygame.Color("black"))
 
-        ### Draw stuff
+        # Draw stuff
         space.debug_draw(draw_options)
         # draw(screen, space)
 
@@ -212,7 +212,7 @@ def main():
 
         pygame.display.flip()
 
-        ### Update physics
+        # Update physics
         fps = 60
         dt = 1.0 / fps
         space.step(dt)

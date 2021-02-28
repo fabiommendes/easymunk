@@ -11,12 +11,15 @@ __docformat__ = "reStructuredText"
 
 import math
 import sys
+from pathlib import Path
 
 import pygame
 
 import easymunk
 import easymunk.pygame_util
 from easymunk.vec2d import Vec2d
+
+PATH = Path(__file__).parent
 
 
 def cpfclamp(f, min_, max_):
@@ -52,18 +55,17 @@ PLATFORM_SPEED = 1
 
 
 def main():
-
-    ### PyGame init
+    # PyGame init
     pygame.init()
     screen = pygame.display.set_mode((width, height))
 
     clock = pygame.time.Clock()
     running = True
     font = pygame.font.SysFont("Arial", 16)
-    sound = pygame.mixer.Sound("sfx.wav")
-    img = pygame.image.load("xmasgirl1.png")
+    sound = pygame.mixer.Sound(PATH / "sfx.wav")
+    img = pygame.image.load(PATH / "xmasgirl1.png")
 
-    ### Physics stuff
+    # Physics stuff
     space = easymunk.Space()
     space.gravity = Vec2d(0, -1000)
     easymunk.pygame_util.positive_y_is_up = True
@@ -172,6 +174,7 @@ def main():
             "position": Vec2d.zero(),
             "body": None,
         }
+
         # find out if player is standing on ground
 
         def f(arbiter):
@@ -273,15 +276,15 @@ def main():
         platform_body.position = new
         platform_body.velocity = (new - current) / dt
 
-        ### Clear screen
+        # Clear screen
         screen.fill(pygame.Color("black"))
 
-        ### Helper lines
+        # Helper lines
         for y in [50, 100, 150, 200, 250, 300]:
             color = pygame.Color("green")
             pygame.draw.line(screen, color, (10, y), (680, y), 1)
 
-        ### Draw stuff
+        # Draw stuff
         space.debug_draw(draw_options)
 
         direction_offset = 48 + (1 * direction + 1) // 2 * 48
@@ -328,10 +331,8 @@ def main():
         pygame.display.flip()
         frame_number += 1
 
-        ### Update physics
-
+        # Update physics
         space.step(dt)
-
         clock.tick(fps)
 
 

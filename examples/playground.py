@@ -22,17 +22,17 @@ class PhysicsDemo:
 
     def __init__(self):
         self.running = True
-        ### Init pygame and create screen
+        # Init pygame and create screen
         pygame.init()
         self.w, self.h = 600, 600
         self.screen = pygame.display.set_mode((self.w, self.h))
         self.clock = pygame.time.Clock()
 
-        ### Init pymunk and create space
+        # Init pymunk and create space
         self.space = pm.Space()
         self.space.gravity = (0.0, -900.0)
 
-        ### Walls
+        # Walls
         self.walls = []
         self.create_wall_segments([(100, 50), (500, 50)])
 
@@ -40,7 +40,7 @@ class PhysicsDemo:
         # balls = [createBall(space, (100,300))]
         self.balls = []
 
-        ### Polys
+        # Polys
         self.polys = []
         h = 10
         for y in range(1, h):
@@ -52,9 +52,9 @@ class PhysicsDemo:
 
         self.run_physics = True
 
-        ### Wall under construction
+        # Wall under construction
         self.wall_points = []
-        ### Poly under construction
+        # Poly under construction
         self.poly_points = []
 
         self.shape_to_remove = None
@@ -151,40 +151,40 @@ class PhysicsDemo:
 
     def draw(self):
 
-        ### Clear the screen
+        # Clear the screen
         self.screen.fill(pygame.Color("white"))
 
-        ### Display some text
+        # Display some text
         self.draw_helptext()
 
-        ### Draw balls
+        # Draw balls
         for ball in self.balls:
             self.draw_ball(ball)
 
-        ### Draw walls
+        # Draw walls
         for wall in self.walls:
             self.draw_wall(wall)
 
-        ### Draw polys
+        # Draw polys
         for poly in self.polys:
             self.draw_poly(poly)
 
-        ### Draw Uncompleted walls
+        # Draw Uncompleted walls
         if len(self.wall_points) > 1:
             ps = [self.flipyv(Vec2d(*p)) for p in self.wall_points]
             pygame.draw.lines(self.screen, pygame.Color("gray"), False, ps, 2)
 
-        ### Uncompleted poly
+        # Uncompleted poly
         if len(self.poly_points) > 1:
             ps = [self.flipyv(Vec2d(*p)) for p in self.poly_points]
             pygame.draw.lines(self.screen, pygame.Color("red"), False, ps, 2)
 
-        ### Mouse Contact
+        # Mouse Contact
         if self.mouse_contact is not None:
             p = self.flipyv(self.mouse_contact)
             pygame.draw.circle(self.screen, pygame.Color("red"), p, 3)
 
-        ### All done, lets flip the display
+        # All done, lets flip the display
         pygame.display.flip()
 
     def loop(self):
@@ -229,14 +229,14 @@ class PhysicsDemo:
                 pygame.K_RCTRL,
                 pygame.K_LCTRL,
             ):
-                ### Create Wall
+                # Create Wall
                 self.create_wall_segments(self.wall_points)
                 self.wall_points = []
             elif event.type == pygame.KEYUP and event.key in (
                 pygame.K_RSHIFT,
                 pygame.K_LSHIFT,
             ):
-                ### Create Polygon
+                # Create Polygon
 
                 if len(self.poly_points) > 0:
                     self.poly_points = u.reduce_poly(self.poly_points, tolerance=5)
@@ -285,7 +285,7 @@ class PhysicsDemo:
         else:
             self.shape_to_remove = None
 
-        ### Update physics
+        # Update physics
         if self.run_physics:
             x = 1
             dt = 1.0 / 60.0 / x
@@ -298,10 +298,10 @@ class PhysicsDemo:
                     # poly.body.reset_forces()
                     pass
 
-        ### Draw stuff
+        # Draw stuff
         self.draw()
 
-        ### Check for objects outside of the screen, we can remove those
+        # Check for objects outside of the screen, we can remove those
         # Balls
         xs = []
         for ball in self.balls:
@@ -331,7 +331,7 @@ class PhysicsDemo:
             self.space.remove(poly, poly.body)
             self.polys.remove(poly)
 
-        ### Tick clock and update fps in title
+        # Tick clock and update fps in title
         self.clock.tick(50)
         pygame.display.set_caption("fps: " + str(self.clock.get_fps()))
 

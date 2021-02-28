@@ -81,18 +81,18 @@ def setup_level(space, player_body):
 
 
 def main():
-    ### PyGame init
+    # PyGame init
     pygame.init()
     screen = pygame.display.set_mode((width, height))
     clock = pygame.time.Clock()
     running = True
     font = pygame.font.SysFont("Arial", 16)
-    ### Physics stuff
+    # Physics stuff
     space = easymunk.Space()
     easymunk.pygame_util.positive_y_is_up = True
     draw_options = easymunk.pygame_util.DrawOptions(screen)
 
-    ### Game area
+    # Game area
     # walls - the left-top-right walls
     static_lines = [
         easymunk.Segment(space.static_body, (50, 50), (50, 550), 2),
@@ -120,7 +120,7 @@ def main():
     h.begin = remove_first
     space.add(bottom)
 
-    ### Player ship
+    # Player ship
     player_body = easymunk.Body(500, float("inf"))
     player_body.position = 300, 100
 
@@ -186,10 +186,10 @@ def main():
                     random.choice([(1, 10), (-1, 10)]),
                 )
 
-        ### Clear screen
+        # Clear screen
         screen.fill(pygame.Color("black"))
 
-        ### Draw stuff
+        # Draw stuff
         space.debug_draw(draw_options)
 
         state = []
@@ -197,12 +197,12 @@ def main():
             s = "%s %s %s" % (x, x.body.position, x.body.velocity)
             state.append(s)
 
-        ### Update physics
+        # Update physics
         fps = 60
         dt = 1.0 / fps
         space.step(dt)
 
-        ### Info and flip screen
+        # Info and flip screen
         screen.blit(
             font.render("fps: " + str(clock.get_fps()), 1, pygame.Color("white")),
             (0, 0),

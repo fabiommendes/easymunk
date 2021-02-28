@@ -25,7 +25,7 @@ clock = pygame.time.Clock()
 
 clock.tick(1)
 
-### Physics stuff
+# Physics stuff
 space = easymunk.Space()
 space.gravity = 0, 900
 space.sleep_time_threshold = 0.3
@@ -33,7 +33,7 @@ space.sleep_time_threshold = 0.3
 draw_options = easymunk.pygame_util.DrawOptions(screen)
 easymunk.pygame_util.positive_y_is_up = False
 
-### Generate geometry from pymunk logo image
+# Generate geometry from pymunk logo image
 logo_img = pygame.image.load("pymunk_logo_sphinx.png")
 logo_bb = easymunk.BB(0, 0, logo_img.get_width(), logo_img.get_height())
 
@@ -96,7 +96,7 @@ floor = easymunk.Segment(space.static_body, (-100, 300), (1000, 220), 5)
 floor.friction = 1.0
 space.add(floor)
 
-### events
+# events
 def big_ball(space):
     mass = 1000
     radius = 50

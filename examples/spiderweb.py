@@ -19,7 +19,7 @@ space.gravity = 0, -900
 space.damping = 0.999
 c = Vec2d(window.width / 2.0, window.height / 2.0)
 
-### WEB
+# WEB
 web_group = 1
 bs = []
 dist = 0.3
@@ -77,7 +77,7 @@ for i in range(len(bs) - 1):
         add_joint(bs[i], bs[i2])
 
 
-### WEB ATTACH POINTS
+# WEB ATTACH POINTS
 static_bs = []
 for b in bs[-17::4]:
     static_body = easymunk.Body(body_type=easymunk.Body.STATIC)
@@ -90,7 +90,7 @@ for b in bs[-17::4]:
     j.stiffness = 20000
     space.add(j)
 
-### ALL SETUP DONE
+# ALL SETUP DONE
 
 
 def update(dt):

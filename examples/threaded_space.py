@@ -7,7 +7,7 @@ from easymunk.vec2d import Vec2d
 class PyramidDemo:
     def __init__(self, threads=1):
 
-        ### Init pymunk and create space
+        # Init pymunk and create space
         if threads == 0:
             self.space = easymunk.Space(threaded=False)
         else:
@@ -15,12 +15,12 @@ class PyramidDemo:
         self.space.gravity = (0.0, -900.0)
         self.space.threads = threads
 
-        ### ground
+        # ground
         shape = easymunk.Segment(self.space.static_body, (5, 100), (595, 100), 1.0)
         shape.friction = 1.0
         self.space.add(shape)
 
-        ### pyramid
+        # pyramid
         x = Vec2d(-270, 7.5) + (300, 100)
         y = Vec2d(0, 0)
         deltaX = Vec2d(0.5625, 1.1) * 20
@@ -51,7 +51,7 @@ class PyramidDemo:
 
 if __name__ == "__main__":
 
-    for num_threads in [0, 1, 2]:
+    for num_threads in [0, 1, 2, 3, 4, 6, 8]:
 
         demo = PyramidDemo(threads=num_threads)
         start = time.time()

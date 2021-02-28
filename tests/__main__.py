@@ -79,7 +79,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     faulthandler.enable()
-    print("RUNNING pymunk.tests ##################")
+    print("RUNNING pymunk.tests")
     print("Python / platform:")
     print(sys.version)
     print(f"on {platform.system()} {platform.machine()} using cffi {cffi.__version__}")

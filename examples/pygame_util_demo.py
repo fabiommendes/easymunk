@@ -26,7 +26,7 @@ def main():
 
     captions = shapes_for_draw_demos.fill_space(space)
 
-    ### Draw it
+    # Draw it
     screen.fill(pygame.Color("white"))
 
     options = easymunk.pygame_util.DrawOptions(screen)

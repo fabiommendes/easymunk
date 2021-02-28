@@ -95,10 +95,10 @@ def main():
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_p:
                 pygame.image.save(screen, "copy_and_pickle.png")
 
-        ### Clear screen
+        # Clear screen
         screen.fill(pygame.Color("white"))
 
-        ### Draw stuff
+        # Draw stuff
         surf1.fill(pygame.Color("white"))
         surf2.fill(pygame.Color("white"))
 
@@ -108,13 +108,13 @@ def main():
         screen.blit(surf1, (50, 100))
         screen.blit(surf2, (450, 100))
 
-        ### Update physics
+        # Update physics
         fps = 60
         dt = 1.0 / fps
         space1.step(dt)
         space2.step(dt)
 
-        ### Info and flip screen
+        # Info and flip screen
         def bt(txt, pos):
             screen.blit(font.render(txt, True, pygame.Color("black")), pos)
 

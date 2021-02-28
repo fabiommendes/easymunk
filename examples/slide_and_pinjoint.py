@@ -44,7 +44,9 @@ def add_L(space):
     l2 = easymunk.Segment(body, (-145, 0), (-145.0, -25.0), 1)
     l1.friction = 1
     l2.friction = 1
-    rotation_center_joint = easymunk.PinJoint(body, rotation_center_body, (0, 0), (0, 0))
+    rotation_center_joint = easymunk.PinJoint(
+        body, rotation_center_body, (0, 0), (0, 0)
+    )
     joint_limit = 25
     rotation_limit_joint = easymunk.SlideJoint(
         body, rotation_limit_body, (-100, 0), (0, 0), 0, joint_limit

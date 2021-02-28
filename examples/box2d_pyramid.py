@@ -17,16 +17,16 @@ class PyramidDemo:
         self.screen = pygame.display.set_mode((self.w, self.h))
         self.clock = pygame.time.Clock()
 
-        ### Init pymunk and create space
+        # Init pymunk and create space
         self.space = easymunk.Space()
         self.space.gravity = (0.0, -900.0)
         self.space.sleep_time_threshold = 0.3
-        ### ground
+        # ground
         shape = easymunk.Segment(self.space.static_body, (5, 100), (595, 100), 1.0)
         shape.friction = 1.0
         self.space.add(shape)
 
-        ### pyramid
+        # pyramid
         x = Vec2d(-270, 7.5) + (300, 100)
         y = Vec2d(0, 0)
         deltaX = Vec2d(0.5625, 1.1) * 20
@@ -49,7 +49,7 @@ class PyramidDemo:
 
             x += deltaX
 
-        ### draw options for drawing
+        # draw options for drawing
         easymunk.pygame_util.positive_y_is_up = True
         self.draw_options = easymunk.pygame_util.DrawOptions(self.screen)
 
@@ -74,18 +74,18 @@ class PyramidDemo:
         if self.drawing:
             self.draw()
 
-        ### Tick clock and update fps in title
+        # Tick clock and update fps in title
         self.clock.tick(fps)
         pygame.display.set_caption("fps: " + str(self.clock.get_fps()))
 
     def draw(self):
-        ### Clear the screen
+        # Clear the screen
         self.screen.fill(pygame.Color("white"))
 
-        ### Draw space
+        # Draw space
         self.space.debug_draw(self.draw_options)
 
-        ### All done, lets flip the display
+        # All done, lets flip the display
         pygame.display.flip()
 
 

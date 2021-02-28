@@ -3,9 +3,6 @@ import unittest
 from typing import Any
 
 import easymunk as p
-from easymunk.vec2d import Vec2d
-
-####################################################################
 
 
 class UnitTestShape(unittest.TestCase):
@@ -20,17 +17,17 @@ class UnitTestShape(unittest.TestCase):
 
         info = c.point_query((0, 0))
 
-        self.assertEqual(info.shape, c)
-        self.assertEqual(info.point, (0, 0))
-        self.assertEqual(info.distance, -5)
-        self.assertEqual(info.gradient, (0, 1))
+        assert info.shape == c
+        assert info.point == (0, 0)
+        assert info.distance == -5
+        assert info.gradient == (0, 1)
 
         info = c.point_query((11, 0))
 
-        self.assertEqual(info.shape, c)
-        self.assertEqual(info.point, (5, 0))
-        self.assertEqual(info.distance, 6)
-        self.assertEqual(info.gradient, (1, 0))
+        assert info.shape == c
+        assert info.point == (5, 0)
+        assert info.distance == 6
+        assert info.gradient == (1, 0)
 
     def testSegmentQuery(self) -> None:
         s = p.Space()
@@ -224,33 +221,23 @@ class UnitTestCircle(unittest.TestCase):
     def testCircleNoBody(self) -> None:
         c = p.Circle(None, 5)
 
-        bb = c.update(p.Transform(1, 2, 3, 4, 5, 6))
+        bb = c.update_transform(p.Transform(1, 2, 3, 4, 5, 6))
         self.assertEqual(c.bb, bb)
         self.assertEqual(c.bb, p.BB(0, 1, 10, 11))
 
-    def testOffset(self) -> None:
-        c = p.Circle(None, 5, (1, 2))
+    def test_offset(self) -> None:
+        c = p.Circle(None, 5, offset=(1, 2))
+        assert c.offset == (1, 2)
 
-        self.assertEqual(c.offset, (1, 2))
+        c.offset = (3, 4)
+        assert c.offset == (3, 4)
 
-    def testOffsetUnsafe(self) -> None:
-        c = p.Circle(None, 5, (1, 2))
-
-        c.unsafe_set_offset((3, 4))
-
-        self.assertEqual(c.offset, (3, 4))
-
-    def testRadius(self) -> None:
+    def test_radius(self) -> None:
         c = p.Circle(None, 5)
+        assert c.radius == 5
 
-        self.assertEqual(c.radius, 5)
-
-    def testRadiusUnsafe(self) -> None:
-        c = p.Circle(None, 5)
-
-        c.unsafe_set_radius(3)
-
-        self.assertEqual(c.radius, 3)
+        c.radius = 3
+        assert c.radius == 3
 
     def testPickle(self) -> None:
         c = p.Circle(None, 3, (4, 5))
@@ -272,23 +259,20 @@ class UnitTestSegment(unittest.TestCase):
 
         self.assertEqual(c.bb, p.BB(0, 0, 4.0, 5.0))
 
-    def testProperties(self) -> None:
+    def test_properties(self) -> None:
         c = p.Segment(None, (2, 2), (2, 3), 4)
 
-        self.assertEqual(c.a, (2, 2))
-        self.assertEqual(c.b, (2, 3))
-        self.assertEqual(c.normal, (1, 0))
-        self.assertEqual(c.radius, 4)
+        assert c.a == (2, 2)
+        assert c.b == (2, 3)
+        assert c.normal == (1, 0)
+        assert c.radius == 4
 
-    def testPropertiesUnsafe(self) -> None:
-        c = p.Segment(None, (2, 2), (2, 3), 4)
+        c.endpoints = (3, 4), (5, 6)
+        assert c.a == (3, 4)
+        assert c.b == (5, 6)
 
-        c.unsafe_set_endpoints((3, 4), (5, 6))
-        self.assertEqual(c.a, (3, 4))
-        self.assertEqual(c.b, (5, 6))
-
-        c.unsafe_set_radius(5)
-        self.assertEqual(c.radius, 5)
+        c.radius = 5
+        assert c.radius == 5
 
     def testSetNeighbors(self) -> None:
         c = p.Segment(None, (2, 2), (2, 3), 1)
@@ -332,32 +316,28 @@ class UnitTestPoly(unittest.TestCase):
         b = p.Body(1, 2)
         c = p.Poly(b, [(0, 0), (10, 10), (20, 0), (-10, 10)], p.Transform.identity(), 6)
 
-    def testVertices(self) -> None:
+    def test_vertices(self) -> None:
         vs = [(-10, 10), (0, 0), (20, 0), (10, 10)]
         c = p.Poly(None, vs, None, 0)
 
-        self.assertEqual(c.get_vertices(), vs)
+        assert c.get_vertices() == vs
 
-        c = p.Poly(None, vs, p.Transform(1, 2, 3, 4, 5, 6), 0)
+        c2 = p.Poly(None, vs, p.Transform(1, 2, 3, 4, 5, 6), 0)
 
         vs2 = [(5.0, 6.0), (25.0, 26.0), (45.0, 66.0), (25.0, 46.0)]
-        self.assertEqual(c.get_vertices(), vs2)
-
-    def testVerticesUnsafe(self) -> None:
-        vs = [(-10, 10), (0, 0), (20, 0), (10, 10)]
-        c = p.Poly(None, vs, None, 0)
+        assert c2.get_vertices() == vs2
 
         vs2 = [(-3, 3), (0, 0), (3, 0)]
-        c.unsafe_set_vertices(vs2)
-        self.assertEqual(c.get_vertices(), vs2)
+        c.set_vertices(vs2)
+        assert c.get_vertices() == vs2
 
         vs3 = [(-4, 4), (0, 0), (4, 0)]
-        c.unsafe_set_vertices(vs3, p.Transform.identity())
-        self.assertEqual(c.get_vertices(), vs3)
+        c.set_vertices(vs3, p.Transform.identity())
+        assert c.get_vertices() == vs3
 
     def testBB(self) -> None:
         c = p.Poly(None, [(2, 2), (4, 3), (3, 5)])
-        bb = c.update(p.Transform.identity())
+        bb = c.update_transform(p.Transform.identity())
         self.assertEqual(bb, c.bb)
         self.assertEqual(c.bb, p.BB(2, 2, 4, 5))
 
@@ -372,16 +352,12 @@ class UnitTestPoly(unittest.TestCase):
         s.add(b, c)
         self.assertEqual(c.bb, p.BB(2, 2, 4, 5))
 
-    def testRadius(self) -> None:
+    def test_radius(self) -> None:
         c = p.Poly(None, [(2, 2), (4, 3), (3, 5)], radius=10)
-        self.assertEqual(c.radius, 10)
+        assert c.radius == 10
 
-    def testRadiusUnsafe(self) -> None:
-        c = p.Poly(None, [(2, 2), (4, 3), (3, 5)], radius=10)
-
-        c.unsafe_set_radius(20)
-
-        self.assertEqual(c.radius, 20)
+        c.radius = 20
+        assert c.radius == 20
 
     def testCreateBox(self) -> None:
         c = p.Poly.create_box(None, (4, 2), 3)
@@ -398,9 +374,3 @@ class UnitTestPoly(unittest.TestCase):
 
         self.assertEqual(c.get_vertices(), c2.get_vertices())
         self.assertEqual(c.radius, c2.radius)
-
-
-####################################################################
-if __name__ == "__main__":
-    print("testing pymunk version " + p.version)
-    unittest.main()

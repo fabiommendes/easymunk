@@ -356,7 +356,7 @@ class Vec2d(NamedTuple):
         return Vec2d(
             self.dot(x_vector) / Vec2d(*x_vector).get_length_sqrd(),
             self.dot(y_vector) / Vec2d(*y_vector).get_length_sqrd(),
-            )
+        )
 
     @property
     def int_tuple(self) -> Tuple[int, int]:

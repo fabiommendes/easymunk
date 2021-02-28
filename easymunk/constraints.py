@@ -76,8 +76,7 @@ if TYPE_CHECKING:
     from .space import Space
 
 from ._chipmunk_cffi import ffi, lib
-from ._pickle import PickleMixin
-from ._typing_attr import TypingAttrMixing
+from ._mixins import PickleMixin, TypingAttrMixing
 from .vec2d import Vec2d
 
 

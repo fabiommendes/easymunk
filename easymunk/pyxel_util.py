@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------------
-# pymunk
-# Copyright (c) 2007-2016 Victor Blomqvist
+# easymunk
+# Copyright (c) 2021 Fábio Macêdo Mendes
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,7 @@
 # ----------------------------------------------------------------------------
 
 """This submodule contains helper functions to help with quick prototyping 
-using pymunk together with pygame.
+using easymunk together with pyxel.
 
 Intended to help with debugging and prototyping, not for actual production use
 in a full application. The methods contained in this module is opinionated 
@@ -41,11 +41,11 @@ __all__ = [
 
 from typing import List, Sequence, Tuple
 
-import pygame
+import pyxel
 
 import easymunk
-from easymunk.space_debug_draw_options import SpaceDebugColor
-from easymunk.vec2d import Vec2d
+from .space_debug_draw_options import SpaceDebugColor
+from .vec2d import Vec2d
 
 positive_y_is_up: bool = False
 """Make increasing values of y point upwards.

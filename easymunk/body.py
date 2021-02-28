@@ -1,10 +1,18 @@
 __docformat__ = "reStructuredText"
 
 import logging
-from typing import TYPE_CHECKING, Any, Callable, Optional, Set, Tuple, Iterable, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Optional,
+    Set,
+    Tuple,
+    Iterable,
+    TypeVar,
+    List,
+)
 from weakref import WeakSet
-
-import sidekick.api as sk
 
 if TYPE_CHECKING:
     from .space import Space
@@ -13,11 +21,16 @@ if TYPE_CHECKING:
     from .bb import BB
 
 from ._chipmunk_cffi import ffi, lib
-from ._pickle import PickleMixin, _State
-from ._typing_attr import TypingAttrMixing
+from ._mixins import (
+    PickleMixin,
+    _State,
+    TypingAttrMixing,
+    HasBBMixin,
+    FilterElementsMixin,
+)
 from .arbiter import Arbiter
 from .vec2d import Vec2d, VecLike, vec2d_from_cffi
-from .util import void, set_attrs
+from .util import void, set_attrs, py_space
 
 T = TypeVar("T")
 _BodyType = int
@@ -25,7 +38,7 @@ _PositionFunc = Callable[["Body", float], None]
 _VelocityFunc = Callable[["Body", Vec2d, float, float], None]
 
 
-class Body(PickleMixin, TypingAttrMixing, object):
+class Body(PickleMixin, TypingAttrMixing, HasBBMixin, FilterElementsMixin):
     """A rigid body
 
     * Use forces to modify the rigid bodies if possible. This is likely to be
@@ -136,85 +149,76 @@ class Body(PickleMixin, TypingAttrMixing, object):
         lambda self, mass: void(lib.cpBodySetMass(self._body, mass)),
         doc="""Mass of the body.""",
     )
-
     moment: float = property(
         lambda self: lib.cpBodyGetMoment(self._body),
         lambda self, moment: void(lib.cpBodySetMoment(self._body, moment)),
         doc="""Moment of inertia (MoI or sometimes just moment) of the body.
     
-            The moment is like the rotational mass of a body.
-            """,
+        The moment is like the rotational mass of a body.
+        """,
     )
-
     position: Vec2d = property(
         lambda self: vec2d_from_cffi(lib.cpBodyGetPosition(self._body)),
         lambda self, pos: void(lib.cpBodySetPosition(self._body, pos)),
         doc="""Position of the body.
     
-            When changing the position you may also want to call
-            :py:func:`Space.reindex_shapes_for_body` to update the collision 
-            detection information for the attached shapes if plan to make any 
-            queries against the space.""",
+        When changing the position you may also want to call
+        :py:func:`Space.reindex_shapes_for_body` to update the collision 
+        detection information for the attached shapes if plan to make any 
+        queries against the space.""",
     )
-
     center_of_gravity: Vec2d = property(
         lambda self: vec2d_from_cffi(lib.cpBodyGetCenterOfGravity(self._body)),
         lambda self, cog: void(lib.cpBodySetCenterOfGravity(self._body, cog)),
         doc="""Location of the center of gravity in body local coordinates.
     
-            The default value is (0, 0), meaning the center of gravity is the
-            same as the position of the body.
-            """,
+        The default value is (0, 0), meaning the center of gravity is the
+        same as the position of the body.
+        """,
     )
-
     velocity: Vec2d = property(
         lambda self: vec2d_from_cffi(lib.cpBodyGetVelocity(self._body)),
         lambda self, vel: void(lib.cpBodySetVelocity(self._body, vel)),
         doc="""Linear velocity of the center of gravity of the body.""",
     )
-
     force: Vec2d = property(
         lambda self: vec2d_from_cffi(lib.cpBodyGetForce(self._body)),
         lambda self, f: void(lib.cpBodySetForce(self._body, f)),
         doc="""Force applied to the center of gravity of the body.
     
-            This value is reset for every time step. Note that this is not the 
-            total of forces acting on the body (such as from collisions), but the 
-            force applied manually from the apply force functions.""",
+        This value is reset for every time step. Note that this is not the 
+        total of forces acting on the body (such as from collisions), but the 
+        force applied manually from the apply force functions.""",
     )
-
     angle: float = property(
         lambda self: lib.cpBodyGetAngle(self._body),
         lambda self, angle: void(lib.cpBodySetAngle(self._body, angle)),
         doc="""Rotation of the body in radians.
     
-            When changing the rotation you may also want to call
-            :py:func:`Space.reindex_shapes_for_body` to update the collision 
-            detection information for the attached shapes if plan to make any 
-            queries against the space. A body rotates around its center of gravity, 
-            not its position.
-    
-            .. Note::
-                If you get small/no changes to the angle when for example a
-                ball is "rolling" down a slope it might be because the Circle shape
-                attached to the body or the slope shape does not have any friction
-                set.""",
-    )
+        When changing the rotation you may also want to call
+        :py:func:`Space.reindex_shapes_for_body` to update the collision 
+        detection information for the attached shapes if plan to make any 
+        queries against the space. A body rotates around its center of gravity, 
+        not its position.
 
+        .. Note::
+            If you get small/no changes to the angle when for example a
+            ball is "rolling" down a slope it might be because the Circle shape
+            attached to the body or the slope shape does not have any friction
+            set.""",
+    )
     angular_velocity: float = property(
         lambda self: lib.cpBodyGetAngularVelocity(self._body),
         lambda self, w: void(lib.cpBodySetAngularVelocity(self._body, w)),
         doc="""The angular velocity of the body in radians per second.""",
     )
-
     torque: float = property(
         lambda self: lib.cpBodyGetTorque(self._body),
         lambda self, t: void(lib.cpBodySetTorque(self._body, t)),
         doc="""The torque applied to the body.
-    
-            This value is reset for every time step.""",
-    )
 
+        This value is reset for every time step.""",
+    )
     rotation_vector: float = property(
         lambda self: vec2d_from_cffi(lib.cpBodyGetRotation(self._body)),
         doc="""The rotation vector for the body.""",
@@ -229,13 +233,13 @@ class Body(PickleMixin, TypingAttrMixing, object):
         lambda self: lib.cpBodyGetType(self._body),
         lambda self, body_type: void(lib.cpBodySetType(self._body, body_type)),
         doc="""The type of a body (:py:const:`Body.DYNAMIC`, 
-            :py:const:`Body.KINEMATIC` or :py:const:`Body.STATIC`).
-    
-            When changing an body to a dynamic body, the mass and moment of
-            inertia are recalculated from the shapes added to the body. Custom
-            calculated moments of inertia are not preserved when changing types.
-            This function cannot be called directly in a collision callback.
-            """,
+        :py:const:`Body.KINEMATIC` or :py:const:`Body.STATIC`).
+
+        When changing an body to a dynamic body, the mass and moment of
+        inertia are recalculated from the shapes added to the body. Custom
+        calculated moments of inertia are not preserved when changing types.
+        This function cannot be called directly in a collision callback.
+        """,
     )
 
     @property
@@ -243,7 +247,7 @@ class Body(PickleMixin, TypingAttrMixing, object):
         """Get the :py:class:`Space` that the body has been added to (or
         None)."""
         if self._space is not None:
-            return self._space._get_self()  # ugly hack because of weakref
+            return py_space(self._space)
         else:
             return None
 
@@ -259,47 +263,47 @@ class Body(PickleMixin, TypingAttrMixing, object):
     velocity_func = property(
         fset=_set_velocity_func,
         doc="""The velocity callback function. 
-            
-            The velocity callback function is called each time step, and can be 
-            used to set a body's velocity.
-    
-                ``func(body : Body, gravity, damping, dt)``
-    
-            There are many cases when this can be useful. One example is individual 
-            gravity for some bodies, and another is to limit the velocity which is 
-            useful to prevent tunneling. 
-            
-            Example of a callback that sets gravity to zero for a object.
-    
-            >>> import pymunk
-            >>> space = pymunk.Space()
-            >>> space.gravity = 0, 10
-            >>> body = pymunk.Body(1,2)
-            >>> space.add(body)
-            >>> def zero_gravity(body, gravity, damping, dt):
-            ...     pymunk.Body.update_velocity(body, (0,0), damping, dt)
-            ... 
-            >>> body.velocity_func = zero_gravity
-            >>> space.step(1)
-            >>> space.step(1)
-            >>> print(body.position, body.velocity)
-            Vec2d(0.0, 0.0) Vec2d(0.0, 0.0)
-    
-            Example of a callback that limits the velocity:
-    
-            >>> import pymunk
-            >>> body = pymunk.Body(1,2)
-            >>> def limit_velocity(body, gravity, damping, dt):
-            ...     max_velocity = 1000
-            ...     pymunk.Body.update_velocity(body, gravity, damping, dt)
-            ...     l = body.velocity.length
-            ...     if l > max_velocity:
-            ...         scale = max_velocity / l
-            ...         body.velocity = body.velocity * scale
-            ...
-            >>> body.velocity_func = limit_velocity
-    
-            """,
+        
+        The velocity callback function is called each time step, and can be 
+        used to set a body's velocity.
+
+            ``func(body : Body, gravity, damping, dt)``
+
+        There are many cases when this can be useful. One example is individual 
+        gravity for some bodies, and another is to limit the velocity which is 
+        useful to prevent tunneling. 
+        
+        Example of a callback that sets gravity to zero for a object.
+
+        >>> import pymunk
+        >>> space = pymunk.Space()
+        >>> space.gravity = 0, 10
+        >>> body = pymunk.Body(1,2)
+        >>> space.add(body)
+        >>> def zero_gravity(body, gravity, damping, dt):
+        ...     pymunk.Body.update_velocity(body, (0,0), damping, dt)
+        ... 
+        >>> body.velocity_func = zero_gravity
+        >>> space.step(1)
+        >>> space.step(1)
+        >>> print(body.position, body.velocity)
+        Vec2d(0.0, 0.0) Vec2d(0.0, 0.0)
+
+        Example of a callback that limits the velocity:
+
+        >>> import pymunk
+        >>> body = pymunk.Body(1,2)
+        >>> def limit_velocity(body, gravity, damping, dt):
+        ...     max_velocity = 1000
+        ...     pymunk.Body.update_velocity(body, gravity, damping, dt)
+        ...     l = body.velocity.length
+        ...     if l > max_velocity:
+        ...         scale = max_velocity / l
+        ...         body.velocity = body.velocity * scale
+        ...
+        >>> body.velocity_func = limit_velocity
+
+        """,
     )
 
     def _set_position_func(self, func: Callable[["Body", float], None]) -> None:
@@ -315,11 +319,11 @@ class Body(PickleMixin, TypingAttrMixing, object):
         fset=_set_position_func,
         doc="""The position callback function. 
             
-            The position callback function is called each time step and can be 
-            used to update the body's position.
-    
-                ``func(body, dt) -> None``
-            """,
+        The position callback function is called each time step and can be 
+        used to update the body's position.
+
+            ``func(body, dt) -> None``
+        """,
     )
 
     @property
@@ -333,6 +337,10 @@ class Body(PickleMixin, TypingAttrMixing, object):
     #
     # Bounding box and shape-related properties
     #
+    _bodies: List["Body"] = property(lambda self: [self])
+    _shapes: Set["Shape"] = set()
+    _constraints: Set["Constraint"] = set()
+
     @property
     def shapes(self) -> Set["Shape"]:
         """Get the shapes attached to this body.
@@ -341,52 +349,10 @@ class Body(PickleMixin, TypingAttrMixing, object):
         body wont prevent GC of the attached shapes"""
         return set(self._shapes)
 
-    def _colliding_shapes(self) -> Iterable["Shape"]:
-        return filter(lambda s: not s.sensor, self._shapes)
-
-    @property
-    def bb(self) -> "BB":
-        """
-        Bounding box for all colliding body shapes.
-        """
-        merge = lambda a, b: a.merge(b)
-        return sk.reduce(merge, self._colliding_shapes())
-
-    @property
-    def left(self) -> float:
-        """
-        Right position (world coordinates) of body.
-
-        Exclude sensor shapes.
-        """
-        return max(s.bb.left for s in self._colliding_shapes())
-
-    @property
-    def right(self) -> float:
-        """
-        Right position (world coordinates) of body.
-
-        Exclude sensor shapes.
-        """
-        return max(s.bb.right for s in self._colliding_shapes())
-
-    @property
-    def bottom(self) -> float:
-        """
-        Bottom position (world coordinates) of body.
-
-        Exclude sensor shapes.
-        """
-        return max(s.bb.bottom for s in self._colliding_shapes())
-
-    @property
-    def top(self) -> float:
-        """
-        Top position (world coordinates) of body.
-
-        Exclude sensor shapes.
-        """
-        return max(s.bb.top for s in self._colliding_shapes())
+    def _iter_bounding_boxes(self) -> Iterable["BB"]:
+        for s in self._shapes:
+            if not s.sensor:
+                yield s.bb
 
     @property
     def arbiters(self) -> Set[Arbiter]:
@@ -491,6 +457,16 @@ class Body(PickleMixin, TypingAttrMixing, object):
     def friction(self, value):
         self.each_shape(friction=value)
 
+    @property
+    def _id(self) -> int:
+        """Unique id of the Body
+
+        .. note::
+            Experimental API. Likely to change in future major, minor orpoint
+            releases.
+        """
+        return int(ffi.cast("int", lib.cpBodyGetUserData(self._body)))
+
     def __init__(
         self, mass: float = 0, moment: float = 0, body_type: _BodyType = DYNAMIC
     ) -> None:
@@ -517,50 +493,12 @@ class Body(PickleMixin, TypingAttrMixing, object):
         overwrite your custom mass value when the shapes are added to the body.
         """
 
-        def freebody(cp_body):
-            logging.debug("bodyfree start %s", cp_body)
-            cp_shapes = []
-
-            @ffi.callback("cpBodyShapeIteratorFunc")
-            def cf1(_, cp_shape, __):
-                cp_shapes.append(cp_shape)
-
-            lib.cpBodyEachShape(cp_body, cf1, ffi.NULL)
-
-            for cp_shape in cp_shapes:
-                logging.debug("bodyfree remove shape %s %s", cp_body, cp_shape)
-                cp_space = lib.cpShapeGetSpace(cp_shape)
-                if cp_space != ffi.NULL:
-                    lib.cpSpaceRemoveShape(cp_space, cp_shape)
-
-            cp_constraints = []
-
-            @ffi.callback("cpBodyConstraintIteratorFunc")
-            def cf2(_, cp_constraint, __):
-                cp_constraints.append(cp_constraint)
-
-            lib.cpBodyEachConstraint(cp_body, cf2, ffi.NULL)
-            for cp_constraint in cp_constraints:
-                logging.debug(
-                    "bodyfree remove constraint %s %s", cp_body, cp_constraint
-                )
-                cp_space = lib.cpConstraintGetSpace(cp_constraint)
-                if cp_space != ffi.NULL:
-                    lib.cpSpaceRemoveConstraint(cp_space, cp_constraint)
-
-            cp_space = lib.cpBodyGetSpace(cp_body)
-            if cp_space != ffi.NULL:
-                lib.cpSpaceRemoveBody(cp_space, cp_body)
-
-            logging.debug("bodyfree free %s", cp_body)
-            lib.cpBodyFree(cp_body)
-
         if body_type == Body.DYNAMIC:
-            self._body = ffi.gc(lib.cpBodyNew(mass, moment), freebody)
+            self._body = ffi.gc(lib.cpBodyNew(mass, moment), cffi_free_body)
         elif body_type == Body.KINEMATIC:
-            self._body = ffi.gc(lib.cpBodyNewKinematic(), freebody)
+            self._body = ffi.gc(lib.cpBodyNewKinematic(), cffi_free_body)
         elif body_type == Body.STATIC:
-            self._body = ffi.gc(lib.cpBodyNewStatic(), freebody)
+            self._body = ffi.gc(lib.cpBodyNewStatic(), cffi_free_body)
 
         # To prevent the gc to collect the callbacks.
         self._position_func = None
@@ -606,16 +544,6 @@ class Body(PickleMixin, TypingAttrMixing, object):
                 self.velocity_func = v
             elif k == "_position_func" and v is not None:
                 self.position_func = v
-
-    @property
-    def _id(self) -> int:
-        """Unique id of the Body
-
-        .. note::
-            Experimental API. Likely to change in future major, minor orpoint
-            releases.
-        """
-        return int(ffi.cast("int", lib.cpBodyGetUserData(self._body)))
 
     def __repr__(self) -> str:
         if self.body_type == Body.DYNAMIC:
@@ -832,3 +760,38 @@ class Body(PickleMixin, TypingAttrMixing, object):
         assert len(point) == 2
         v = lib.cpBodyGetVelocityAtLocalPoint(self._body, point)
         return Vec2d(v.x, v.y)
+
+
+def cffi_free_body(cp_body):
+    logging.debug("bodyfree start %s", cp_body)
+    cp_shapes = []
+    cp_constraints = []
+
+    @ffi.callback("cpBodyShapeIteratorFunc")
+    def cf1(_, shape, __):
+        cp_shapes.append(shape)
+
+    @ffi.callback("cpBodyConstraintIteratorFunc")
+    def cf2(_, constraint, __):
+        cp_constraints.append(constraint)
+
+    lib.cpBodyEachShape(cp_body, cf1, ffi.NULL)
+    for cp_shape in cp_shapes:
+        logging.debug("free %s %s", cp_body, cp_shape)
+        cp_space = lib.cpShapeGetSpace(cp_shape)
+        if cp_space != ffi.NULL:
+            lib.cpSpaceRemoveShape(cp_space, cp_shape)
+
+    lib.cpBodyEachConstraint(cp_body, cf2, ffi.NULL)
+    for cp_constraint in cp_constraints:
+        logging.debug("free %s %s", cp_body, cp_constraint)
+        cp_space = lib.cpConstraintGetSpace(cp_constraint)
+        if cp_space != ffi.NULL:
+            lib.cpSpaceRemoveConstraint(cp_space, cp_constraint)
+
+    cp_space = lib.cpBodyGetSpace(cp_body)
+    if cp_space != ffi.NULL:
+        lib.cpSpaceRemoveBody(cp_space, cp_body)
+
+    logging.debug("bodyfree free %s", cp_body)
+    lib.cpBodyFree(cp_body)

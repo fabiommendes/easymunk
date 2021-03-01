@@ -15,7 +15,7 @@ from ._chipmunk_cffi import ffi, lib
 from ._mixins import PickleMixin, _State, TypingAttrMixing, HasBBMixin
 from .bb import BB
 from .body import Body
-from .contact_point_set import ContactPointSet
+from .contact_point_set import ContactPointSet, contact_point_set_from_cffi
 from .query_info import PointQueryInfo, SegmentQueryInfo
 from .shape_filter import ShapeFilter, shape_filter_from_cffi
 from .transform import Transform
@@ -326,8 +326,8 @@ class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
 
     def shapes_collide(self, b: "Shape") -> ContactPointSet:
         """Get contact information about this shape and shape b."""
-        _points = lib.cpShapesCollide(self._shape, b._shape)
-        return ContactPointSet._from_cp(_points)
+        points = lib.cpShapesCollide(self._shape, b._shape)
+        return contact_point_set_from_cffi(points)
 
 
 class Circle(Shape):

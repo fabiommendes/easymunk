@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from .shapes import Shape
 
 from ._chipmunk_cffi import ffi, lib
-from .contact_point_set import ContactPointSet
+from .contact_point_set import ContactPointSet, contact_point_set_from_cffi
 from .vec2d import Vec2d
 
 
@@ -39,8 +39,8 @@ class Arbiter(object):
         self._space = space
 
     def _get_contact_point_set(self) -> ContactPointSet:
-        _set = lib.cpArbiterGetContactPointSet(self._arbiter)
-        return ContactPointSet._from_cp(_set)
+        points = lib.cpArbiterGetContactPointSet(self._arbiter)
+        return contact_point_set_from_cffi(points)
 
     def _set_contact_point_set(self, point_set: ContactPointSet) -> None:
         # This has to be done by fetching a new Chipmunk point set, update it

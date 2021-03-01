@@ -24,7 +24,7 @@ from ._mixins import PickleMixin, FilterElementsMixin, _State
 from .body import Body
 from .collision_handler import CollisionHandler
 from .constraints import Constraint
-from .contact_point_set import ContactPointSet
+from .contact_point_set import ContactPointSet, contact_point_set_from_cffi
 from .query_info import PointQueryInfo, SegmentQueryInfo, ShapeQueryInfo
 from .shape_filter import ShapeFilter
 from .shapes import Shape
@@ -987,11 +987,10 @@ class Space(PickleMixin, FilterElementsMixin):
         query_hits = []
 
         @ffi.callback("cpSpaceShapeQueryFunc")
-        def cf(_shape, _points, _data):  # type: ignore
+        def cf(_shape, _points, _data):
             found_shape = self._get_shape(_shape)
-            point_set = ContactPointSet._from_cp(_points)
+            point_set = contact_point_set_from_cffi(_points)
             info = ShapeQueryInfo(found_shape, point_set)
-            nonlocal query_hits
             query_hits.append(info)
 
         data = ffi.new_handle(self)

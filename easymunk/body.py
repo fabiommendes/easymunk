@@ -30,7 +30,7 @@ from ._mixins import (
 )
 from .arbiter import Arbiter
 from .vec2d import Vec2d, VecLike, vec2d_from_cffi
-from .util import void, set_attrs, py_space
+from .util import void, set_attrs, py_space, init_attributes
 
 T = TypeVar("T")
 _BodyType = int
@@ -114,6 +114,13 @@ class Body(PickleMixin, TypingAttrMixing, HasBBMixin, FilterElementsMixin):
         "_velocity_func",
         "_position_func",
     ]
+    _init_kwargs = {
+        "position",
+        "velocity",
+        "center_of_gravity",
+        "angle",
+        "angular_velocity",
+    }
 
     _position_func_base: Optional[_PositionFunc] = None  # For pickle
     _velocity_func_base: Optional[_VelocityFunc] = None  # For pickle
@@ -468,7 +475,11 @@ class Body(PickleMixin, TypingAttrMixing, HasBBMixin, FilterElementsMixin):
         return int(ffi.cast("int", lib.cpBodyGetUserData(self._body)))
 
     def __init__(
-        self, mass: float = 0, moment: float = 0, body_type: _BodyType = DYNAMIC
+        self,
+        mass: float = 0,
+        moment: float = 0,
+        body_type: _BodyType = DYNAMIC,
+        **kwargs,
     ) -> None:
         """Create a new Body
 
@@ -514,6 +525,7 @@ class Body(PickleMixin, TypingAttrMixing, HasBBMixin, FilterElementsMixin):
         self._shapes: WeakSet["Shape"] = WeakSet()
 
         self._set_id()
+        init_attributes(self, self._init_kwargs, kwargs)
 
     def __getstate__(self) -> _State:
         """Return the state of this object
@@ -670,12 +682,12 @@ class Body(PickleMixin, TypingAttrMixing, HasBBMixin, FilterElementsMixin):
 
         @ffi.callback("cpBodyArbiterIteratorFunc")
         def cf(_body: ffi.CData, _arbiter: ffi.CData, _data: ffi.CData) -> None:
-            assert self._space is not None
+            if self._space is None:
+                raise ValueError("Body does not belong to any space")
             arbiter = Arbiter(_arbiter, self._space)
             func(arbiter, *args, **kwargs)
 
-        data = ffi.new_handle(self)
-        lib.cpBodyEachArbiter(self._body, cf, data)
+        lib.cpBodyEachArbiter(self._body, cf, ffi.new_handle(self))
         return self
 
     def _each(self: T, _col, _fn, args, kwargs) -> T:

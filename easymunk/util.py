@@ -34,9 +34,10 @@ from typing import (
     TYPE_CHECKING,
     Optional,
     Union,
+    Any,
 )
 
-from ._chipmunk_cffi import ffi
+from ._chipmunk_cffi import ffi, lib
 from .math import sqrt
 from .vec2d import Vec2d
 
@@ -44,26 +45,7 @@ if TYPE_CHECKING:
     from .space import Space
     from .body import Body
     from .shapes import Shape
-
-__all__ = [
-    "is_clockwise",
-    "reduce_poly",
-    "convex_hull",
-    "calc_area",
-    "calc_center",
-    "poly_vectors_around_center",
-    "is_convex",
-    "calc_perimeter",
-    "triangulate",
-    "convexise",
-    "void",
-    "set_attrs",
-    "single_query",
-    "compose_filters",
-    "py_space",
-    "cffi_body",
-    "inner_shapes",
-]
+    from .constraints import Constraint
 
 X, Y = 0, 1
 T = TypeVar("T")
@@ -476,6 +458,18 @@ def set_attrs(obj: T, **kwargs) -> T:
     return obj
 
 
+def init_attributes(obj: Any, valid: set, values: dict) -> None:
+    """
+    Initialize attributes from dictionary, first verifying if attributes are
+    present in a valid set.
+    """
+    if not valid.issuperset(values):
+        invalid = set(values) - valid
+        raise TypeError(f"invalid parameters: {invalid}")
+    for k, v in values.items():
+        setattr(obj, k, v)
+
+
 def single_query(seq: Iterable[T], *, name: str = None, first=False):
     """
     Return first element of sequence and raise ValueError if sequence has more
@@ -541,3 +535,29 @@ def inner_shapes(obj: Union["Body"]) -> WeakSet["Shape"]:
     """
     # noinspection PyProtectedMember
     return obj._shapes
+
+
+def inner_constraints(obj: Union["Body"]) -> WeakSet["Constraint"]:
+    """
+    Return the mutable set of shapes from object.
+    """
+    # noinspection PyProtectedMember
+    return obj._constraints
+
+
+def cp_property(prefix, suffix, doc=None, wrap=None):
+    """
+    A getter/setter for lib.cp{prefix}Get/Set{suffix} methods.
+
+    If given, wrap is used to wrap the value returned from the getter.
+    """
+    getter = getattr(lib, f"cp{prefix}Get{suffix}")
+    setter = getattr(lib, f"cp{prefix}Set{suffix}")
+
+    if wrap:
+        fget = lambda self: wrap(getter(self._constraint))
+    else:
+        fget = lambda self: getter(self._constraint)
+    fset = lambda self, value: setter(self._constraint, value)
+
+    return property(fget, fset, doc=doc)

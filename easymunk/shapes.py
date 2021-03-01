@@ -10,7 +10,7 @@ from .mat22 import Mat22
 if TYPE_CHECKING:
     from .space import Space
 
-from .util import void, cffi_body, inner_shapes, py_space
+from .util import void, cffi_body, inner_shapes, py_space, init_attributes
 from ._chipmunk_cffi import ffi, lib
 from ._mixins import PickleMixin, _State, TypingAttrMixing, HasBBMixin
 from .bb import BB
@@ -228,7 +228,7 @@ class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
         else:
             return None
 
-    def _init(
+    def __init__(
         self,
         body: Optional["Body"],
         _shape: ffi.CData,
@@ -241,11 +241,7 @@ class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
         self._shape = ffi.gc(_shape, cffi_free_shape)
         self._set_id()
 
-        if not self._init_kwargs.issuperset(kwargs):
-            keys = self._init_kwargs.difference(kwargs)
-            raise TypeError(f"invalid parameters: {keys}")
-        for k, v in kwargs.items():
-            setattr(self, k, v)
+        init_attributes(self, self._init_kwargs, kwargs)
         if space is not None:
             space.add(self)
 
@@ -381,7 +377,7 @@ class Circle(Shape):
         before adding the shape to a space or used for a space shape query.
         """
         _shape = lib.cpCircleShapeNew(cffi_body(body), radius, offset)
-        self._init(body, _shape, **kwargs)
+        super().__init__(body, _shape, **kwargs)
 
     def _iter_bounding_boxes(self) -> Iterable["BB"]:
         yield self.bb
@@ -448,7 +444,7 @@ class Segment(Shape):
         :param float radius: The thickness of the segment
         """
         _shape = lib.cpSegmentShapeNew(cffi_body(body), a, b, radius)
-        self._init(body, _shape, **kwargs)
+        super().__init__(body, _shape, **kwargs)
 
     def set_neighbors(self: T, prev: VecLike, next: VecLike) -> T:
         """When you have a number of segment shapes that are all joined
@@ -502,11 +498,10 @@ class Poly(Shape):
         :rtype: :py:class:`Poly`
         """
 
-        self = Poly.__new__(Poly)
-        _shape = lib.cpBoxShapeNew(cffi_body(body), size[0], size[1], radius)
-        self._init(body, _shape, **kwargs)
-
-        return self
+        poly = Poly.__new__(Poly)
+        shape = lib.cpBoxShapeNew(cffi_body(body), size[0], size[1], radius)
+        Shape.__init__(poly, body, shape, **kwargs)
+        return poly
 
     @staticmethod
     def create_box_bb(
@@ -527,11 +522,10 @@ class Poly(Shape):
         :rtype: :py:class:`Poly`
         """
 
-        self = Poly.__new__(Poly)
-        _shape = lib.cpBoxShapeNew2(cffi_body(body), bb, radius)
-        self._init(body, _shape, **kwargs)
-
-        return self
+        poly = Poly.__new__(Poly)
+        shape = lib.cpBoxShapeNew2(cffi_body(body), bb, radius)
+        Shape.__init__(poly, body, shape, **kwargs)
+        return poly
 
     @staticmethod
     def create_regular_poly(
@@ -629,7 +623,7 @@ class Poly(Shape):
         _shape = lib.cpPolyShapeNew(
             cffi_body(body), len(vertices), vertices, transform, radius
         )
-        self._init(body, _shape, **kwargs)
+        super().__init__(body, _shape, **kwargs)
 
     def __getstate__(self) -> _State:
         """Return the state of this object

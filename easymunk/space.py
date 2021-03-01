@@ -29,7 +29,7 @@ from .query_info import PointQueryInfo, SegmentQueryInfo, ShapeQueryInfo
 from .shape_filter import ShapeFilter
 from .shapes import Shape
 from .space_debug_draw_options import SpaceDebugDrawOptions
-from .util import void
+from .util import void, init_attributes
 from .vec2d import Vec2d, vec2d_from_cffi
 
 if TYPE_CHECKING:
@@ -345,11 +345,7 @@ class Space(PickleMixin, FilterElementsMixin):
         self._forces = []
 
         # Save attributes
-        if not self._init_kwargs.issuperset(kwargs):
-            keys = self._init_kwargs.difference(kwargs)
-            raise TypeError(f"invalid parameters: {keys}")
-        for k, v in kwargs.items():
-            setattr(self, k, v)
+        init_attributes(self, self._init_kwargs, kwargs)
 
     def _get_self(self) -> "Space":
         return self

@@ -9,10 +9,10 @@ import sys
 import pygame
 
 import easymunk
-import easymunk.pygame_util
+import easymunk.pygame
 from easymunk import Vec2d
 
-easymunk.pygame_util.positive_y_is_up = True
+easymunk.pygame.positive_y_is_up = True
 
 
 def draw_collision(arbiter, space, data):
@@ -20,7 +20,7 @@ def draw_collision(arbiter, space, data):
         r = max(3, abs(c.distance * 5))
         r = int(r)
 
-        p = easymunk.pygame_util.to_pygame(c.point_a, data["surface"])
+        p = easymunk.pygame.to_pygame(c.point_a, data["surface"])
         pygame.draw.circle(data["surface"], pygame.Color("black"), p, r, 1)
 
 
@@ -34,10 +34,10 @@ def main():
     # Physics stuff
     space = easymunk.Space()
     space.gravity = (0.0, -900.0)
-    draw_options = easymunk.pygame_util.DrawOptions(screen)
+    draw_options = easymunk.pygame.DrawOptions(screen)
     # disable the build in debug draw of collision point since we use our own code.
     draw_options.flags = (
-        draw_options.flags ^ easymunk.pygame_util.DrawOptions.DRAW_COLLISION_POINTS
+        draw_options.flags ^ easymunk.pygame.DrawOptions.DRAW_COLLISION_POINTS
     )
     ## Balls
     balls = []

@@ -1,4 +1,4 @@
-"""Showcase what the output of pymunk.pyglet_util draw methods will look like.
+"""Showcase what the output of easymunk.pyglet_util draw methods will look like.
 
 See pygame_util_demo.py for a comparison to pygame.
 """
@@ -11,12 +11,12 @@ import pyglet
 import shapes_for_draw_demos
 
 import easymunk
-import easymunk.pyglet_util
+import easymunk.pyglet
 from easymunk.vec2d import Vec2d
 
 window = pyglet.window.Window(1000, 700, vsync=False)
 space = easymunk.Space()
-draw_options = easymunk.pyglet_util.DrawOptions()
+draw_options = easymunk.pyglet.DrawOptions()
 captions = shapes_for_draw_demos.fill_space(space)
 
 

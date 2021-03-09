@@ -7,14 +7,14 @@ from typing import List
 import pygame
 
 import easymunk
-import easymunk.pygame_util
+import easymunk.pygame
 from easymunk.vec2d import Vec2d
 
 
 def create_arrow():
     vs = [(-30, 0), (0, 3), (10, 0), (0, -3)]
     # mass = 1
-    # moment = pymunk.moment_for_poly(mass, vs)
+    # moment = easymunk.moment_for_poly(mass, vs)
     arrow_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
 
     arrow_shape = easymunk.Poly(arrow_body, vs)
@@ -67,7 +67,7 @@ def main():
     # Physics stuff
     space = easymunk.Space()
     space.gravity = 0, 1000
-    draw_options = easymunk.pygame_util.DrawOptions(screen)
+    draw_options = easymunk.pygame.DrawOptions(screen)
 
     # walls - the left-top-right walls
     static: List[easymunk.Shape] = [
@@ -142,7 +142,7 @@ def main():
         if keys[pygame.K_RIGHT]:
             cannon_body.position += Vec2d(1, 0) * speed
 
-        mouse_position = easymunk.pygame_util.from_pygame(
+        mouse_position = easymunk.pygame.from_pygame(
             Vec2d(*pygame.mouse.get_pos()), screen
         )
         cannon_body.angle = (mouse_position - cannon_body.position).angle

@@ -1,5 +1,5 @@
 """
-Pymunk constraints demo. Showcase of all the constraints included in Pymunk.
+Pymunk constraints demo. Showcase of all the constraints included in easymunk.
 
 Adapted from the Chipmunk Joints demo:
 https://github.com/slembcke/Chipmunk2D/blob/master/demo/Joints.c
@@ -11,7 +11,7 @@ import math
 import pygame
 
 import easymunk
-import easymunk.pygame_util
+import easymunk.pygame
 from easymunk.vec2d import Vec2d
 
 pygame.init()
@@ -28,7 +28,7 @@ help_txt = font.render(
 
 space = easymunk.Space()
 space.gravity = (0.0, 900.0)
-draw_options = easymunk.pygame_util.DrawOptions(screen)
+draw_options = easymunk.pygame.DrawOptions(screen)
 
 # containers
 box_size = 200

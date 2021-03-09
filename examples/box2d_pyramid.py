@@ -5,7 +5,7 @@ Remake of the pyramid demo from the box2d testbed.
 import pygame
 
 import easymunk
-import easymunk.pygame_util
+import easymunk.pygame
 from easymunk import Vec2d
 
 
@@ -50,8 +50,8 @@ class PyramidDemo:
             x += deltaX
 
         # draw options for drawing
-        easymunk.pygame_util.positive_y_is_up = True
-        self.draw_options = easymunk.pygame_util.DrawOptions(self.screen)
+        easymunk.pygame.positive_y_is_up = True
+        self.draw_options = easymunk.pygame.DrawOptions(self.screen)
 
     def run(self):
         while self.running:

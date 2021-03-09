@@ -9,7 +9,7 @@ import pygame
 
 import easymunk
 import easymunk.autogeometry
-import easymunk.pygame_util
+import easymunk.pygame
 from easymunk import BB
 
 
@@ -98,8 +98,8 @@ def main():
         shape.friction = 0.5
         space.add(body, shape)
 
-    draw_options = easymunk.pygame_util.DrawOptions(screen)
-    easymunk.pygame_util.positive_y_is_up = False
+    draw_options = easymunk.pygame.DrawOptions(screen)
+    easymunk.pygame.positive_y_is_up = False
 
     fps = 60
     while True:

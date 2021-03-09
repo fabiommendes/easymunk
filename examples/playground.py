@@ -29,15 +29,13 @@ class PhysicsDemo:
         self.clock = pygame.time.Clock()
 
         # Init pymunk and create space
-        self.space = pm.Space()
-        self.space.gravity = (0.0, -900.0)
+        self.space = pm.Space(gravity = (0.0, -900.0))
 
         # Walls
         self.walls = []
         self.create_wall_segments([(100, 50), (500, 50)])
 
-        ## Balls
-        # balls = [createBall(space, (100,300))]
+        # Balls
         self.balls = []
 
         # Polys
@@ -66,7 +64,8 @@ class PhysicsDemo:
             "LMB: Create ball",
             "LMB + Shift: Create box",
             "RMB on object: Remove object",
-            "RMB(hold) + Shift: Create polygon, release to finish (we be converted to a convex hull of the points)",
+            "RMB(hold) + Shift: Create polygon, release to finish (we be converted to a "
+            "convex hull of the points)",
             "RMB + Ctrl: Create wall, release to finish",
             "Space: Stop physics simulation",
             "k: Spawn a bunch of blocks",
@@ -150,7 +149,6 @@ class PhysicsDemo:
         pygame.draw.lines(self.screen, color, False, ps)
 
     def draw(self):
-
         # Clear the screen
         self.screen.fill(pygame.Color("white"))
 
@@ -226,15 +224,15 @@ class PhysicsDemo:
                     self.space.remove(self.shape_to_remove.body, self.shape_to_remove)
 
             elif event.type == pygame.KEYUP and event.key in (
-                pygame.K_RCTRL,
-                pygame.K_LCTRL,
+                    pygame.K_RCTRL,
+                    pygame.K_LCTRL,
             ):
                 # Create Wall
                 self.create_wall_segments(self.wall_points)
                 self.wall_points = []
             elif event.type == pygame.KEYUP and event.key in (
-                pygame.K_RSHIFT,
-                pygame.K_LSHIFT,
+                    pygame.K_RSHIFT,
+                    pygame.K_LSHIFT,
             ):
                 # Create Polygon
 
@@ -280,7 +278,7 @@ class PhysicsDemo:
         hit = self.space.point_query_nearest(
             self.flipyv(Vec2d(*mpos)), 0, pm.ShapeFilter()
         )
-        if hit != None:
+        if hit is not None:
             self.shape_to_remove = hit.shape
         else:
             self.shape_to_remove = None
@@ -306,10 +304,10 @@ class PhysicsDemo:
         xs = []
         for ball in self.balls:
             if (
-                ball.body.position.x < -1000
-                or ball.body.position.x > 1000
-                or ball.body.position.y < -1000
-                or ball.body.position.y > 1000
+                    ball.body.position.x < -1000
+                    or ball.body.position.x > 1000
+                    or ball.body.position.y < -1000
+                    or ball.body.position.y > 1000
             ):
                 xs.append(ball)
         for ball in xs:
@@ -320,10 +318,10 @@ class PhysicsDemo:
         xs = []
         for poly in self.polys:
             if (
-                poly.body.position.x < -1000
-                or poly.body.position.x > 1000
-                or poly.body.position.y < -1000
-                or poly.body.position.y > 1000
+                    poly.body.position.x < -1000
+                    or poly.body.position.x > 1000
+                    or poly.body.position.y < -1000
+                    or poly.body.position.y > 1000
             ):
                 xs.append(poly)
 
@@ -336,21 +334,6 @@ class PhysicsDemo:
         pygame.display.set_caption("fps: " + str(self.clock.get_fps()))
 
 
-def main():
+if __name__ == "__main__":
     demo = PhysicsDemo()
     demo.run()
-
-
-if __name__ == "__main__":
-    doprof = 0
-    if not doprof:
-        main()
-    else:
-        import cProfile
-        import pstats
-
-        prof = cProfile.run("main()", "profile.prof")
-        stats = pstats.Stats("profile.prof")
-        stats.strip_dirs()
-        stats.sort_stats("cumulative", "time", "calls")
-        stats.print_stats(30)

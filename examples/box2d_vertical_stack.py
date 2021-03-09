@@ -9,7 +9,7 @@ from pyglet.gl import *
 from pyglet.window import key, mouse
 
 import easymunk
-import easymunk.pyglet_util
+import easymunk.pyglet
 from easymunk import Vec2d
 
 
@@ -27,7 +27,7 @@ class Main(pyglet.window.Window):
         )
         self.create_world()
 
-        self.draw_options = easymunk.pyglet_util.DrawOptions()
+        self.draw_options = easymunk.pyglet.DrawOptions()
         self.draw_options.flags = self.draw_options.DRAW_SHAPES
 
     def create_world(self):

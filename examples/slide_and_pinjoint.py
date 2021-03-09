@@ -11,7 +11,7 @@ import sys
 import pygame
 
 import easymunk
-import easymunk.pygame_util
+import easymunk.pygame
 
 random.seed(1)
 
@@ -67,7 +67,7 @@ def main():
 
     lines = add_L(space)
     balls = []
-    draw_options = easymunk.pygame_util.DrawOptions(screen)
+    draw_options = easymunk.pygame.DrawOptions(screen)
 
     ticks_to_next_ball = 10
     while True:

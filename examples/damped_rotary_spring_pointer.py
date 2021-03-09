@@ -10,7 +10,7 @@ import pygame
 
 import easymunk
 import easymunk.constraints
-import easymunk.pygame_util
+import easymunk.pygame
 from easymunk import Vec2d
 
 
@@ -22,7 +22,7 @@ def main():
 
     # Physics stuff
     space = easymunk.Space()
-    draw_options = easymunk.pygame_util.DrawOptions(screen)
+    draw_options = easymunk.pygame.DrawOptions(screen)
 
     pointer_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
 
@@ -51,7 +51,7 @@ def main():
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_p:
                 pygame.image.save(screen, "damped_rotary_sprint_pointer.png")
             elif event.type == pygame.MOUSEMOTION:
-                mouse_pos = easymunk.pygame_util.get_mouse_pos(screen)
+                mouse_pos = easymunk.pygame.get_mouse_pos(screen)
                 pointer_body.position = mouse_pos
                 pointer_body.angle = (pointer_body.position - gun_body.position).angle
 

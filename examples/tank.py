@@ -7,7 +7,7 @@ import random
 import pygame
 
 import easymunk
-import easymunk.pygame_util
+import easymunk.pygame
 from easymunk.vec2d import Vec2d
 
 
@@ -16,7 +16,7 @@ def update(space, dt, surface):
     global tank_control_body
 
     mpos = pygame.mouse.get_pos()
-    mouse_pos = easymunk.pygame_util.from_pygame(Vec2d(*mpos), surface)
+    mouse_pos = easymunk.pygame.from_pygame(Vec2d(*mpos), surface)
 
     mouse_delta = mouse_pos - tank_body.position
     turn = tank_body.rotation_vector.cpvunrotate(mouse_delta).angle
@@ -126,7 +126,7 @@ space = init()
 pygame.init()
 screen = pygame.display.set_mode((640, 480))
 clock = pygame.time.Clock()
-draw_options = easymunk.pygame_util.DrawOptions(screen)
+draw_options = easymunk.pygame.DrawOptions(screen)
 
 
 font = pygame.font.Font(None, 24)

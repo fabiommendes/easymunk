@@ -16,7 +16,7 @@ from pathlib import Path
 import pygame
 
 import easymunk
-import easymunk.pygame_util
+import easymunk.pygame
 from easymunk.vec2d import Vec2d
 
 PATH = Path(__file__).parent
@@ -68,8 +68,8 @@ def main():
     # Physics stuff
     space = easymunk.Space()
     space.gravity = Vec2d(0, -1000)
-    easymunk.pygame_util.positive_y_is_up = True
-    draw_options = easymunk.pygame_util.DrawOptions(screen)
+    easymunk.pygame.positive_y_is_up = True
+    draw_options = easymunk.pygame.DrawOptions(screen)
 
     # box walls
     static = [
@@ -97,7 +97,7 @@ def main():
     # static platforms
     platforms = [
         easymunk.Segment(space.static_body, (170, 50), (270, 150), 3)
-        # , pymunk.Segment(space.static_body, (270, 100), (300, 100), 5)
+        # , easymunk.Segment(space.static_body, (270, 100), (300, 100), 5)
         ,
         easymunk.Segment(space.static_body, (400, 150), (450, 150), 3),
         easymunk.Segment(space.static_body, (400, 200), (450, 200), 3),
@@ -295,7 +295,7 @@ def main():
         else:
             animation_offset = 32 * 0
         position = body.position + (-16, 28)
-        p = easymunk.pygame_util.to_pygame(position, screen)
+        p = easymunk.pygame.to_pygame(position, screen)
         screen.blit(img, p, (animation_offset, direction_offset, 32, 48))
 
         # Did we land?
@@ -306,7 +306,7 @@ def main():
         else:
             landed_previous = False
         if landing["n"] > 0:
-            p = easymunk.pygame_util.to_pygame(landing["p"], screen)
+            p = easymunk.pygame.to_pygame(landing["p"], screen)
             pygame.draw.circle(screen, pygame.Color("yellow"), p, 5)
             landing["n"] -= 1
 

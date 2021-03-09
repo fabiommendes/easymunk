@@ -1,4 +1,4 @@
-"""Showcase what the output of pymunk.pygame_util draw methods will look like.
+"""Showcase what the output of easymunk.pygame_util draw methods will look like.
 
 See pyglet_util_demo.py for a comparison to pyglet.
 """
@@ -11,7 +11,7 @@ import pygame
 import shapes_for_draw_demos
 
 import easymunk
-import easymunk.pygame_util
+import easymunk.pygame
 from easymunk.vec2d import Vec2d
 
 
@@ -21,7 +21,7 @@ def main():
     clock = pygame.time.Clock()
     font = pygame.font.SysFont("Arial", 16)
 
-    easymunk.pygame_util.positive_y_is_up = True
+    easymunk.pygame.positive_y_is_up = True
     space = easymunk.Space()
 
     captions = shapes_for_draw_demos.fill_space(space)
@@ -29,9 +29,9 @@ def main():
     # Draw it
     screen.fill(pygame.Color("white"))
 
-    options = easymunk.pygame_util.DrawOptions(screen)
+    options = easymunk.pygame.DrawOptions(screen)
     space.debug_draw(options)
-    # pymunk.pygame_util.draw(screen, space)
+    # easymunk.pygame_util.draw(screen, space)
 
     # Info
     color = pygame.Color("black")

@@ -5,7 +5,7 @@ import pickle
 import pygame
 
 import easymunk
-import easymunk.pygame_util
+import easymunk.pygame
 from easymunk import Vec2d
 
 width, height = 800, 600
@@ -27,8 +27,8 @@ def main():
     space1.gravity = 0, 1000
     space1.sleep_time_threshold = 0.5
 
-    draw_options1 = easymunk.pygame_util.DrawOptions(surf1)
-    draw_options2 = easymunk.pygame_util.DrawOptions(surf2)
+    draw_options1 = easymunk.pygame.DrawOptions(surf1)
+    draw_options2 = easymunk.pygame.DrawOptions(surf2)
 
     box = [(5, 5), (295, 5), (295, 295), (5, 295)]
     for i, p1 in enumerate(box):

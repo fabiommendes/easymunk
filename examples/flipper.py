@@ -8,7 +8,7 @@ import random
 import pygame
 
 import easymunk
-import easymunk.pygame_util
+import easymunk.pygame
 from easymunk import Vec2d
 
 pygame.init()
@@ -19,7 +19,7 @@ running = True
 # Physics stuff
 space = easymunk.Space()
 space.gravity = (0.0, 900.0)
-draw_options = easymunk.pygame_util.DrawOptions(screen)
+draw_options = easymunk.pygame.DrawOptions(screen)
 
 # Balls
 balls = []

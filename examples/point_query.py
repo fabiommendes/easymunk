@@ -11,7 +11,7 @@ import sys
 import pygame
 
 import easymunk
-import easymunk.pygame_util
+import easymunk.pygame
 from easymunk import Vec2d
 
 
@@ -24,7 +24,7 @@ def main():
     # Physics stuff
     space = easymunk.Space()
     space.gravity = Vec2d(0.0, 900.0)
-    draw_options = easymunk.pygame_util.DrawOptions(screen)
+    draw_options = easymunk.pygame.DrawOptions(screen)
     ## Balls
     balls = []
 
@@ -75,14 +75,14 @@ def main():
             space.remove(ball, ball.body)
             balls.remove(ball)
 
-        mouse_pos = easymunk.pygame_util.get_mouse_pos(screen)
+        mouse_pos = easymunk.pygame.get_mouse_pos(screen)
 
         shape = space.point_query_nearest(
             mouse_pos, float("inf"), easymunk.ShapeFilter()
         ).shape
         if shape is not None and isinstance(shape, easymunk.Circle):
             r = shape.radius + 4
-            p = easymunk.pygame_util.to_pygame(shape.body.position, screen)
+            p = easymunk.pygame.to_pygame(shape.body.position, screen)
             pygame.draw.circle(screen, pygame.Color("red"), p, int(r), 2)
 
         # Update physics

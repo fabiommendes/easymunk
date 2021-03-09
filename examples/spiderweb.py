@@ -84,7 +84,7 @@ for b in bs[-17::4]:
     static_body.position = b.position
     static_bs.append(static_body)
 
-    # j = pymunk.PivotJoint(static_body, b, static_body.position)
+    # j = easymunk.PivotJoint(static_body, b, static_body.position)
     j = easymunk.DampedSpring(static_body, b, (0, 0), (0, 0), 0, 0, 0)
     j.damping = 100
     j.stiffness = 20000

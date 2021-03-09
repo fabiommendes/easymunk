@@ -11,7 +11,7 @@ import sys
 import pygame
 
 import easymunk
-import easymunk.pygame_util
+import easymunk.pygame
 from easymunk import Vec2d
 
 width, height = 600, 600
@@ -89,8 +89,8 @@ def main():
     font = pygame.font.SysFont("Arial", 16)
     # Physics stuff
     space = easymunk.Space()
-    easymunk.pygame_util.positive_y_is_up = True
-    draw_options = easymunk.pygame_util.DrawOptions(screen)
+    easymunk.pygame.positive_y_is_up = True
+    draw_options = easymunk.pygame.DrawOptions(screen)
 
     # Game area
     # walls - the left-top-right walls

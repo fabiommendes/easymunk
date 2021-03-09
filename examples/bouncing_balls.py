@@ -5,19 +5,13 @@ two segment shapes. Not interactive.
 __version__ = "$Id:$"
 __docformat__ = "reStructuredText"
 
-# Python imports
 import random
 from typing import List
-
-# Library imports
 import pygame
-
-# pymunk imports
-import easymunk
-import easymunk.pygame_util
+import easymunk as mk
 
 
-class BouncyBalls(object):
+class BouncyBalls:
     """
     This class implements a simple scene in which there is a static platform (made up of a couple of lines)
     that don't move. Balls appear occasionally and drop onto the platform. They bounce around.
@@ -25,7 +19,7 @@ class BouncyBalls(object):
 
     def __init__(self) -> None:
         # Space
-        self._space = easymunk.Space()
+        self._space = mk.Space()
         self._space.gravity = (0.0, 900.0)
 
         # Physics
@@ -39,13 +33,11 @@ class BouncyBalls(object):
         self._screen = pygame.display.set_mode((600, 600))
         self._clock = pygame.time.Clock()
 
-        self._draw_options = easymunk.pygame_util.DrawOptions(self._screen)
-
         # Static barrier walls (lines) that the balls bounce off of
         self._add_static_scenery()
 
         # Balls that exist in the world
-        self._balls: List[easymunk.Circle] = []
+        self._balls: List[mk.Circle] = []
 
         # Execution control and time until the next ball spawns
         self._running = True
@@ -54,11 +46,8 @@ class BouncyBalls(object):
     def run(self) -> None:
         """
         The main loop of the game.
-        :return: None
         """
-        # Main loop
         while self._running:
-            # Progress time forward
             for x in range(self._physics_steps_per_frame):
                 self._space.step(self._dt)
 
@@ -67,19 +56,17 @@ class BouncyBalls(object):
             self._clear_screen()
             self._draw_objects()
             pygame.display.flip()
-            # Delay fixed time between frames
             self._clock.tick(50)
             pygame.display.set_caption("fps: " + str(self._clock.get_fps()))
 
     def _add_static_scenery(self) -> None:
         """
         Create the static bodies.
-        :return: None
         """
         static_body = self._space.static_body
         static_lines = [
-            easymunk.Segment(static_body, (111.0, 600 - 280), (407.0, 600 - 246), 0.0),
-            easymunk.Segment(static_body, (407.0, 600 - 246), (407.0, 600 - 343), 0.0),
+            mk.Segment(static_body, (111.0, 600 - 280), (407.0, 600 - 246), 0.0),
+            mk.Segment(static_body, (407.0, 600 - 246), (407.0, 600 - 343), 0.0),
         ]
         for line in static_lines:
             line.elasticity = 0.95
@@ -89,7 +76,6 @@ class BouncyBalls(object):
     def _process_events(self) -> None:
         """
         Handle game and events like keyboard input. Call once per frame only.
-        :return: None
         """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -102,7 +88,6 @@ class BouncyBalls(object):
     def _update_balls(self) -> None:
         """
         Create/remove balls as necessary. Call once per frame only.
-        :return: None
         """
         self._ticks_to_next_ball -= 1
         if self._ticks_to_next_ball <= 0:
@@ -117,15 +102,14 @@ class BouncyBalls(object):
     def _create_ball(self) -> None:
         """
         Create a ball.
-        :return:
         """
         mass = 10
         radius = 25
-        inertia = easymunk.moment_for_circle(mass, 0, radius, (0, 0))
-        body = easymunk.Body(mass, inertia)
+        inertia = mk.moment_for_circle(mass, 0, radius, (0, 0))
+        body = mk.Body(mass, inertia)
         x = random.randint(115, 350)
         body.position = x, 200
-        shape = easymunk.Circle(body, radius, (0, 0))
+        shape = mk.Circle(body, radius, (0, 0))
         shape.elasticity = 0.95
         shape.friction = 0.9
         self._space.add(body, shape)
@@ -134,16 +118,14 @@ class BouncyBalls(object):
     def _clear_screen(self) -> None:
         """
         Clears the screen.
-        :return: None
         """
         self._screen.fill(pygame.Color("white"))
 
     def _draw_objects(self) -> None:
         """
         Draw the objects.
-        :return: None
         """
-        self._space.debug_draw(self._draw_options)
+        self._space.debug_draw("pygame")
 
 
 if __name__ == "__main__":

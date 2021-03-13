@@ -51,9 +51,10 @@ More examples::
 """
 __docformat__ = "reStructuredText"
 
-import math
 import numbers
 from typing import NamedTuple, Tuple
+
+from .math import sqrt, atan2, cos, sin, radians, degrees
 
 __all__ = ["Vec2d", "VecLike", "vec2d_from_cffi"]
 
@@ -67,6 +68,77 @@ class Vec2d(NamedTuple):
 
     x: float
     y: float
+
+    @property
+    def int_tuple(self) -> Tuple[int, int]:
+        """The x and y values of this vector as a tuple of ints.
+        Uses round() to round to closest int.
+
+        >>> Vec2d(0.9, 2.4).int_tuple
+        (1, 2)
+        """
+        return round(self.x), round(self.y)
+
+    @staticmethod
+    def zero() -> "Vec2d":
+        """A vector of zero length.
+
+        >>> Vec2d.zero()
+        Vec2d(0, 0)
+        """
+        return Vec2d(0, 0)
+
+    @staticmethod
+    def unit() -> "Vec2d":
+        """A unit vector pointing up
+
+        >>> Vec2d.unit()
+        Vec2d(0, 1)
+        """
+        return Vec2d(0, 1)
+
+    @staticmethod
+    def ones() -> "Vec2d":
+        """A vector where both x and y is 1
+
+        >>> Vec2d.ones()
+        Vec2d(1, 1)
+        """
+        return Vec2d(1, 1)
+
+    @property
+    def length_sqr(self) -> float:
+        """Squared length of vector.
+
+        If the squared length is enough it is more efficient to use this method
+        instead of access .length and then do a x**2.
+
+        >>> v = Vec2d(3, 4)
+        >>> v.length_sqr == v.length ** 2 == 25.0
+        True
+        """
+        return self.x ** 2 + self.y ** 2
+
+    @property
+    def length(self) -> float:
+        """Length of vector.
+
+        >>> Vec2d(3, 4).length
+        5.0
+        """
+        return sqrt(self.x ** 2 + self.y ** 2)
+
+    @property
+    def angle(self) -> float:
+        """The angle (in degrees) of the vector"""
+        if self.length_sqr == 0:
+            return 0
+        return atan2(self.y, self.x)
+
+    @property
+    def angle_radians(self) -> float:
+        """The angle (in radians) of the vector"""
+        return radians(self.angle)
 
     # String representation (for debugging)
     def __repr__(self) -> str:
@@ -179,34 +251,6 @@ class Vec2d(NamedTuple):
         """
         return self.length
 
-    # vectory functions
-    def get_length_sqrd(self) -> float:
-        """Get the squared length of the vector.
-        If the squared length is enough it is more efficient to use this method
-        instead of first calling get_length() or access .length and then do a
-        x**2.
-
-        >>> v = Vec2d(3,4)
-        >>> v.get_length_sqrd() == v.length**2
-        True
-
-        :return: The squared length
-        """
-        return self.x ** 2 + self.y ** 2
-
-    @property
-    def length(self) -> float:
-        """Get the length of the vector.
-
-        >>> Vec2d(10, 0).length
-        10.0
-        >>> Vec2d(10, 20).length
-        22.360679774997898
-
-        :return: The length
-        """
-        return math.sqrt(self.x ** 2 + self.y ** 2)
-
     def scale_to_length(self, length: float) -> "Vec2d":
         """Return a copy of this vector scaled to the given length.
 
@@ -216,54 +260,30 @@ class Vec2d(NamedTuple):
         old_length = self.length
         return Vec2d(self.x * length / old_length, self.y * length / old_length)
 
-    def rotated(self, angle_radians: float) -> "Vec2d":
+    def rotated(self, angle: float) -> "Vec2d":
         """Create and return a new vector by rotating this vector by
-        angle_radians radians.
-
-        :return: Rotated vector
-        """
-        cos = math.cos(angle_radians)
-        sin = math.sin(angle_radians)
-        x = self.x * cos - self.y * sin
-        y = self.x * sin + self.y * cos
+        angle (in degrees)."""
+        cos_ = cos(angle)
+        sin_ = sin(angle)
+        x = self.x * cos_ - self.y * sin_
+        y = self.x * sin_ + self.y * cos_
         return Vec2d(x, y)
 
-    def rotated_degrees(self, angle_degrees: float) -> "Vec2d":
+    def rotated_radians(self, angle: float) -> "Vec2d":
         """Create and return a new vector by rotating this vector by
-        angle_degrees degrees.
+        angle (in radians)."""
+        return self.rotated(degrees(angle))
 
-        :return: Rotade vector
-        """
-        return self.rotated(math.radians(angle_degrees))
-
-    @property
-    def angle(self) -> float:
-        """The angle (in radians) of the vector"""
-        if self.get_length_sqrd() == 0:
-            return 0
-        return math.atan2(self.y, self.x)
-
-    @property
-    def angle_degrees(self) -> float:
-        """Gets the angle (in degrees) of a vector"""
-        return math.degrees(self.angle)
-
-    def get_angle_between(self, other: VecLike) -> float:
-        """Get the angle between the vector and the other in radians
-
-        :return: The angle
-        """
+    def angle_between(self, other: VecLike) -> float:
+        """Get the angle between the vector and the other in degrees."""
         u, v = other
         cross = self.x * v - self.y * u
         dot = self.x * u + self.y * v
-        return math.atan2(cross, dot)
+        return atan2(cross, dot)
 
-    def get_angle_degrees_between(self, other: "Vec2d") -> float:
-        """Get the angle between the vector and the other in degrees
-
-        :return: The angle (in degrees)
-        """
-        return math.degrees(self.get_angle_between(other))
+    def angle_radians_between(self, other: VecLike) -> float:
+        """Get the angle between the vector and the other in radians."""
+        return radians(self.angle_between(other))
 
     def normalized(self) -> "Vec2d":
         """Get a normalized copy of the vector
@@ -304,20 +324,16 @@ class Vec2d(NamedTuple):
         u, v = other
         return float(self.x * u + self.y * v)
 
-    def get_distance(self, other: VecLike) -> float:
-        """The distance between the vector and other vector
-
-        :return: The distance
-        """
+    def distance(self, other: VecLike) -> float:
+        """The distance between the vector and other vector."""
         u, v = other
-        return math.sqrt((self.x - u) ** 2 + (self.y - v) ** 2)
+        return sqrt((self.x - u) ** 2 + (self.y - v) ** 2)
 
-    def get_dist_sqrd(self, other: VecLike) -> float:
-        """The squared distance between the vector and other vector
-        It is more efficent to use this method than to call get_distance()
+    def distance_sqr(self, other: VecLike) -> float:
+        """The squared distance between the vector and other vector.
+
+        It is more efficient to use this method than to call get_distance()
         first and then do a sqrt() on the result.
-
-        :return: The squared distance
         """
         u, v = other
         return (self.x - u) ** 2 + (self.y - v) ** 2
@@ -335,9 +351,7 @@ class Vec2d(NamedTuple):
 
     def cross(self, other: VecLike) -> float:
         """The cross product between the vector and other vector
-            v1.cross(v2) -> v1.x*v2.y - v1.y*v2.x
-
-        :return: The cross product
+        v1.cross(v2) -> v1.x*v2.y - v1.y*v2.x
         """
         u, v = other
         return self.x * v - self.y * u
@@ -354,46 +368,9 @@ class Vec2d(NamedTuple):
 
     def convert_to_basis(self, x_vector: VecLike, y_vector: VecLike) -> "Vec2d":
         return Vec2d(
-            self.dot(x_vector) / Vec2d(*x_vector).get_length_sqrd(),
-            self.dot(y_vector) / Vec2d(*y_vector).get_length_sqrd(),
+            self.dot(x_vector) / Vec2d(*x_vector).length_sqr,
+            self.dot(y_vector) / Vec2d(*y_vector).length_sqr,
         )
-
-    @property
-    def int_tuple(self) -> Tuple[int, int]:
-        """The x and y values of this vector as a tuple of ints.
-        Uses round() to round to closest int.
-
-        >>> Vec2d(0.9, 2.4).int_tuple
-        (1, 2)
-        """
-        return round(self.x), round(self.y)
-
-    @staticmethod
-    def zero() -> "Vec2d":
-        """A vector of zero length.
-
-        >>> Vec2d.zero()
-        Vec2d(0, 0)
-        """
-        return Vec2d(0, 0)
-
-    @staticmethod
-    def unit() -> "Vec2d":
-        """A unit vector pointing up
-
-        >>> Vec2d.unit()
-        Vec2d(0, 1)
-        """
-        return Vec2d(0, 1)
-
-    @staticmethod
-    def ones() -> "Vec2d":
-        """A vector where both x and y is 1
-
-        >>> Vec2d.ones()
-        Vec2d(1, 1)
-        """
-        return Vec2d(1, 1)
 
     # Extra functions, mainly for chipmunk
     def cpvrotate(self, other: VecLike) -> "Vec2d":

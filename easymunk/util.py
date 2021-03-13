@@ -526,7 +526,7 @@ def cffi_body(body: Optional["Body"]):
     Return the C reference to body or a null pointer if body is None.
     """
     # noinspection PyProtectedMember
-    return ffi.NULL if body is None else body._body
+    return ffi.NULL if body is None else body._cffi_ref
 
 
 def inner_shapes(obj: Union["Body"]) -> WeakSet["Shape"]:
@@ -545,6 +545,30 @@ def inner_constraints(obj: Union["Body"]) -> WeakSet["Constraint"]:
     return obj._constraints
 
 
+def shape_id(shape: "Shape") -> int:
+    """Return shape id."""
+    # noinspection PyProtectedMember
+    return shape._id
+
+
+def get_nursery(obj: Union["Shape", "Body", "Constraint"]) -> set:
+    """Return the nursery set from object."""
+    # noinspection PyProtectedMember
+    return obj._nursery
+
+
+def clear_nursery(obj: Union["Shape", "Body", "Constraint"]) -> set:
+    """Return the nursery set from object."""
+    # noinspection PyProtectedMember
+    return obj._nursery.clear()
+
+
+def get_cffi_ref(obj: Union["Shape", "Body", "Constraint"]) -> set:
+    """Return the nursery set from object."""
+    # noinspection PyProtectedMember
+    return obj._cffi_ref
+
+
 def cp_property(prefix, suffix, doc=None, wrap=None):
     """
     A getter/setter for lib.cp{prefix}Get/Set{suffix} methods.
@@ -555,9 +579,9 @@ def cp_property(prefix, suffix, doc=None, wrap=None):
     setter = getattr(lib, f"cp{prefix}Set{suffix}")
 
     if wrap:
-        fget = lambda self: wrap(getter(self._constraint))
+        fget = lambda self: wrap(getter(self._cffi_ref))
     else:
-        fget = lambda self: getter(self._constraint)
-    fset = lambda self, value: setter(self._constraint, value)
+        fget = lambda self: getter(self._cffi_ref)
+    fset = lambda self, value: setter(self._cffi_ref, value)
 
     return property(fget, fset, doc=doc)

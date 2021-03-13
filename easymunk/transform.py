@@ -1,8 +1,8 @@
-import math
 from typing import NamedTuple
 
 from .mat22 import Mat22
 from .vec2d import Vec2d, VecLike
+from .math import cos, sin
 
 
 class Transform(NamedTuple):
@@ -121,8 +121,8 @@ class Transform(NamedTuple):
         ====== ======= =
 
         """
-        c = math.cos(t)
-        s = math.sin(t)
+        c = cos(t)
+        s = sin(t)
         return Transform(a=c, b=s, c=-s, d=c)
 
     @staticmethod
@@ -143,14 +143,12 @@ class Transform(NamedTuple):
         return Transform(a, b, c, d, tx, ty)
 
     @staticmethod
-    def similarity(*, scale=None, angle=None, angle_degrees=None, translation=(0, 0)):
+    def similarity(*, scale=None, angle=None, translation=(0, 0)):
         """
         Create affine transform from similarity transformations..
         """
         if angle is not None:
             mat = Mat22.rotation(angle)
-        elif angle_degrees is not None:
-            mat = Mat22.rotation(angle_degrees)
         else:
             mat = Mat22.identity()
         vec = Vec2d(*translation)

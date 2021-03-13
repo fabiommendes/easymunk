@@ -4,6 +4,8 @@ than radians.
 """
 from math import *
 
+# __all__ = ["cos", "sin", "tan", "acos", "asin", "atan", "atan2", "pi", "degrees",
+#            "radians", "sqrt", "log", "log10", "log2"]
 _cos, _sin, _tan = cos, sin, tan
 _acos, _asin, _atan, _atan2 = acos, asin, atan, atan2
 

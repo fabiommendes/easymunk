@@ -1561,7 +1561,7 @@ void cpSpaceGetBodyPositions(cpSpace *space, cpVectArr *arr) {
 """
 
 ffibuilder.set_source(
-    "pymunk._chipmunk",  # name of the output C extension
+    "easymunk._chipmunk",  # name of the output C extension
     f"""
         //#include "chipmunk/chipmunk_types.h"
         //#include "chipmunk/cpVect.h"

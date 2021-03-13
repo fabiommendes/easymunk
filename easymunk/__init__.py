@@ -25,9 +25,9 @@
 Pymunk is a easy-to-use pythonic 2d physics library that can be used whenever
 you need 2d rigid body physics from Python.
 
-Homepage: http://www.pymunk.org
+Homepage: http://www.easymunk.org
 
-This is the main containing module of Pymunk. It contains among other things
+This is the main containing module of easymunk. It contains among other things
 the very central Space, Body and Shape classes.
 
 """
@@ -97,13 +97,13 @@ chipmunk_version: str = _version.chipmunk_version
 """The Chipmunk version used with this Pymunk version.
 
 This property does not show a valid value in the compiled documentation, only
-when you actually import pymunk and do pymunk.chipmunk_version
+when you actually import pymunk and do easymunk.chipmunk_version
 
 The string is in the following format:
 <cpVersionString>R<github commit of chipmunk>
 where cpVersionString is a version string set by Chipmunk and the git commit
 hash corresponds to the git hash of the chipmunk source from
-github.com/viblo/Chipmunk2D included with Pymunk.
+github.com/viblo/Chipmunk2D included with easymunk.
 """
 
 

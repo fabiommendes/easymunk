@@ -1,6 +1,6 @@
 __docformat__ = "reStructuredText"
 
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Tuple, Any, Callable
 
 from ._chipmunk_cffi import ffi, lib
 from .contact_point_set import ContactPointSet, contact_point_set_from_cffi
@@ -31,6 +31,7 @@ class Arbiter(object):
         points = lib.cpArbiterGetContactPointSet(self._cffi_ref)
         return contact_point_set_from_cffi(points)
 
+    # noinspection PyPep8Naming
     def _set_contact_point_set(self, point_set: ContactPointSet) -> None:
         # This has to be done by fetching a new Chipmunk point set, update it
         # according to whats passed in and the pass that back to chipmunk due
@@ -53,7 +54,8 @@ class Arbiter(object):
 
         lib.cpArbiterSetContactPointSet(self._cffi_ref, ffi.addressof(cp_set))
 
-    contact_point_set: ContactPointSet = property(
+    contact_point_set: ContactPointSet
+    contact_point_set = property(  # type: ignore
         _get_contact_point_set,
         _set_contact_point_set,
         doc="""Contact point sets make getting contact information from the 
@@ -61,7 +63,8 @@ class Arbiter(object):
         
         Return `ContactPointSet`""",
     )
-    restitution: float = cp_property(
+    restitution: float
+    restitution = cp_property(  # type: ignore
         "Arbiter",
         "Restitution",
         doc="""The calculated restitution (elasticity) for this collision 
@@ -72,7 +75,8 @@ class Arbiter(object):
         elasticity of the two shapes together.
         """,
     )
-    friction: float = cp_property(
+    friction: float
+    friction = cp_property(  # type: ignore
         "Arbiter",
         "Friction",
         doc="""The calculated friction for this collision pair. 
@@ -82,7 +86,8 @@ class Arbiter(object):
         friction of the two shapes together.
         """,
     )
-    surface_velocity: Vec2d = cp_property(
+    surface_velocity: Vec2d
+    surface_velocity = cp_property(  # type: ignore
         "Arbiter",
         "SurfaceVelocity",
         doc="""The calculated surface velocity for this collision pair. 
@@ -153,11 +158,14 @@ class Arbiter(object):
         ptr_b = ffi.new("cpShape *[1]")
 
         lib.cpArbiterGetShapes(self._cffi_ref, ptr_a, ptr_b)
-        a = self._space._shape_from_cffi(ptr_a[0])
-        b = self._space._shape_from_cffi(ptr_b[0])
+        a = self._shape_from_cffi(self._space, ptr_a[0])
+        b = self._shape_from_cffi(self._space, ptr_b[0])
         if a is None or b is None:
-            raise ValueError('invalid shape in arbiter')
+            raise ValueError("invalid shape in arbiter")
         return a, b
+
+    def _shape_from_cffi(self, space: "Space", _) -> "Shape":
+        return NotImplemented
 
     def __init__(self, _arbiter: ffi.CData, space: "Space") -> None:
         """Initialize an Arbiter object from the Chipmunk equivalent struct

@@ -14,6 +14,7 @@ from typing import (
     Callable,
     TYPE_CHECKING,
     Sequence,
+    Iterator,
 )
 
 from ._chipmunk_cffi import lib
@@ -78,7 +79,7 @@ class PickleMixin:
         """
 
         # noinspection PyArgumentList
-        self.__init__(*(v for k, v in state["init"]))
+        self.__init__(*(v for k, v in state["init"]))  # type: ignore
 
         for k, v in state["general"]:
             self.__setattr__(k, v)
@@ -88,7 +89,11 @@ class PickleMixin:
 
     def copy(self: T) -> T:
         """Create a deep copy of this object."""
-        return copy.deepcopy(self)
+
+        state = self.__getstate__()
+        new = object.__new__(type(self))
+        new.__setstate__(state)
+        return new
 
 
 class TypingAttrMixing:
@@ -167,23 +172,20 @@ class FilterElementsMixin:
         "ne": operator.ne,
         "len": lambda obj, n: len(obj) == n,
     }
-    _CHAIN_MODIFIERS: Dict[str, Callable[[Any, Any], bool]] = {
+    _CHAIN_MODIFIERS: Dict[str, Callable[[Any], Any]] = {
         "len": len,
     }
 
-    @sk.lazy
     @abstractmethod
-    def _bodies(self) -> Sequence["Body"]:
+    def _iter_bodies(self) -> Iterator["Body"]:
         raise NotImplementedError
 
-    @sk.lazy
     @abstractmethod
-    def _shapes(self) -> Sequence["Shape"]:
+    def _iter_shapes(self) -> Iterator["Shape"]:
         raise NotImplementedError
 
-    @sk.lazy
     @abstractmethod
-    def _constraints(self) -> Sequence["Constraint"]:
+    def _iter_constraints(self) -> Iterator["Constraint"]:
         raise NotImplementedError
 
     def _generic_filters(self, kwargs) -> Iterable[Predicate]:
@@ -255,7 +257,7 @@ class FilterElementsMixin:
             body_type = BODY_TYPE_MAP.get(body_type)
             filters.append(lambda b: b.body_type == body_type)
         filters.extend(self._generic_filters(kwargs))
-        return filter(compose_filters(filters), self._bodies)
+        return filter(compose_filters(filters), self._iter_bodies())
 
     def get_shape(self, *, first: bool = False, **kwargs) -> "Shape":
         """
@@ -273,7 +275,7 @@ class FilterElementsMixin:
         Filter shapes according to criteria.
         """
         filters = self._generic_filters(kwargs)
-        return filter(compose_filters(filters), self._shapes)
+        return filter(compose_filters(filters), self._iter_shapes())
 
     def get_constraint(self, *, first: bool = False, **kwargs) -> "Constraint":
         """
@@ -293,4 +295,4 @@ class FilterElementsMixin:
         Filter constraints according to criteria.
         """
         filters = self._generic_filters(kwargs)
-        return filter(compose_filters(filters), self._constraints)
+        return filter(compose_filters(filters), self._iter_constraints())

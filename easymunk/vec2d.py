@@ -52,7 +52,7 @@ More examples::
 __docformat__ = "reStructuredText"
 
 import numbers
-from typing import NamedTuple, Tuple
+from typing import NamedTuple, Tuple, Any
 
 from .math import sqrt, atan2, cos, sin, radians, degrees
 
@@ -160,7 +160,8 @@ class Vec2d(NamedTuple):
         else:
             return Vec2d(self.x + u, self.y + v)
 
-    __radd__ = __add__
+    def __radd__(self, other: VecLike) -> "Vec2d":
+        return self.__add__(other)
 
     # Subtraction
     def __sub__(self, other: VecLike) -> "Vec2d":
@@ -384,7 +385,7 @@ class Vec2d(NamedTuple):
         return Vec2d(self.x * u + self.y * v, self.y * u - self.x * v)
 
 
-def vec2d_from_cffi(cffi) -> Vec2d:
+def vec2d_from_cffi(cffi: Any) -> Vec2d:
     """
     Creates Vec2d from cffi cpVect.
     """

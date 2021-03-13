@@ -67,17 +67,17 @@ class ShapeFilter(NamedTuple):
     >>> s.add(player_b, player_c)
     >>> player_c.filter = easymunk.ShapeFilter(categories=0b1)
     >>> hit = s.point_query_nearest((0,0), 0, easymunk.ShapeFilter())
-    >>> hit != None
+    >>> hit is not None
     True
     >>> filter = easymunk.ShapeFilter(mask=easymunk.ShapeFilter.ALL_MASKS() ^ 0b1)
     >>> hit = s.point_query_nearest((0,0), 0, filter)
-    >>> hit == None
+    >>> hit is None
     True
     >>> enemy_b = easymunk.Body(1,1)
     >>> enemy_c = easymunk.Circle(enemy_b, 10)
     >>> s.add(enemy_b, enemy_c)
     >>> hit = s.point_query_nearest((0,0), 0, filter)
-    >>> hit != None
+    >>> hit is not None
     True
 
     """

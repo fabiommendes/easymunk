@@ -41,7 +41,7 @@ class SegmentQueryInfo(NamedTuple):
     point. This object hold that information.
 
     To test if the query hit something, check if
-    SegmentQueryInfo.shape == None or not.
+    SegmentQueryInfo.shape is None or not.
 
     Segment queries are like ray casting, but because not all spatial indexes
     allow processing infinitely long ray queries it is limited to segments.

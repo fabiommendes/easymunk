@@ -93,7 +93,7 @@ def constraint_property(attr, doc=None, wrap=None):
     return cp_property("Constraint", attr, doc, wrap=wrap)
 
 
-def anchor_property(name) -> property:
+def anchor_property(name) -> Any:
     """Wraps cp{name}[Get|Set]Anchor[A|B] APIs"""
     return cp_property(
         name[:-1],
@@ -103,7 +103,7 @@ def anchor_property(name) -> property:
     )
 
 
-class Constraint(PickleMixin, TypingAttrMixing, object):
+class Constraint(PickleMixin, TypingAttrMixing):
     """Base class of all constraints.
 
     You usually don't want to create instances of this class directly, but
@@ -125,7 +125,8 @@ class Constraint(PickleMixin, TypingAttrMixing, object):
     _cp_pre_solve_func: Any = ffi.NULL
     _cp_post_solve_func: Any = ffi.NULL
 
-    max_force: float = constraint_property(
+    max_force: float
+    max_force = constraint_property(  # type: ignore
         "MaxForce",
         doc="""The maximum force that the constraint can use to act on the two
         bodies.
@@ -133,7 +134,8 @@ class Constraint(PickleMixin, TypingAttrMixing, object):
         Defaults to infinity
         """,
     )
-    error_bias: float = constraint_property(
+    error_bias: float
+    error_bias = constraint_property(  # type: ignore
         "ErrorBias",
         doc="""The percentage of joint error that remains unfixed after a
         second.
@@ -146,7 +148,8 @@ class Constraint(PickleMixin, TypingAttrMixing, object):
         the error every 1/60th of a second.
         """,
     )
-    max_bias: float = constraint_property(
+    max_bias: float
+    max_bias = constraint_property(  # type: ignore
         "MaxBias",
         doc="""The maximum speed at which the constraint can apply error
         correction.
@@ -154,7 +157,8 @@ class Constraint(PickleMixin, TypingAttrMixing, object):
         Defaults to infinity
         """,
     )
-    collide_bodies: bool = constraint_property(
+    collide_bodies: bool
+    collide_bodies = constraint_property(  # type: ignore
         "CollideBodies",
         doc="""Constraints can be used for filtering collisions too.
 
@@ -173,7 +177,7 @@ class Constraint(PickleMixin, TypingAttrMixing, object):
         space.step(). You can use this to implement breakable joints to check
         if the force they attempted to apply exceeded a certain threshold.
         """
-        return lib.cpConstraintGetImpulse(self._constraint)
+        return lib.cpConstraintGetImpulse(self._cffi_ref)
 
     @property
     def a(self) -> "Body":
@@ -197,19 +201,19 @@ class Constraint(PickleMixin, TypingAttrMixing, object):
     def pre_solve(self, func: Optional[SolveFunc]):
         self._pre_solve_func = func
 
-        if func is None:
-            self._cp_pre_solve_func = ffi.NULL
-        else:
-
+        if func is not None:
             @ffi.callback("cpConstraintPreSolveFunc")
             def _impl(_constraint, _space) -> None:
                 if self.a.space is None:
                     raise ValueError("body a is not attached to any space")
-                func(self, self.a.space)
+                fn(self, self.a.space)
 
+            fn = func
             self._cp_pre_solve_func = _impl
+        else:
+            self._cp_pre_solve_func = ffi.NULL
 
-        lib.cpConstraintSetPreSolveFunc(self._constraint, self._cp_pre_solve_func)
+        lib.cpConstraintSetPreSolveFunc(self._cffi_ref, self._cp_pre_solve_func)
 
     @property
     def post_solve(self) -> Optional[SolveFunc]:
@@ -222,26 +226,28 @@ class Constraint(PickleMixin, TypingAttrMixing, object):
     @post_solve.setter
     def post_solve(self, func: Optional[SolveFunc]) -> None:
         self._post_solve_func = func
-        if func is None:
-            self._cp_post_solve_func = ffi.NULL
-        else:
-
+        if func is not None:
             @ffi.callback("cpConstraintPostSolveFunc")
             def _impl(_constraint, _space) -> None:
                 if self.a.space is None:
                     raise ValueError("body a is not attached to any space")
-                func(self, self.a.space)
+                fn(self, self.a.space)
 
+            fn = func
             self._cp_post_solve_func = _impl
-        lib.cpConstraintSetPostSolveFunc(self._constraint, self._cp_post_solve_func)
+        else:
+            self._cp_post_solve_func = ffi.NULL
+
+        lib.cpConstraintSetPostSolveFunc(self._cffi_ref, self._cp_post_solve_func)
 
     def __init__(self, a: "Body", b: "Body", _constraint: Any, **kwargs) -> None:
         if a is b:
             raise ValueError("cannot apply constraint to same body")
 
-        self._constraint = ffi.gc(_constraint, cffi_free_constraint)
+        self._cffi_ref = ffi.gc(_constraint, cffi_free_constraint)
         self._a = a
         self._b = b
+        self._nursery = [a, b]
         inner_constraints(a).add(self)
         inner_constraints(b).add(self)
         init_attributes(self, self._init_kwargs, kwargs)
@@ -288,19 +294,20 @@ class PinJoint(Constraint):
 
     anchor_a: Vec2d = anchor_property("PinJointA")
     anchor_b: Vec2d = anchor_property("PinJointB")
-    distance: float = property(
-        lambda self: lib.cpPinJointGetDist(self._constraint),
-        lambda self, distance: void(lib.cpPinJointSetDist(self._constraint, distance)),
+    distance: float
+    distance = property(  # type: ignore
+        lambda self: lib.cpPinJointGetDist(self._cffi_ref),
+        lambda self, distance: void(lib.cpPinJointSetDist(self._cffi_ref, distance)),
         doc="""Fixed distance between anchor points.""",
     )
 
     def __init__(
-        self,
-        a: "Body",
-        b: "Body",
-        anchor_a: VecLike = (0, 0),
-        anchor_b: VecLike = (0, 0),
-        **kwargs,
+            self,
+            a: "Body",
+            b: "Body",
+            anchor_a: VecLike = (0, 0),
+            anchor_b: VecLike = (0, 0),
+            **kwargs,
     ):
         """a and b are the two bodies to connect, and anchor_a and anchor_b are
         the anchor points on those bodies.
@@ -309,8 +316,8 @@ class PinJoint(Constraint):
         is created. If you want to set a specific distance, use the setter
         function to override it.
         """
-        _constraint = lib.cpPinJointNew(cffi_body(a), cffi_body(b), anchor_a, anchor_b)
-        super().__init__(a, b, _constraint, **kwargs)
+        ptr = lib.cpPinJointNew(cffi_body(a), cffi_body(b), anchor_a, anchor_b)
+        super().__init__(a, b, ptr, **kwargs)
 
 
 class SlideJoint(Constraint):
@@ -329,23 +336,25 @@ class SlideJoint(Constraint):
     ]
     anchor_a: Vec2d = anchor_property("SlideJointA")
     anchor_b: Vec2d = anchor_property("SlideJointB")
-    min: float = cp_property(
+    min: float
+    min = cp_property(  # type: ignore
         "SlideJoint", "Min", doc="Minimum distance between anchor points."
     )
-    max: float = cp_property(
+    max: float
+    max = cp_property(  # type: ignore
         "SlideJoint", "Max", doc="Maximum distance between anchor points."
     )
 
     # noinspection PyShadowingBuiltins
     def __init__(
-        self,
-        a: "Body",
-        b: "Body",
-        anchor_a: VecLike,
-        anchor_b: VecLike,
-        min: float,
-        max: float,
-        **kwargs,
+            self,
+            a: "Body",
+            b: "Body",
+            anchor_a: VecLike,
+            anchor_b: VecLike,
+            min: float,
+            max: float,
+            **kwargs,
     ):
         """a and b are the two bodies to connect, anchor_a and anchor_b are the
         anchor points on those bodies, and min and max define the allowed
@@ -368,11 +377,11 @@ class PivotJoint(Constraint):
     anchor_b: Vec2d = anchor_property("PivotJointB")
 
     def __init__(
-        self,
-        a: "Body",
-        b: "Body",
-        *args: Union[VecLike, Tuple[VecLike, VecLike]],
-        **kwargs,
+            self,
+            a: "Body",
+            b: "Body",
+            *args: Union[VecLike, Tuple[VecLike, VecLike]],
+            **kwargs,
     ):
         """a and b are the two bodies to connect, and pivot is the point in
         world coordinates of the pivot.
@@ -417,13 +426,15 @@ class GrooveJoint(Constraint):
         "anchor_b",
     ]
     anchor_b: Vec2d = anchor_property("GrooveJointB")
-    groove_a: Vec2d = cp_property(
+    groove_a: Vec2d
+    groove_a = cp_property(  # type: ignore
         "GrooveJoint",
         "GrooveA",
         doc="Start of groove relative to body A.",
         wrap=vec2d_from_cffi,
     )
-    groove_b: Vec2d = cp_property(
+    groove_b: Vec2d
+    groove_b = cp_property(  # type: ignore
         "GrooveJoint",
         "GrooveB",
         doc="Start of groove relative to body B.",
@@ -431,13 +442,13 @@ class GrooveJoint(Constraint):
     )
 
     def __init__(
-        self,
-        a: "Body",
-        b: "Body",
-        groove_a: VecLike,
-        groove_b: VecLike,
-        anchor_b: VecLike,
-        **kwargs,
+            self,
+            a: "Body",
+            b: "Body",
+            groove_a: VecLike,
+            groove_b: VecLike,
+            anchor_b: VecLike,
+            **kwargs,
     ):
         """The groove goes from groove_a to groove_b on body a, and the pivot
         is attached to anchor_b on body b.
@@ -471,15 +482,15 @@ class DampedSpring(Constraint):
     damping: float = cp_property("DampedSpring", "Damping", doc=DAMPING)
 
     def __init__(
-        self,
-        a: "Body",
-        b: "Body",
-        anchor_a: VecLike,
-        anchor_b: VecLike,
-        rest_length: float,
-        stiffness: float,
-        damping: float,
-        **kwargs,
+            self,
+            a: "Body",
+            b: "Body",
+            anchor_a: VecLike,
+            anchor_b: VecLike,
+            rest_length: float,
+            stiffness: float,
+            damping: float,
+            **kwargs,
     ):
         """Defined much like a slide joint.
 
@@ -519,13 +530,13 @@ class DampedRotarySpring(Constraint):
     damping: float = cp_property("DampedRotarySpring", "Damping", doc=DAMPING)
 
     def __init__(
-        self,
-        a: "Body",
-        b: "Body",
-        rest_angle: float,
-        stiffness: float,
-        damping: float,
-        **kwargs,
+            self,
+            a: "Body",
+            b: "Body",
+            rest_angle: float,
+            stiffness: float,
+            damping: float,
+            **kwargs,
     ):
         """Like a damped spring, but works in an angular fashion.
 
@@ -602,7 +613,8 @@ class SimpleMotor(Constraint):
     """SimpleMotor keeps the relative angular velocity constant."""
 
     _pickle_attrs_init = [*Constraint._pickle_attrs_init, "rate"]
-    rate: float = cp_property(
+    rate: float
+    rate = cp_property(  # type: ignore
         "SimpleMotor", "Rate", "Desired relative angular velocity"
     )
 

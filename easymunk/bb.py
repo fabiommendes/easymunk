@@ -44,7 +44,7 @@ class BB(NamedTuple):
         return self.center()
 
     @staticmethod
-    def newForCircle(p: VecLike, r: float) -> "BB":
+    def from_circle(p: VecLike, r: float) -> "BB":
         """Convenience constructor for making a BB fitting a circle at
         position p with radius r.
         """
@@ -69,8 +69,6 @@ class BB(NamedTuple):
     def intersects_segment(self, a: VecLike, b: VecLike) -> bool:
         """Returns true if the segment defined by endpoints a and b
         intersect this bb."""
-        assert len(a) == 2
-        assert len(b) == 2
         return bool(lib.cpBBIntersectsSegment(self, a, b))
 
     def contains(self, other: "BB") -> bool:
@@ -79,7 +77,6 @@ class BB(NamedTuple):
 
     def contains_vect(self, v: VecLike) -> bool:
         """Returns true if this bb contains the vector v"""
-        assert len(v) == 2
         return bool(lib.cpBBContainsVect(self, v))
 
     def merge(self, other: "BB") -> "BB":
@@ -133,13 +130,10 @@ class BB(NamedTuple):
 
         Returns infinity if it doesnt hit
         """
-        assert len(a) == 2
-        assert len(b) == 2
         return lib.cpBBSegmentQuery(self, a, b)
 
     def clamp_vect(self, v: VecLike) -> Vec2d:
         """Returns a copy of the vector v clamped to the bounding box"""
-        assert len(v) == 2
         v2 = lib.cpBBClampVect(self, v)
         return Vec2d(v2.x, v2.y)
 

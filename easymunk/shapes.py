@@ -21,7 +21,7 @@ from .shape_filter import ShapeFilter, shape_filter_from_cffi
 from .transform import Transform
 from .vec2d import Vec2d, VecLike, vec2d_from_cffi
 
-T = TypeVar("T")
+S = TypeVar("S", bound="Shape")
 
 
 class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
@@ -56,7 +56,7 @@ class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
     _init_kwargs = {*_pickle_attrs_general, *_pickle_attrs_skip}
     _space = None  # Weak ref to the space holding this body (if any)
     _body = None
-    _shape = None
+    _cffi_ref = None
     _id_counter = 1
 
     @property
@@ -67,17 +67,18 @@ class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
             Experimental API. Likely to change in future major, minor or point
             releases.
         """
-        return int(ffi.cast("int", lib.cpShapeGetUserData(self._shape)))
+        return int(ffi.cast("int", lib.cpShapeGetUserData(self._cffi_ref)))
 
     def _set_id(self) -> None:
         lib.cpShapeSetUserData(
-            self._shape, ffi.cast("cpDataPointer", Shape._id_counter)
+            self._cffi_ref, ffi.cast("cpDataPointer", Shape._id_counter)
         )
         Shape._id_counter += 1
 
-    mass: float = property(
-        lambda self: lib.cpShapeGetMass(self._shape),
-        lambda self, mass: void(lib.cpShapeSetMass(self._shape, mass)),
+    mass: float
+    mass = property(  # type: ignore
+        lambda self: lib.cpShapeGetMass(self._cffi_ref),
+        lambda self, mass: void(lib.cpShapeSetMass(self._cffi_ref, mass)),
         doc="""The mass of this shape.
 
         This is useful when you let Pymunk calculate the total mass and inertia 
@@ -85,9 +86,10 @@ class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
         mass and inertia directly)
         """,
     )
-    density: float = property(
-        lambda self: lib.cpShapeGetDensity(self._shape),
-        lambda self, density: void(lib.cpShapeSetDensity(self._shape, density)),
+    density: float
+    density = property(  # type: ignore
+        lambda self: lib.cpShapeGetDensity(self._cffi_ref),
+        lambda self, density: void(lib.cpShapeSetDensity(self._cffi_ref, density)),
         doc="""The density of this shape.
         
         This is useful when you let Pymunk calculate the total mass and inertia 
@@ -95,44 +97,51 @@ class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
         mass and inertia directly)
         """,
     )
-    moment: float = property(
-        lambda self: lib.cpShapeGetMoment(self._shape),
+    moment: float
+    moment = property(  # type: ignore
+        lambda self: lib.cpShapeGetMoment(self._cffi_ref),
         doc="The calculated moment of this shape.",
     )
-    area: float = property(
-        lambda self: lib.cpShapeGetArea(self._shape),
+    area: float
+    area = property(  # type: ignore
+        lambda self: lib.cpShapeGetArea(self._cffi_ref),
         doc="The calculated area of this shape.",
     )
-    center_of_gravity: Vec2d = property(
-        lambda self: vec2d_from_cffi(lib.cpShapeGetCenterOfGravity(self._shape)),
+    center_of_gravity: Vec2d
+    center_of_gravity = property(  # type: ignore
+        lambda self: vec2d_from_cffi(lib.cpShapeGetCenterOfGravity(self._cffi_ref)),
         doc="""The calculated center of gravity of this shape.""",
     )
-    sensor: bool = property(
-        lambda self: bool(lib.cpShapeGetSensor(self._shape)),
-        lambda self, is_sensor: void(lib.cpShapeSetSensor(self._shape, is_sensor)),
+    sensor: bool
+    sensor = property(  # type: ignore
+        lambda self: bool(lib.cpShapeGetSensor(self._cffi_ref)),
+        lambda self, is_sensor: void(lib.cpShapeSetSensor(self._cffi_ref, is_sensor)),
         doc="""A boolean value if this shape is a sensor or not.
 
         Sensors only call collision callbacks, and never generate real
         collisions.
         """,
     )
-    collision_type: int = property(
-        lambda self: lib.cpShapeGetCollisionType(self._shape),
-        lambda self, t: void(lib.cpShapeSetCollisionType(self._shape, t)),
+    collision_type: int
+    collision_type = property(  # type: ignore
+        lambda self: lib.cpShapeGetCollisionType(self._cffi_ref),
+        lambda self, t: void(lib.cpShapeSetCollisionType(self._cffi_ref, t)),
         doc="""User defined collision type for the shape.
 
         See :py:meth:`Space.add_collision_handler` function for more 
         information on when to use this property.
         """,
     )
-    filter: ShapeFilter = property(
-        lambda self: shape_filter_from_cffi(lib.cpShapeGetFilter(self._shape)),
-        lambda self, f: void(lib.cpShapeSetFilter(self._shape, f)),
+    filter: ShapeFilter
+    filter = property(  # type: ignore
+        lambda self: shape_filter_from_cffi(lib.cpShapeGetFilter(self._cffi_ref)),
+        lambda self, f: void(lib.cpShapeSetFilter(self._cffi_ref, f)),
         doc="Set the collision :py:class:`ShapeFilter` for this shape.",
     )
-    elasticity: float = property(
-        lambda self: lib.cpShapeGetElasticity(self._shape),
-        lambda self, e: void(lib.cpShapeSetElasticity(self._shape, e)),
+    elasticity: float
+    elasticity = property(  # type: ignore
+        lambda self: lib.cpShapeGetElasticity(self._cffi_ref),
+        lambda self, e: void(lib.cpShapeSetElasticity(self._cffi_ref, e)),
         doc="""Elasticity of the shape.
 
         A value of 0.0 gives no bounce, while a value of 1.0 will give a
@@ -140,9 +149,10 @@ class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
         using 1.0 or greater is not recommended.
         """,
     )
-    friction: float = property(
-        lambda self: lib.cpShapeGetFriction(self._shape),
-        lambda self, u: void(lib.cpShapeSetFriction(self._shape, u)),
+    friction: float
+    friction = property(  # type: ignore
+        lambda self: lib.cpShapeGetFriction(self._cffi_ref),
+        lambda self, u: void(lib.cpShapeSetFriction(self._cffi_ref, u)),
         doc="""Friction coefficient.
 
         Pymunk uses the Coulomb friction model, a value of 0.0 is
@@ -175,10 +185,11 @@ class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
         ==============  ======  ========
         """,
     )
-    surface_velocity: Vec2d = property(
-        lambda self: vec2d_from_cffi(lib.cpShapeGetSurfaceVelocity(self._shape)),
+    surface_velocity: Vec2d
+    surface_velocity = property(  # type: ignore
+        lambda self: vec2d_from_cffi(lib.cpShapeGetSurfaceVelocity(self._cffi_ref)),
         lambda self, surface_v: void(
-            lib.cpShapeSetSurfaceVelocity(self._shape, surface_v)
+            lib.cpShapeSetSurfaceVelocity(self._cffi_ref, surface_v)
         ),
         doc="""The surface velocity of the object.
 
@@ -187,24 +198,14 @@ class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
         collision.
         """,
     )
-
-    def _set_body(self, body: Optional["Body"]) -> None:
-        if self._body is not None:
-            inner_shapes(self._body).remove(self)
-
-        lib.cpShapeSetBody(self._shape, cffi_body(body))
-        if body is not None:
-            inner_shapes(body).add(self),
-        self._body = body
-
-    body: Optional["Body"] = property(
+    body: Optional["Body"]
+    body = property(  # type: ignore
         lambda self: self._body,
-        _set_body,
+        lambda self, body: void(self.__set_body(body)),
         doc="""The body this shape is attached to. Can be set to None to
         indicate that this shape doesnt belong to a body.""",
     )
 
-    # noinspection PyProtectedMember
     @property
     def bb(self) -> BB:
         """The bounding box :py:class:`BB` of the shape.
@@ -215,8 +216,8 @@ class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
         queries that aren't attached to bodies, you can also use
         :py:meth:`Shape.update`.
         """
-        _bb = lib.cpShapeGetBB(self._shape)
-        return BB(_bb.l, _bb.b, _bb.r, _bb.t)
+        ptr = lib.cpShapeGetBB(self._cffi_ref)
+        return BB(ptr.l, ptr.b, ptr.r, ptr.t)
 
     @property
     def space(self) -> Optional["Space"]:
@@ -231,22 +232,25 @@ class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
     def __init__(
         self,
         body: Optional["Body"],
-        _shape: ffi.CData,
+        shape: ffi.CData,
         space: Optional["Space"] = None,
+        name: Optional[str] = None,
         **kwargs,
     ) -> None:
+        self._nursery = []
         self._body = body
         if body is not None:
             inner_shapes(body).add(self)
-        self._shape = ffi.gc(_shape, cffi_free_shape)
+            self._nursery.append(body)
+        self._cffi_ref = ffi.gc(shape, cffi_free_shape)
         self._set_id()
-
+        self.name = name
         init_attributes(self, self._init_kwargs, kwargs)
         if space is not None:
             space.add(self)
 
     def _iter_bounding_boxes(self) -> Iterable["BB"]:
-        return self.bb
+        yield self.bb
 
     def __getstate__(self) -> _State:
         """Return the state of this object
@@ -263,6 +267,23 @@ class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
 
         return d
 
+    def __repr__(self, *args):
+        if args:
+            (args,) = args
+        name = ""
+        if self.name is not None:
+            name = f", name={self.name!r}"
+        return f"{type(self).__name__}({args}{name})"
+
+    def __set_body(self, body):
+        if self._body is not None:
+            inner_shapes(self._body).remove(self)
+
+        lib.cpShapeSetBody(self._cffi_ref, cffi_body(body))
+        if body is not None:
+            inner_shapes(body).add(self),
+        self._body = body
+
     def update_transform(self, transform: Transform) -> BB:
         """Update, cache and return the bounding box of a shape with an
         explicit transformation.
@@ -270,64 +291,71 @@ class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
         Useful if you have a shape without a body and want to use it for
         querying.
         """
-        _bb = lib.cpShapeUpdate(self._shape, transform)
-        return BB(_bb.l, _bb.b, _bb.r, _bb.t)
+        ptr = lib.cpShapeUpdate(self._cffi_ref, transform)
+        return BB(ptr.l, ptr.b, ptr.r, ptr.t)
 
     def cache_bb(self) -> BB:
         """Update and returns the bounding box of this shape"""
-        _bb = lib.cpShapeCacheBB(self._shape)
-        return BB(_bb.l, _bb.b, _bb.r, _bb.t)
+        ptr = lib.cpShapeCacheBB(self._cffi_ref)
+        return BB(ptr.l, ptr.b, ptr.r, ptr.t)
 
-    def point_query(self, p: Tuple[float, float]) -> PointQueryInfo:
+    def reindex(self: S) -> S:
+        """Reindex shape in space."""
+
+        space = self.space
+        if space is not None:
+            space.reindex_shape(self)
+        return self
+
+    def point_query(self, point: VecLike) -> Optional[PointQueryInfo]:
         """Check if the given point lies within the shape.
 
         A negative distance means the point is within the shape.
-
-        :return: Tuple of (distance, info)
-        :rtype: (float, :py:class:`PointQueryInfo`)
         """
-        info = ffi.new("cpPointQueryInfo *")
-        _ = lib.cpShapePointQuery(self._shape, p, info)
+        ptr = ffi.new("cpPointQueryInfo *")
+        _ = lib.cpShapePointQuery(self._cffi_ref, point, ptr)
 
-        ud = int(ffi.cast("int", lib.cpShapeGetUserData(info.shape)))
-        assert ud == self._id
-        return PointQueryInfo(
-            self,
-            Vec2d(info.point.x, info.point.y),
-            info.distance,
-            Vec2d(info.gradient.x, info.gradient.y),
-        )
+        ref = int(ffi.cast("int", lib.cpShapeGetUserData(ptr.shape)))
+        if ref == self._id:
+            pos = Vec2d(ptr.point.x, ptr.point.y)
+            grad = Vec2d(ptr.gradient.x, ptr.gradient.y)
+            return PointQueryInfo(self, pos, ptr.distance, grad)
+        return None
 
     def segment_query(
-        self, start: VecLike, end: VecLike, radius: float = 0
-    ) -> SegmentQueryInfo:
+        self, start: VecLike, end: VecLike, radius: float = 0.0
+    ) -> Optional[SegmentQueryInfo]:
         """Check if the line segment from start to end intersects the shape.
 
-        :rtype: :py:class:`SegmentQueryInfo`
-        """
+        Return query info object, if successful."""
+
         info = ffi.new("cpSegmentQueryInfo *")
-        r = lib.cpShapeSegmentQuery(self._shape, start, end, radius, info)
-        if r:
-            ud = int(ffi.cast("int", lib.cpShapeGetUserData(info.shape)))
-            assert ud == self._id
-            return SegmentQueryInfo(
-                self,
-                Vec2d(info.point.x, info.point.y),
-                Vec2d(info.normal.x, info.normal.y),
-                info.alpha,
-            )
-        else:
-            return SegmentQueryInfo(
-                None,
-                Vec2d(info.point.x, info.point.y),
-                Vec2d(info.normal.x, info.normal.y),
-                info.alpha,
-            )
+        success = lib.cpShapeSegmentQuery(self._cffi_ref, start, end, radius, info)
+        if success:
+            ref = int(ffi.cast("int", lib.cpShapeGetUserData(info.shape)))
+            if ref != self._id:
+                raise RuntimeError
+            pos = Vec2d(info.point.x, info.point.y)
+            grad = Vec2d(info.normal.x, info.normal.y)
+            return SegmentQueryInfo(self, pos, grad, info.alpha)
+        return None
 
     def shapes_collide(self, b: "Shape") -> ContactPointSet:
-        """Get contact information about this shape and shape b."""
-        points = lib.cpShapesCollide(self._shape, b._shape)
+        """Get contact information about this shape and shape b.
+
+        It is a NO-OP if body is not in a space."""
+        points = lib.cpShapesCollide(self._cffi_ref, b._cffi_ref)
         return contact_point_set_from_cffi(points)
+
+    def copy(self):
+        return self.prepare()
+
+    def prepare(self, body=None):
+        state = self.__getstate__()
+        state["init"][0] = "body", body
+        new = object.__new__(type(self))
+        new.__setstate__(state)
+        return new
 
 
 class Circle(Shape):
@@ -337,9 +365,10 @@ class Circle(Shape):
     """
 
     _pickle_attrs_init = Shape._pickle_attrs_init + ["radius", "offset"]
-    radius: float = property(
-        lambda self: lib.cpCircleShapeGetRadius(self._shape),
-        lambda self, r: void(lib.cpCircleShapeSetRadius(self._shape, r)),
+    radius: float
+    radius = property(  # type: ignore
+        lambda self: lib.cpCircleShapeGetRadius(self._cffi_ref),
+        lambda self, r: void(lib.cpCircleShapeSetRadius(self._cffi_ref, r)),
         doc="""The Radius of the circle
         
        .. note::
@@ -349,9 +378,10 @@ class Circle(Shape):
             what you are doing!
         """,
     )
-    offset: Vec2d = property(
-        lambda self: vec2d_from_cffi(lib.cpCircleShapeGetOffset(self._shape)),
-        lambda self, o: void(lib.cpCircleShapeSetOffset(self._shape, o)),
+    offset: Vec2d
+    offset = property(  # type: ignore
+        lambda self: vec2d_from_cffi(lib.cpCircleShapeGetOffset(self._cffi_ref)),
+        lambda self, o: void(lib.cpCircleShapeSetOffset(self._cffi_ref, o)),
         doc="""Offset. (body space coordinates)
         
         .. note::
@@ -376,8 +406,11 @@ class Circle(Shape):
         shape is not attached to a body. However, you must attach it to a body
         before adding the shape to a space or used for a space shape query.
         """
-        _shape = lib.cpCircleShapeNew(cffi_body(body), radius, offset)
-        super().__init__(body, _shape, **kwargs)
+        shape = lib.cpCircleShapeNew(cffi_body(body), radius, offset)
+        super().__init__(body, shape, **kwargs)
+
+    def __repr__(self):
+        return super().__repr__(f"{self.radius}, offset={tuple(self.offset)}")
 
     def _iter_bounding_boxes(self) -> Iterable["BB"]:
         yield self.bb
@@ -392,9 +425,10 @@ class Segment(Shape):
     """
 
     _pickle_attrs_init = Shape._pickle_attrs_init + ["a", "b", "radius"]
-    radius: float = property(
-        lambda self: lib.cpSegmentShapeGetRadius(self._shape),
-        lambda self, r: void(lib.cpSegmentShapeSetRadius(self._shape, r)),
+    radius: float
+    radius = property(  # type: ignore
+        lambda self: lib.cpSegmentShapeGetRadius(self._cffi_ref),
+        lambda self, r: void(lib.cpSegmentShapeSetRadius(self._cffi_ref, r)),
         doc="""The radius/thickness of the segment
         
        .. note::
@@ -404,23 +438,27 @@ class Segment(Shape):
             what you are doing!
         """,
     )
-    a: Vec2d = property(
-        lambda self: vec2d_from_cffi(lib.cpSegmentShapeGetA(self._shape)),
-        lambda self, a: void(lib.cpSegmentShapeSetEndpoints(self._shape, a, self.b)),
+    a: Vec2d
+    a = property(  # type: ignore
+        lambda self: vec2d_from_cffi(lib.cpSegmentShapeGetA(self._cffi_ref)),
+        lambda self, a: void(lib.cpSegmentShapeSetEndpoints(self._cffi_ref, a, self.b)),
         doc="The first of the two endpoints for this segment",
     )
-    b: Vec2d = property(
-        lambda self: vec2d_from_cffi(lib.cpSegmentShapeGetB(self._shape)),
-        lambda self, b: void(lib.cpSegmentShapeSetEndpoints(self._shape, self.a, b)),
+    b: Vec2d
+    b = property(  # type: ignore
+        lambda self: vec2d_from_cffi(lib.cpSegmentShapeGetB(self._cffi_ref)),
+        lambda self, b: void(lib.cpSegmentShapeSetEndpoints(self._cffi_ref, self.a, b)),
         doc="The second of the two endpoints for this segment",
     )
-    endpoints: Tuple[Vec2d, Vec2d] = property(
+    endpoints: Tuple[Vec2d, Vec2d]
+    endpoints = property(  # type: ignore
         lambda self: (self.a, self.b),
-        lambda self, pts: void(lib.cpSegmentShapeSetEndpoints(self._shape, *pts)),
+        lambda self, pts: void(lib.cpSegmentShapeSetEndpoints(self._cffi_ref, *pts)),
         doc="A tuple with (a, b) endpoints.",
     )
-    normal: Vec2d = property(
-        lambda self: vec2d_from_cffi(lib.cpSegmentShapeGetNormal(self._shape)),
+    normal: Vec2d
+    normal = property(  # type: ignore
+        lambda self: vec2d_from_cffi(lib.cpSegmentShapeGetNormal(self._cffi_ref)),
         doc="The normal",
     )
 
@@ -443,16 +481,20 @@ class Segment(Shape):
         :param b: The second endpoint of the segment
         :param float radius: The thickness of the segment
         """
-        _shape = lib.cpSegmentShapeNew(cffi_body(body), a, b, radius)
-        super().__init__(body, _shape, **kwargs)
+        shape = lib.cpSegmentShapeNew(cffi_body(body), a, b, radius)
+        super().__init__(body, shape, **kwargs)
 
-    def set_neighbors(self: T, prev: VecLike, next: VecLike) -> T:
+    def __repr__(self):
+        args = f"{tuple(self.a)}, {tuple(self.b)}, radius={self.radius}"
+        return super().__repr__(args)
+
+    def set_neighbors(self: S, prev: VecLike, next: VecLike) -> S:
         """When you have a number of segment shapes that are all joined
         together, things can still collide with the "cracks" between the
         segments. By setting the neighbor segment endpoints you can tell
         Chipmunk to avoid colliding with the inner parts of the crack.
         """
-        lib.cpSegmentShapeSetNeighbors(self._shape, prev, next)
+        lib.cpSegmentShapeSetNeighbors(self._cffi_ref, prev, next)
         return self
 
 
@@ -462,9 +504,10 @@ class Poly(Shape):
     Slowest, but most flexible collision shape.
     """
 
-    radius: float = property(
-        lambda self: lib.cpPolyShapeGetRadius(self._shape),
-        lambda self, r: void(lib.cpPolyShapeSetRadius(self._shape, r)),
+    radius: float
+    radius = property(  # type: ignore
+        lambda self: lib.cpPolyShapeGetRadius(self._cffi_ref),
+        lambda self, r: void(lib.cpPolyShapeSetRadius(self._cffi_ref, r)),
         doc="""The radius/thickness of polygon lines
         
        .. note::
@@ -620,10 +663,15 @@ class Poly(Shape):
         if transform is None:
             transform = Transform.identity()
 
-        _shape = lib.cpPolyShapeNew(
+        shape = lib.cpPolyShapeNew(
             cffi_body(body), len(vertices), vertices, transform, radius
         )
-        super().__init__(body, _shape, **kwargs)
+        super().__init__(body, shape, **kwargs)
+
+    def __repr__(self):
+        vertices = [tuple(v) for v in self.get_vertices()]
+        args = f"{vertices}, radius={self.radius}"
+        return super().__repr__(args)
 
     def __getstate__(self) -> _State:
         """Return the state of this object
@@ -638,26 +686,28 @@ class Poly(Shape):
         d["init"].append(("radius", self.radius))
         return d
 
-    def get_vertices(self, *, world: bool = False) -> List[VecLike]:
+    def get_vertices(self, *, world: bool = False) -> List[Vec2d]:
         """Return list of vertices in local coordinates.
 
         Set ``world=True`` if you need the list of vertices in world coordinates.
         """
-        n = lib.cpPolyShapeGetCount(self._shape)
-        vs = [vec2d_from_cffi(lib.cpPolyShapeGetVert(self._shape, i)) for i in range(n)]
-        if world:
+        n = lib.cpPolyShapeGetCount(self._cffi_ref)
+        vs = [
+            vec2d_from_cffi(lib.cpPolyShapeGetVert(self._cffi_ref, i)) for i in range(n)
+        ]
+        if world and self.body is not None:
             pos = self.body.position
             rot = Mat22.rotation(self.body.angle)
             return [rot.transform_vector(v) + pos for v in vs]
         return vs
 
     def set_vertices(
-        self: T,
+        self: S,
         vertices: Sequence[VecLike],
         transform: Optional[Transform] = None,
         *,
         world: bool = False,
-    ) -> T:
+    ) -> S:
         """Set the vertices of the poly.
 
         .. note::
@@ -666,14 +716,14 @@ class Poly(Shape):
             not result in realistic physical behavior. Only use if you know
             what you are doing!
         """
-        if world:
+        if world and self.body is not None:
             pos = self.body.position
             rot = Mat22.rotation(-self.body.angle)
             vertices = [rot.transform_vector(v) - pos for v in vertices]
         if transform is None:
-            lib.cpPolyShapeSetVertsRaw(self._shape, len(vertices), vertices)
-            return
-        lib.cpPolyShapeSetVerts(self._shape, len(vertices), vertices, transform)
+            lib.cpPolyShapeSetVertsRaw(self._cffi_ref, len(vertices), vertices)
+            return self
+        lib.cpPolyShapeSetVerts(self._cffi_ref, len(vertices), vertices, transform)
         return self
 
 

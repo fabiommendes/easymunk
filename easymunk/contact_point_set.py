@@ -40,10 +40,12 @@ def contact_point_set_from_cffi(cp_point_set) -> ContactPointSet:
     points = []
     for i in range(cp_point_set.count):
         ps = cp_point_set.points[i]
-        points.append(ContactPoint(
-            Vec2d(ps.pointA.x, ps.pointA.y),
-            Vec2d(ps.pointB.x, ps.pointB.y),
-            ps.distance,
-        ))
+        points.append(
+            ContactPoint(
+                Vec2d(ps.pointA.x, ps.pointA.y),
+                Vec2d(ps.pointB.x, ps.pointB.y),
+                ps.distance,
+            )
+        )
 
     return ContactPointSet(normal, points)

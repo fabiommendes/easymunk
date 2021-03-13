@@ -56,7 +56,7 @@ def parse_example(basepath, filename, img_folder, img_folder_os, source_url):
         content = f.read().strip()
     n = ast.parse(content)
     docstring = ast.get_docstring(n)
-    if docstring == None:
+    if docstring is None:
         return []
 
     s = []
@@ -79,7 +79,7 @@ def parse_example(basepath, filename, img_folder, img_folder_os, source_url):
     # Screenshot
     img_name, _ = os.path.splitext(filename)
     img_name += ".png"
-    if img_folder != None:
+    if img_folder is not None:
         # print os.path.abspath(img_folder)
         # print os.path.abspath(img_folder_os)
         img_path = os.path.join(img_folder, img_name)
@@ -103,7 +103,7 @@ def parse_folder_example(basepath, foldername, img_folder, img_folder_os, source
         content = f.read().strip()
     n = ast.parse(content)
     docstring = ast.get_docstring(n)
-    if docstring == None:
+    if docstring is None:
         return []
 
     s = []
@@ -126,7 +126,7 @@ def parse_folder_example(basepath, foldername, img_folder, img_folder_os, source
     # Screenshot
     img_name, _ = os.path.splitext(foldername)
     img_name += ".png"
-    if img_folder != None:
+    if img_folder is not None:
         # print os.path.abspath(img_folder)
         # print os.path.abspath(img_folder_os)
         img_path = os.path.join(img_folder, img_name)

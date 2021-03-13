@@ -18,4 +18,5 @@ easymunk/*.pyd
 *.whl
 .eggs/.idea
 .idea/
+.mypy_cache/
 .coverage

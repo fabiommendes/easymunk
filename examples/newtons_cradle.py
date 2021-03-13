@@ -177,7 +177,7 @@ def main():
                 hit = space.point_query_nearest(p, 0, pm.ShapeFilter())
                 if hit != None:
                     shape = hit.shape
-                    rest_length = mouse_body.position.get_distance(shape.body.position)
+                    rest_length = mouse_body.position.distance(shape.body.position)
                     ds = pm.DampedSpring(
                         mouse_body, shape.body, (0, 0), (0, 0), rest_length, 1000, 10
                     )

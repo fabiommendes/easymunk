@@ -121,7 +121,7 @@ while running:
     # Remove any balls outside
     to_remove = []
     for ball in balls:
-        if ball.body.position.get_distance((300, 300)) > 1000:
+        if ball.body.position.distance((300, 300)) > 1000:
             to_remove.append(ball)
 
     for ball in to_remove:

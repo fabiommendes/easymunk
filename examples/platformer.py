@@ -265,7 +265,7 @@ def main():
         # Move the moving platform
         destination = platform_path[platform_path_index]
         current = Vec2d(*platform_body.position)
-        distance = current.get_distance(destination)
+        distance = current.distance(destination)
         if distance < PLATFORM_SPEED:
             platform_path_index += 1
             platform_path_index = platform_path_index % len(platform_path)

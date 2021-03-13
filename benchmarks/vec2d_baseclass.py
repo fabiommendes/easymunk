@@ -9,7 +9,7 @@ from typing import NamedTuple
 
 import easymunk
 
-print("pymunk.version", easymunk.version)
+print("easymunk.version", easymunk.version)
 
 s = None
 g = None
@@ -38,7 +38,7 @@ class Vec2dObject:
 
     @staticmethod
     def _fromcffi(p) -> "Vec2dObject":
-        """Used as a speedy way to create Vec2ds internally in pymunk."""
+        """Used as a speedy way to create Vec2ds internally in easymunk."""
         v = Vec2dObject.__new__(Vec2dObject)
         v.x = p.x
         v.y = p.y
@@ -98,12 +98,12 @@ class Vec2dNamedTuple(NamedTuple):
 
     @staticmethod
     def _fromcffi(p) -> "Vec2dNamedTuple":
-        """Used as a speedy way to create Vec2ds internally in pymunk."""
+        """Used as a speedy way to create Vec2ds internally in easymunk."""
         return Vec2dNamedTuple.__new__(Vec2dNamedTuple, p.x, p.y)
 
     @staticmethod
     def _fromcffi2(p) -> "Vec2dNamedTuple":
-        """Used as a speedy way to create Vec2ds internally in pymunk."""
+        """Used as a speedy way to create Vec2ds internally in easymunk."""
         return Vec2dNamedTuple(p.x, p.y)
 
 

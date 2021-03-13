@@ -3,7 +3,7 @@ from timeit import repeat
 
 import easymunk
 
-print("pymunk.version", easymunk.version)
+print("easymunk.version", easymunk.version)
 
 s = None
 

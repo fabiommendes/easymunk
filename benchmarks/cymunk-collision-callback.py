@@ -2,11 +2,11 @@ import timeit
 
 s = """
 import cymunk as pymunk
-#print("pymunk.version", pymunk.version)
-s = pymunk.Space()
-s.add(pymunk.Circle(s.static_body, 5))
-b = pymunk.Body(1,10)
-c = pymunk.Circle(b, 5)
+#print("easymunk.version", easymunk.version)
+s = easymunk.Space()
+s.add(easymunk.Circle(s.static_body, 5))
+b = easymunk.Body(1,10)
+c = easymunk.Circle(b, 5)
 s.add(b, c)
 def f(arb):
     return False

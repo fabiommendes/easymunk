@@ -29,7 +29,7 @@ class PhysicsDemo:
         self.clock = pygame.time.Clock()
 
         # Init pymunk and create space
-        self.space = pm.Space(gravity = (0.0, -900.0))
+        self.space = pm.Space(gravity=(0.0, -900.0))
 
         # Walls
         self.walls = []
@@ -224,15 +224,15 @@ class PhysicsDemo:
                     self.space.remove(self.shape_to_remove.body, self.shape_to_remove)
 
             elif event.type == pygame.KEYUP and event.key in (
-                    pygame.K_RCTRL,
-                    pygame.K_LCTRL,
+                pygame.K_RCTRL,
+                pygame.K_LCTRL,
             ):
                 # Create Wall
                 self.create_wall_segments(self.wall_points)
                 self.wall_points = []
             elif event.type == pygame.KEYUP and event.key in (
-                    pygame.K_RSHIFT,
-                    pygame.K_LSHIFT,
+                pygame.K_RSHIFT,
+                pygame.K_LSHIFT,
             ):
                 # Create Polygon
 
@@ -304,10 +304,10 @@ class PhysicsDemo:
         xs = []
         for ball in self.balls:
             if (
-                    ball.body.position.x < -1000
-                    or ball.body.position.x > 1000
-                    or ball.body.position.y < -1000
-                    or ball.body.position.y > 1000
+                ball.body.position.x < -1000
+                or ball.body.position.x > 1000
+                or ball.body.position.y < -1000
+                or ball.body.position.y > 1000
             ):
                 xs.append(ball)
         for ball in xs:
@@ -318,10 +318,10 @@ class PhysicsDemo:
         xs = []
         for poly in self.polys:
             if (
-                    poly.body.position.x < -1000
-                    or poly.body.position.x > 1000
-                    or poly.body.position.y < -1000
-                    or poly.body.position.y > 1000
+                poly.body.position.x < -1000
+                or poly.body.position.x > 1000
+                or poly.body.position.y < -1000
+                or poly.body.position.y > 1000
             ):
                 xs.append(poly)
 

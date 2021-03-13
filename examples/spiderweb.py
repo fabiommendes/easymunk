@@ -57,7 +57,7 @@ for x in range(0, 101):
 
 
 def add_joint(a, b):
-    rl = a.position.get_distance(b.position) * 0.9
+    rl = a.position.distance(b.position) * 0.9
     stiffness = 5000.0
     damping = 100
     j = easymunk.DampedSpring(a, b, (0, 0), (0, 0), rl, stiffness, damping)
@@ -116,7 +116,7 @@ def on_mouse_press(x, y, button, modifiers):
     if hit != None:
         global selected
         body = hit.shape.body
-        rest_length = mouse_body.position.get_distance(body.position)
+        rest_length = mouse_body.position.distance(body.position)
         stiffness = 1000
         damping = 10
         selected = easymunk.DampedSpring(

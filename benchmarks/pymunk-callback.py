@@ -2,9 +2,9 @@ import timeit
 
 s = """
 import pymunk
-print("pymunk.version", pymunk.version)
-s = pymunk.Space()
-b = pymunk.Body(1,10)
+print("easymunk.version", easymunk.version)
+s = easymunk.Space()
+b = easymunk.Body(1,10)
 def f(b,dt):
     b.position += (1,0)
 b.position_func = f 

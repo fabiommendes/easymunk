@@ -1,11 +1,11 @@
-:mod:`pymunk.pygame_util` Module
+:mod:`easymunk.pygame_util` Module
 --------------------------------
 
 .. container:: custom-index
     
     .. raw:: html
     
-        <script type="text/javascript" src='_static/pymunk.js'></script>
+        <script type="text/javascript" src='_static/easymunk.js'></script>
     
-.. automodule:: pymunk.pygame_util
+.. automodule:: easymunk.pygame_util
     :special-members: __init__

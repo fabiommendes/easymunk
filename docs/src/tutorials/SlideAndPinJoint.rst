@@ -3,7 +3,7 @@ Slide and Pin Joint Demo Step by Step
 *************************************
 
 This is a step by step tutorial explaining the demo slide_and_pinjoint.py 
-included in pymunk. You will find a screenshot of it in the list of 
+included in easymunk. You will find a screenshot of it in the list of
 :ref:`examples <examples>`.
 It is probably a good idea to have the file near by if I 
 miss something in the tutorial or something is unclear.
@@ -17,24 +17,24 @@ For this tutorial you will need:
 
 * Python (of course)
 * Pygame (found at www.pygame.org)
-* Pymunk 
+* Easymunk
 
 Pygame is required for this tutorial and some of the included demos, but it 
-is not required to run just pymunk. Pymunk should work just fine with other 
+is not required to run just easymunk. Easymunk should work just fine with other
 similar libraries as well, for example you could easily translate this 
 tutorial to use Pyglet instead.
 
-Pymunk is built on top of the 2d physics library Chipmunk. Chipmunk itself 
-is written in C meaning Pymunk need to call into the c code. The Cffi 
+Easymunk is built on top of the 2d physics library Chipmunk. Chipmunk itself
+is written in C meaning Easymunk need to call into the c code. The Cffi
 library helps with this, however if you are on a platform that I haven't been 
 able to compile it on you might have to do it yourself. The good news is that 
-it is very easy to do, in fact if you got Pymunk by Pip install its arelady 
+it is very easy to do, in fact if you got Easymunk by Pip install its arelady
 done!
 
-When you have pymunk installed, try to import it from the python prompt to 
+When you have easymunk installed, try to import it from the python prompt to
 make sure it works and can be imported::
 
-    >>> import pymunk
+    >>> import easymunk
 
 More information on installation can be found here: 
 :ref:`Installation <installation>`
@@ -47,7 +47,7 @@ An empty simulation
 =======================
 
 Ok, lets start.
-Chipmunk (and therefore Pymunk) has a couple of central concepts, which is 
+Chipmunk (and therefore Easymunk) has a couple of central concepts, which is
 explained pretty good in this citation from the Chipmunk docs:
 
 Rigid bodies
@@ -70,16 +70,16 @@ Spaces
 
 The documentation for Chipmunk can be found here: 
 http://chipmunk-physics.net/release/ChipmunkLatest-Docs/ 
-It is for the c-library but is a good complement to the Pymunk documentation 
-as the concepts are the same, just that Pymunk is more pythonic to use.
+It is for the c-library but is a good complement to the Easymunk documentation
+as the concepts are the same, just that Easymunk is more pythonic to use.
 
-The API documentation for Pymunk can be found here: :doc:`../pymunk`.
+The API documentation for Easymunk can be found here: :doc:`../easymunk`.
 
 Anyway, we are now ready to write some code::
 
     import sys
     import pygame
-    import pymunk #1
+    import easymunk #1
 
     def main():
         pygame.init()
@@ -87,7 +87,7 @@ Anyway, we are now ready to write some code::
         pygame.display.set_caption("Joints. Just wait and the L will tip over")
         clock = pygame.time.Clock()
         
-        space = pymunk.Space() #2
+        space = easymunk.Space() #2
         space.gravity = (0.0, 900.0)
         
         while True:
@@ -110,7 +110,7 @@ Anyway, we are now ready to write some code::
 The code will display a blank window, and will run a physics simulation of an 
 empty space.
 
-1. We need to import pymunk in order to use it...
+1. We need to import easymunk in order to use it...
 
 2. We then create a space and set its gravity to something good. Remember 
    that what is important is what looks good on screen, not what the real 
@@ -137,10 +137,10 @@ follow. First, a function to add a ball to a space::
     def add_ball(space):
         mass = 3
         radius = 25
-        body = pymunk.Body()  # 1
+        body = easymunk.Body()  # 1
         x = random.randint(120, 300)
         body.position = x, 50  # 2
-        shape = pymunk.Circle(body, radius)  # 3
+        shape = easymunk.Circle(body, radius)  # 3
         shape.mass = mass  # 4
         shape.friction = 1
         space.add(body, shape)  # 5
@@ -156,7 +156,7 @@ follow. First, a function to add a ball to a space::
    collision shape(s).  
 
 4. All bodies must have their moment of inertia set. In most cases its 
-   easiest to let Pymunk handle calculation from shapes. So we set the mass of 
+   easiest to let Easymunk handle calculation from shapes. So we set the mass of
    each shape, and then when added to space the body will automatically get a 
    proper mass and moment set. Another option is to set the density of each 
    shape, or its also possible to set the values directly on the body (or 
@@ -170,7 +170,7 @@ follow. First, a function to add a ball to a space::
 
 Now that we can create balls we want to display them. Either we can use the 
 built in pymunk_util package do draw the whole space directly, or we can do it 
-manually. The debug drawing functions included with Pymunk are good for putting
+manually. The debug drawing functions included with Easymunk are good for putting
 something together easy and quickly, while for example a polished game most 
 probably will want to make its own drawing code.
 
@@ -187,20 +187,20 @@ called balls)::
         draw_ball(screen, ball)
 
 However, as we use pygame in this example we can instead use the debug_draw
-method already included in Pymunk to simplify a bit. It first needs to be 
+method already included in Easymunk to simplify a bit. It first needs to be
 imported, and next we have to create a DrawOptions object with the options 
 (what surface to draw on in the case of Pygame)::
 
-    import pymunk.pygame_util
+    import easymunk.pygame_util
     ...
-    draw_options = pymunk.pygame_util.DrawOptions(screen)
+    draw_options = easymunk.pygame_util.DrawOptions(screen)
 
 And after that when we want to draw all our shapes we would just do it in this 
 way::
 
     space.debug_draw(draw_options)    
 
-Most of the examples included with Pymunk uses this way of drawing. 
+Most of the examples included with Easymunk uses this way of drawing.
 
 With the add_ball function and the debug_draw call and a little code to spawn 
 balls you should see a couple of balls falling. Yay!
@@ -210,8 +210,8 @@ balls you should see a couple of balls falling. Yay!
     import sys, random
     random.seed(1) # make the simulation the same each time, easier to debug
     import pygame
-    import pymunk
-    import pymunk.pygame_util
+    import easymunk
+    import easymunk.pygame_util
 
     #def add_ball(space):
 
@@ -221,11 +221,11 @@ balls you should see a couple of balls falling. Yay!
         pygame.display.set_caption("Joints. Just wait and the L will tip over")
         clock = pygame.time.Clock()
         
-        space = pymunk.Space()
+        space = easymunk.Space()
         space.gravity = (0.0, 900.0)
         
         balls = []
-        draw_options = pymunk.pygame_util.DrawOptions(screen)
+        draw_options = easymunk.pygame_util.DrawOptions(screen)
 
         
         ticks_to_next_ball = 10
@@ -262,10 +262,10 @@ So lets add something the balls can land on, two static lines forming an L. As
 with the balls we start with a function to add an L to the space::
 
     def add_static_L(space):
-        body = pymunk.Body(body_type = pymunk.Body.STATIC) # 1
+        body = easymunk.Body(body_type = easymunk.Body.STATIC) # 1
         body.position = (300, 300)    
-        l1 = pymunk.Segment(body, (-150, 0), (255, 0), 5) # 2
-        l2 = pymunk.Segment(body, (-150, 0), (-150, -50), 5)
+        l1 = easymunk.Segment(body, (-150, 0), (255, 0), 5) # 2
+        l2 = easymunk.Segment(body, (-150, 0), (-150, -50), 5)
         l1.friction = 1 # 3
         l2.friction = 1        
         
@@ -299,14 +299,14 @@ just to show what it could look like::
    the lines are static, and not rotated so we don't really have to do this 
    extra calculation, but we will soon make them move and rotate.
 
-2. This is a little function to convert coordinates from pymunk to pygame 
+2. This is a little function to convert coordinates from easymunk to pygame
    world. Now that we have it we can use it in the draw_ball() function as 
    well. 
 
 ::
 
     def to_pygame(p):
-        """Small helper to convert pymunk vec2d to pygame integers"""
+        """Small helper to convert easymunk vec2d to pygame integers"""
         return round(p.x), round(p.y)
 
 
@@ -318,8 +318,8 @@ an inverted L shape in the middle will balls spawning and hitting the shape.
     import sys, random
     random.seed(1) # make the simulation the same each time, easier to debug
     import pygame
-    import pymunk
-    import pymunk.pymunk_util
+    import easymunk
+    import easymunk.pymunk_util
 
     #def to_pygame(p):
     #def add_ball(space):
@@ -331,12 +331,12 @@ an inverted L shape in the middle will balls spawning and hitting the shape.
         pygame.display.set_caption("Joints. Just wait and the L will tip over")
         clock = pygame.time.Clock()
         
-        space = pymunk.Space()
+        space = easymunk.Space()
         space.gravity = (0.0, 900.0)
         
         lines = add_static_L(space)
         balls = []
-        draw_options = pymunk.pygame_util.DrawOptions(screen)
+        draw_options = easymunk.pygame_util.DrawOptions(screen)
         
         ticks_to_next_ball = 10
         while True:
@@ -374,18 +374,18 @@ we constrain it. As our static L shape won't be static anymore we also rename
 the function to add_L(). ::
 
     def add_L(space):
-        rotation_center_body = pymunk.Body(body_type=pymunk.Body.STATIC)  # 1
+        rotation_center_body = easymunk.Body(body_type=easymunk.Body.STATIC)  # 1
         rotation_center_body.position = (300, 300)
 
-        body = pymunk.Body()
+        body = easymunk.Body()
         body.position = (300, 300)
-        l1 = pymunk.Segment(body, (-150, 0), (255.0, 0.0), 5.0)
-        l2 = pymunk.Segment(body, (-150.0, 0), (-150.0, -50.0), 5.0)
+        l1 = easymunk.Segment(body, (-150, 0), (255.0, 0.0), 5.0)
+        l2 = easymunk.Segment(body, (-150.0, 0), (-150.0, -50.0), 5.0)
         l1.friction = 1
         l2.friction = 1
         l1.mass = 8  # 2
         l2.mass = 1
-        rotation_center_joint = pymunk.PinJoint(
+        rotation_center_joint = easymunk.PinJoint(
             body, rotation_center_body, (0, 0), (0, 0)
         )  # 3
 
@@ -399,7 +399,7 @@ the function to add_L(). ::
 2. The L shape will now be moving in the world, and therefor it can no longer 
    be a static body. Here we see the benefit of setting the mass on the 
    shapes instead of the body, no need to figure out how big the moment 
-   should be, and Pymunk will automatically calculate the center of gravity. 
+   should be, and Easymunk will automatically calculate the center of gravity.
 
 3. A pin joint allow two objects to pivot about a single point. In our case one 
    of the objects will be stuck to the world.
@@ -413,7 +413,7 @@ rotating L shape to create a more interesting simulation. In order to do this
 we modify the add_L() function::
 
     def add_L(space):
-        rotation_center_body = pymunk.Body(body_type = pymunk.Body.STATIC)
+        rotation_center_body = easymunk.Body(body_type = pymunk.Body.STATIC)
         rotation_center_body.position = (300,300)
         
         rotation_limit_body = pymunk.Body(body_type = pymunk.Body.STATIC) # 1

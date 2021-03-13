@@ -1,11 +1,11 @@
-:mod:`pymunk.matplotlib_util` Module
+:mod:`easymunk.matplotlib_util` Module
 ------------------------------------
 
 .. container:: custom-index
     
     .. raw:: html
     
-        <script type="text/javascript" src='_static/pymunk.js'></script>
+        <script type="text/javascript" src='_static/easymunk.js'></script>
     
-.. automodule:: pymunk.matplotlib_util
+.. automodule:: easymunk.matplotlib_util
     :special-members: __init__

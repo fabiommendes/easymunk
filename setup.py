@@ -21,10 +21,10 @@ setup(
     url="http://fabiommendes.github.io/easymunk/",
     author="Fábio Mendes",
     author_email="fabiomacedomendes@gmail.com",
-    version="1.0.0",  # remember to change me for new versions!
+    version="1.0.0",
     description="Easymunk is a easy-to-use pythonic 2d physics library",
     long_description=long_description,
-    packages=["easymunk", "easymunk.tests"],
+    packages=["easymunk", "easymunk.hypothesis"],
     include_package_data=True,
     license="MIT License",
     classifiers=classifiers,
@@ -34,7 +34,7 @@ setup(
             "source_dir": ("setup.py", "docs/src"),
         }
     },
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     # Require >1.14.0 since that (and older) has problem with returning structs
     # from functions.
     setup_requires=["cffi > 1.14.0"],
@@ -43,5 +43,5 @@ setup(
     extras_require={
         "dev": ["pyglet", "pygame", "sphinx", "aafigure", "wheel", "matplotlib"]
     },
-    test_suite="easymunk.tests",
+    test_suite="tests",
 )

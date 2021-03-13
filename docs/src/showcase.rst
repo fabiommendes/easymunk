@@ -2,8 +2,8 @@
 Showcase 
 ********
 
-This page shows some uses of Pymunk. If you also have done something using 
-Pymunk please let me know and I can add it here!
+This page shows some uses of Easymunk. If you also have done something using
+Easymunk please let me know and I can add it here!
 
 Games
 =====
@@ -80,7 +80,7 @@ Non-Games
 
         :subscript:`made by PySimpleGUI/Mike. Retrieved 2020-10-13`
 
-        Demo of using PySimpleGUI together with Pymunk to create bouncing
+        Demo of using PySimpleGUI together with Easymunk to create bouncing
         balls directly on the desktop, thanks to a transparent container 
         window.
 
@@ -107,7 +107,7 @@ Non-Games
 
         :subscript:`made by Cheesy AI. Retrieved 2019-11-17`
 
-        Recently I learned Pymunk 2d physics library.
+        Recently I learned Easymunk 2d physics library.
         It is very cool so with that I made 2d Humanoid for my AI.
         Today I'm going to teach AI to move forward with NEAT.
         NEAT is a genetic algorithm for the generation of evolving artificial 
@@ -121,7 +121,7 @@ Non-Games
         :subscript:`made by Nav. Retrieved 2019-05-05`
 
         Among the simplest AI algorithms: Differential Evolution. Brought to 
-        life with Pymunk and Pygame. Each car has an objective of reaching the 
+        life with Easymunk and Pygame. Each car has an objective of reaching the
         end of the track, but has only 15 seconds to do so. They explore the 
         multidimensional search space of vehicle speed, chassis width, chassis 
         height and wheel radius, to find a variety of configurations among 
@@ -147,8 +147,8 @@ Non-Games
         :subscript:`made by Paul. Retrieved 2018-03-05`
 
         Arcade is an easy-to-learn Python library for creating 2D video games. 
-        It is not directly tied to Pymunk, but includes a number of examples 
-        and helper classes to use Pymunk physics from a Arcade application.
+        It is not directly tied to Easymunk, but includes a number of examples
+        and helper classes to use Easymunk physics from a Arcade application.
         
     * - .. image:: _static/billiARds.png
       - `billiARds  A Game of Augmented Reality Pool 
@@ -158,7 +158,7 @@ Non-Games
 
         Alex built billiARds for his 15-112 (Fundamentals of Programming and 
         Computer Science) term project at Carnegie Mellon University.
-        Made in Python3 using OpenCV, Pygame, and Pymunk. Users can simply use 
+        Made in Python3 using OpenCV, Pygame, and Easymunk. Users can simply use
         a pool cue stick and run the program on any ordinary surface.
 
     * - .. image:: _static/pyphysicssandbox.png

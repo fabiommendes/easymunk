@@ -9,7 +9,7 @@ in your game, demo or other application! It is built on top of the very
 capable 2d physics library `Chipmunk <http://chipmunk-physics.net>`_.
 
 
-Easymunk is a fork of the excellent Pymunk project, but it allows itself to deviate
+Easymunk is a fork of the excellent Easymunk project, but it allows itself to deviate
 more from the original C-library. The goal is to explore a more Pythonic interface
 and tends to be easier to use.
 

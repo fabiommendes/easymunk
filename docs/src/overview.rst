@@ -5,9 +5,9 @@ Overview
 Basics
 ======
 
-There are 4 basic classes you will use in Pymunk.
+There are 4 basic classes you will use in Easymunk.
 
-**Rigid Bodies** (:py:class:`pymunk.Body`)
+**Rigid Bodies** (:py:class:`easymunk.Body`)
     A rigid body holds the physical properties of an object. (mass, position, 
     rotation, velocity, etc.) It does not have a shape by itself. If you've 
     done physics with particles before, rigid bodies differ mostly in that they 
@@ -15,23 +15,23 @@ There are 4 basic classes you will use in Pymunk.
     to sprites in a game. You should structure your game so that you use the 
     position and rotation of the rigid body for drawing your sprite.
 
-**Collision Shapes** (:py:class:`pymunk.Circle`, :py:class:`pymunk.Segment` and :py:class:`pymunk.Poly`)
+**Collision Shapes** (:py:class:`easymunk.Circle`, :py:class:`easymunk.Segment` and :py:class:`easymunk.Poly`)
     By attaching shapes to bodies, you can define the a body's shape. You can 
     attach many shapes to a single body to define a complex shape, or none if 
     it doesn't require a shape.
 
-**Constraints/Joints** (:py:class:`pymunk.constraint.PinJoint`, :py:class:`pymunk.constraint.SimpleMotor` and many others)
+**Constraints/Joints** (:py:class:`easymunk.constraint.PinJoint`, :py:class:`easymunk.constraint.SimpleMotor` and many others)
     You can attach constraints between two bodies to constrain their behavior, 
     for example to keep a fixed distance between two bodies.
 
-**Spaces** (:py:class:`pymunk.Space`)
-    Spaces are the basic simulation unit in Pymunk. You add bodies, shapes 
+**Spaces** (:py:class:`easymunk.Space`)
+    Spaces are the basic simulation unit in Easymunk. You add bodies, shapes
     and constraints to a space, and then update the space as a whole. They 
     control how all the rigid bodies, shapes, and constraints interact together.
 
 The actual simulation is done by the Space. After adding the objects that 
 should be simulated to the Space time is moved forward in small steps with the
-:py:meth:`pymunk.Space.step` function. 
+:py:meth:`easymunk.Space.step` function.
 
 
 Model your physics objects
@@ -64,7 +64,7 @@ what is drawn.
   looks.
 
 You can see an example of this in the :ref:`using_sprites.py` example included 
-in Pymunk. There the physics shape is a triangle, but what is drawn is 3 boxes 
+in Easymunk. There the physics shape is a triangle, but what is drawn is 3 boxes
 in a pyramid with a snake on top. Another example is in the 
 :ref:`platformer.py` example, where the player is drawn as a girl in red and 
 gray. However the physics shape is just a couple of circle shapes on top of 
@@ -74,8 +74,8 @@ each other.
 Mass, weight and units
 ----------------------
 
-Sometimes users of Pymunk can be confused as to what unit everything is 
-defined in. For example, is the mass of a Body in grams or kilograms? Pymunk 
+Sometimes users of Easymunk can be confused as to what unit everything is
+defined in. For example, is the mass of a Body in grams or kilograms? Easymunk
 is unit-less and does not care which unit you use. If you pass in seconds to 
 a function expecting time, then your time unit is seconds. If you pass in 
 pixels to functions that expect a distance, then your unit of distance is pixels. 
@@ -103,14 +103,14 @@ Sometimes it make sense to start out with realistic units, to give you a feel
 for how big mass should be in comparison to gravity for example. 
 
 There are exceptions to this of course, when you actually want realism over the 
-looks. In the end it is up to you as a user of Pymunk to decide. 
+looks. In the end it is up to you as a user of Easymunk to decide.
 
 
 Game loop / moving time forward
 ===============================
 
 The most important part in your game loop is to keep the dt argument to the 
-:py:meth:`pymunk.Space.step` function constant. A constant time step makes the 
+:py:meth:`easymunk.Space.step` function constant. A constant time step makes the
 simulation much more stable and reliable.
 
 There are several ways to do this, some more complicated than others. Which one 
@@ -152,7 +152,7 @@ idea to do more than one of these.
 
     def limit_velocity(body, gravity, damping, dt):
         max_velocity = 1000
-        pymunk.Body.update_velocity(body, gravity, damping, dt)
+        easymunk.Body.update_velocity(body, gravity, damping, dt)
         l = body.velocity.length
         if l > max_velocity:
             scale = max_velocity / l
@@ -166,7 +166,7 @@ idea to do more than one of these.
 
     def limit_velocity(body, gravity, damping, dt):
         max_velocity = 1000
-        pymunk.Body.update_velocity(body, gravity, damping, dt)
+        easymunk.Body.update_velocity(body, gravity, damping, dt)
         if body.velocity.length > max_velocity:
             body.velocity = body.velocity * 0.99
 
@@ -211,7 +211,7 @@ There a a number of things to try if this happens:
   objects.
 
 (Most of these suggestions are the same for most physics engines, not just 
-Pymunk.)
+Easymunk.)
 
 
 Performance
@@ -233,27 +233,27 @@ the result after each step and manipulating the objects manually can have a
 significant overhead and performance cost.
 
 
-Copy and Load/Save Pymunk objects
+Copy and Load/Save Easymunk objects
 =================================
 
-Most Pymunk objects can be copied and/or saved with pickle from the standard 
+Most Easymunk objects can be copied and/or saved with pickle from the standard
 library. Since the implementation is generic it will also work to use other 
 serializer libraries such as `jsonpickle <https://jsonpickle.github.io/>`_ (in 
 contrast to pickle the jsonpickle serializes to/from json) as long as they make 
 use of the pickle infrastructure.
 
 See the :ref:`copy_and_pickle.py` example for an example on how to save, load 
-and copy Pymunk objects.
+and copy Easymunk objects.
 
-Note that the version of Pymunk used must be the same for the code saving as 
+Note that the version of Easymunk used must be the same for the code saving as
 the verison used when loading the saved object.
 
 
 Additional info
 ===============
 
-As a complement to the Pymunk docs it can be good to read the `Chipmunk docs 
+As a complement to the Easymunk docs it can be good to read the `Chipmunk docs
 <http://chipmunk-physics.net/release/ChipmunkLatest-Docs/>`_. Its made for 
-Chipmunk, but Pymunk is build on top of Chipmunk and share most of the concepts,
-with the main difference being that Pymunk is used from Python while Chipmunk is 
+Chipmunk, but Easymunk is build on top of Chipmunk and share most of the concepts,
+with the main difference being that Easymunk is used from Python while Chipmunk is
 a C-library.

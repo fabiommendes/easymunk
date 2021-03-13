@@ -2,25 +2,25 @@ Benchmarks
 ==========
 .. _benchmark:
 
-To get a grip of the actual performance of Pymunk this page contains a number
+To get a grip of the actual performance of Easymunk this page contains a number
 of benchmarks.  
 
 The full code of all benchmarks are available under the `benchmarks
-<https://github.com/viblo/pymunk/blob/master/benchmarks>`_ folder.
+<https://github.com/viblo/easymunk/blob/master/benchmarks>`_ folder.
 
-Note that the the benchmarks are not yet updated for Pymunk 6.0, but tests 
+Note that the the benchmarks are not yet updated for Easymunk 6.0, but tests
 look promising.
 
 Micro benchmarks
 ----------------
 
-In order to measure the overhead created by Pymunk in the most common cases I 
+In order to measure the overhead created by Easymunk in the most common cases I
 have created two micro benchmarks. They should show the speed of the actual 
-wrapping code, which can tell how big overhead Pymunk creates, and how big 
+wrapping code, which can tell how big overhead Easymunk creates, and how big
 difference different wrapping methods does.
 
-The most common thing a typical program using Pymunk does is to read out the 
-position and angle from a Pymunk object. Usually this is done each frame for 
+The most common thing a typical program using Easymunk does is to read out the
+position and angle from a Easymunk object. Usually this is done each frame for
 every object in the simulation, so this is a important factor in how fast 
 something will be.
 
@@ -87,7 +87,7 @@ CPython, but positive impact on Pypy, and Pymunk 5 together with Pypy is with a
 big margin the fastest option. 
 
 The speed increase between 5.0 and 5.1 happened because the Vec2d class and how
-its handled internally in Pymunk was changed to improve performance.
+its handled internally in Easymunk was changed to improve performance.
 
 
 Compared to Other Physics Libraries
@@ -102,7 +102,7 @@ around Chipmunk the overall speed will be very similar, only when information
 passes from/to Chipmunk will there be a difference. This is exactly the kind of 
 overhead that the micro benchmarks are made to measure.
 
-Cymunk is not as feature complete as Pymunk, so in order to compare with Pymunk 
+Cymunk is not as feature complete as Easymunk, so in order to compare with Easymunk
 we have to make some adjustments. A major difference is that it does not 
 implement the `position_func` function, so instead we do an alternative 
 callback test using the collision handler::
@@ -151,7 +151,7 @@ Pymunk 20170916  0.95s          (7.01s)
 slow on Pypy)
 
 What we can see from these results is that Cymunk on CPython is much faster 
-than Pymunk on CPython, but Pymunk takes the overall victory when we include 
+than Easymunk on CPython, but Pymunk takes the overall victory when we include
 Pypy. 
 
 Something we did not take into account is that you can trade convenience for 

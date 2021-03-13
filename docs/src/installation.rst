@@ -8,18 +8,18 @@ Installation
     https://pypi.python.org/pypi/pymunk
 
 
-Install Pymunk
+Install Easymunk
 ==============
 
-Pymunk can be installed with pip install::
+Easymunk can be installed with pip install::
 
-    > pip install pymunk
+    > pip install easymunk
     
-Pymunk can also be installed with conda install, from the conda-forge channel::
+Easymunk can also be installed with conda install, from the conda-forge channel::
 
-    > conda install -c conda-forge pymunk
+    > conda install -c conda-forge easymunk
 
-Once Pymunk is installed you can verify that the installation works by running 
+Once Easymunk is installed you can verify that the installation works by running
 the tests::
 
     > python -m pymunk.tests -f test
@@ -41,7 +41,7 @@ Examples & Documentation
 ========================
 
 Because of their size the examples and the documentation are available in the 
-source distribution of Pymunk, but not the wheels. The source distribution is 
+source distribution of Easymunk, but not the wheels. The source distribution is
 available from PyPI at https://pypi.org/project/pymunk/#files (Named
 pymunk-x.y.z.zip)
 
@@ -49,7 +49,7 @@ pymunk-x.y.z.zip)
 Troubleshooting
 ===============
 
-Check that no files are named pymunk.py
+Check that no files are named easymunk.py
 
 Check that conda install works
 https://stackoverflow.com/questions/39811929/package-installed-by-conda-python-cannot-find-it
@@ -57,7 +57,7 @@ https://stackoverflow.com/questions/39811929/package-installed-by-conda-python-c
 Advanced - Android Install
 ==========================
 
-Pymunk can run on Android phones/tablets/computers. 
+Easymunk can run on Android phones/tablets/computers.
 
 Kivy
 ----
@@ -67,8 +67,8 @@ development of applications that make use of innovative user interfaces, such
 as multi-touch apps, and can run on Android (and a number of other platforms 
 such as Linux, Windows, OS X, iOS and Raspberry Pi).
 
-Pymunk should work out of the box when used with Kivy. Note however that the 
-recipe used to build Pymunk specifies a specific version of Pymunk that might 
+Easymunk should work out of the box when used with Kivy. Note however that the
+recipe used to build Easymunk specifies a specific version of Easymunk that might
 not be the latest, see the recipe script here:
 https://github.com/kivy/python-for-android/blob/master/pythonforandroid/recipes/pymunk/__init__.py
 
@@ -118,7 +118,7 @@ you want it installed in a contained environment.
 Advanced - Running without installation
 ---------------------------------------
 
-If you do not want to install Pymunk, for example because you want to bundle it
+If you do not want to install Easymunk, for example because you want to bundle it
 with your code, its also possible to run it directly inplace. Given that you 
 have the source code the first thing to do is to compile chipmunk with the 
 inplace option, as described in the :ref:`compile-chipmunk` section. 
@@ -178,8 +178,8 @@ CFFI Installation
 
 Sometimes you need to manually install the (non-python) dependencies of CFFI. 
 Usually you will notice this as a installation failure when pip tries to 
-install CFFI since CFFI is a dependency of Pymunk. This is not really part of 
-Pymunk, but a brief description is available for your convenience. 
+install CFFI since CFFI is a dependency of Easymunk. This is not really part of
+Easymunk, but a brief description is available for your convenience.
 
 You need to install two extra dependencies for CFFI to install properly. This 
 can be handled by the package manager. The dependencies are `python-dev` and 

@@ -1,5 +1,5 @@
 [run]
-source = pymunk/
+source = easymunk/
 branch = True
 
 
@@ -32,7 +32,7 @@ exclude_lines =
     @overload
 
 omit = 
-    pymunk/tests/*
-    pymunk/pymunk_extension_build.py
+    tests/*
+    easymunk/pymunk_extension_build.py
 
 ignore_errors = True

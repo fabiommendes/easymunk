@@ -25,7 +25,7 @@ API Reference
     
         <script type="text/javascript" src='_static/pymunk.js'></script>
    
-.. rubric:: Pymunk
+.. rubric:: Easymunk
 
 .. automodule:: pymunk
     :special-members: __init__

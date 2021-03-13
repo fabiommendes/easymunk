@@ -11,4 +11,4 @@ This is the first release of Easymunk.
 
 Highlights - Major changes relative to easymunk:
 
-- Defaults to using angles rather than radians.
+- Default to using angles rather than radians.

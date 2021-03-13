@@ -726,8 +726,7 @@ class UnitTestSpace(unittest.TestCase):
         s.add_default_collision_handler().pre_solve = pre_solve
         s.step(0.1)
 
-        assert c1 == d["shapes"][1]
-        assert c2 == d["shapes"][0]
+        assert {c1, c2} == set(d["shapes"])
         assert s == d["space"]
 
     def testPostStepCallback(self) -> None:

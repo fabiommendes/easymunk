@@ -31,10 +31,15 @@ from .util import void, set_attrs, py_space, init_attributes
 from .vec2d import Vec2d, VecLike, vec2d_from_cffi
 
 if TYPE_CHECKING:
+    from .shape_filter import ShapeFilter
     from .space import Space
     from .constraints import Constraint
-    from .shapes import Shape
+    from .shapes import Shape, Circle, Poly, Segment
     from .bb import BB
+else:
+    Circle = sk.import_later('.shapes:Circle', __package__)
+    Segment = sk.import_later('.shapes:Segment', __package__)
+    Poly = sk.import_later('.shapes:Poly', __package__)
 
 B = TypeVar("B", bound="Body")
 _BodyType = int
@@ -932,6 +937,65 @@ class Body(PickleMixin, TypingAttrMixing, HasBBMixin, FilterElementsMixin):
         return self
 
 
+#
+# Specialized bodies
+#
+class ShapeMixin:
+    """
+    Base class for bodies with a single shape.
+    """
+    radius: float = sk.delegate_to('shape', mutable=True)
+    area: float = sk.delegate_to('shape')
+    collision_type: int = sk.delegate_to('shape')
+    filter: "ShapeFilter" = sk.delegate_to('shape')
+    elasticity: float = sk.delegate_to('shape')
+    friction: float = sk.delegate_to('shape')
+    surface_velocity: Vec2d = sk.delegate_to('shape')
+    bb: "BB" = sk.delegate_to('shape')
+    point_query = sk.delegate_to('shape')
+    segment_query = sk.delegate_to('shape')
+    shapes_collide = sk.delegate_to('shape')
+    body: "Body" = property(lambda self: self)
+
+
+class CircleBody(ShapeMixin, Body):
+    """
+    A body attached to a single circular shape.
+    """
+    offset: Vec2d = sk.delegate_to('shape', mutable=True)
+
+    def __init__(self, radius, *args, offset=(0, 0), **kwargs):
+        super().__init__(*args, **kwargs)
+        self.shape: "Circle" = Circle(self, radius, offset=offset)
+
+
+class PolyBody(ShapeMixin, Body):
+    """
+    A body attached to a single circular shape.
+    """
+    get_vertices = sk.delegate_to('shape')
+    set_vertices = sk.delegate_to('shape')
+
+    def __init__(self, vertices, *args, radius=0, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.shape: "Poly" = Poly(self, vertices, radius=radius)
+
+
+class SegmentBody(ShapeMixin, Body):
+    """
+    A body attached to a single circular shape.
+    """
+    a: Vec2d = sk.delegate_to('shape', mutable=True)
+    b: Vec2d = sk.delegate_to('shape', mutable=True)
+
+    def __init__(self, a, b, *args, radius=0, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.shape: "Segment" = Segment(self, a, b, radius)
+
+
+#
+# Utility functions
+#
 def cffi_free_body(cp_body):
     logging.debug("bodyfree start %s", cp_body)
     cp_shapes = []

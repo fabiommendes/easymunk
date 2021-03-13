@@ -1,20 +1,15 @@
 import pickle
 import unittest
-
+import pytest
 import easymunk as p
 from easymunk.constraints import *
-from easymunk.vec2d import Vec2d
 
 
 class UnitTestConstraint(unittest.TestCase):
-    def testA(self) -> None:
+    def test_objs(self) -> None:
         a, b = p.Body(10, 10), p.Body(10, 10)
         j = PivotJoint(a, b, (0, 0))
         self.assertEqual(j.a, a)
-
-    def testB(self) -> None:
-        a, b = p.Body(10, 10), p.Body(10, 10)
-        j = PivotJoint(a, b, (0, 0))
         self.assertEqual(j.b, b)
 
     def testMaxForce(self) -> None:
@@ -57,12 +52,13 @@ class UnitTestConstraint(unittest.TestCase):
         s.step(1)
         self.assertAlmostEqual(j.impulse, 50)
 
+    # @pytest.mark.skip()
     def testActivate(self) -> None:
         a, b = p.Body(4, 5), p.Body(10, 10)
         j = PivotJoint(a, b, (0, 0))
         s = p.Space()
         s.sleep_time_threshold = 0.01
-        s.add(a, b)
+        s.add(a, b, add_children=False)
         a.sleep()
         b.sleep()
 
@@ -153,7 +149,6 @@ class UnitTestConstraint(unittest.TestCase):
         j.collide_bodies = False
 
         j.pre_solve = pre_solve
-
         j.post_solve = post_solve
 
         s = pickle.dumps(j)

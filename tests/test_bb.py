@@ -25,7 +25,7 @@ class UnitTestBB(unittest.TestCase):
         self.assertEqual(bb_defined.right, 15)
         self.assertEqual(bb_defined.top, 20)
 
-        bb_circle = p.BB.newForCircle((3, 3), 3)
+        bb_circle = p.BB.from_circle((3, 3), 3)
         self.assertEqual(bb_circle.left, 0)
         self.assertEqual(bb_circle.bottom, 0)
         self.assertEqual(bb_circle.right, 6)

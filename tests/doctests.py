@@ -23,7 +23,7 @@ def load_tests(
                 skip = True
         if skip:
             continue
-        tests.addTests(doctest.DocTestSuite("pymunk." + modname))
+        tests.addTests(doctest.DocTestSuite("easymunk." + modname))
 
         # except Exception as e:
         #    print("Skipping " + modname, e)

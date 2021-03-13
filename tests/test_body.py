@@ -1,5 +1,6 @@
 import pickle
 import unittest
+from math import degrees
 from typing import List, Tuple
 
 import easymunk as p
@@ -82,7 +83,7 @@ class UnitTestBody(unittest.TestCase):
         self.assertEqual(b.velocity_at_world_point((1, 1)), (0, 0))
         self.assertEqual(b.velocity_at_local_point((1, 1)), (0, 0))
         b.position = 1, 2
-        b.angular_velocity = 1.2
+        b.angular_velocity = degrees(1.2)
         self.assertEqual(b.velocity_at_world_point((1, 1)), (1.2, 0))
         self.assertEqual(b.velocity_at_local_point((1, 1)), (-1.2, 1.2))
 
@@ -104,13 +105,13 @@ class UnitTestBody(unittest.TestCase):
         b.position = 3, 4
         b.apply_impulse_at_world_point((10, 0), (0, 10))
         self.assertEqual(b.velocity, (10, 0))
-        self.assertEqual(b.angular_velocity, -30)
+        self.assertEqual(b.angular_velocity, degrees(-30))
 
         b = p.Body(1, 2)
         b.position = 3, 4
         b.apply_impulse_at_local_point((10, 0), (0, 10))
         self.assertEqual(b.velocity, (10, 0))
-        self.assertEqual(b.angular_velocity, -50)
+        self.assertEqual(b.angular_velocity, degrees(-50))
 
     def testSleep(self) -> None:
         b = p.Body(1, 1)

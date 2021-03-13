@@ -33,94 +33,20 @@ __docformat__ = "reStructuredText"
 
 __all__ = [
     "DrawOptions",
-    "get_mouse_pos",
-    "to_pygame",
-    "from_pygame",
-    "positive_y_is_up",
 ]
 
-from typing import List, Sequence, Tuple
+from typing import Sequence, Tuple
 
 import pyxel
 
-import easymunk
-from .space_debug_draw_options import SpaceDebugColor
-from .vec2d import Vec2d
-
-positive_y_is_up: bool = False
-"""Make increasing values of y point upwards.
-
-When True::
-
-    y
-    ^
-    |      . (3, 3)
-    |
-    |   . (2, 2)
-    |
-    +------ > x
-    
-When False::
-
-    +------ > x
-    |
-    |   . (2, 2)
-    |
-    |      . (3, 3)
-    v
-    y
-    
-"""
+from ..space_debug_draw_options import SpaceDebugColor, SpaceDebugDrawOptions
+from ..vec2d import Vec2d
 
 
-class DrawOptions(easymunk.SpaceDebugDrawOptions):
-    def __init__(self, surface: pygame.Surface) -> None:
-        """Draw a easymunk.Space on a pygame.Surface object.
-
-        Typical usage::
-
-        >>> import easymunk
-        >>> surface = pygame.Surface((10,10))
-        >>> space = easymunk.Space()
-        >>> options = easymunk.pygame_util.DrawOptions(surface)
-        >>> space.debug_draw(options)
-
-        You can control the color of a shape by setting shape.color to the color
-        you want it drawn in::
-
-        >>> c = easymunk.Circle(None, 10)
-        >>> c.color = pygame.Color("pink")
-
-        See pygame_util.demo.py for a full example
-
-        Since pygame uses a coordiante system where y points down (in contrast
-        to many other cases), you either have to make the physics simulation
-        with Pymunk also behave in that way, or flip everything when you draw.
-
-        The easiest is probably to just make the simulation behave the same
-        way as Pygame does. In that way all coordinates used are in the same
-        orientation and easy to reason about::
-
-        >>> space = easymunk.Space()
-        >>> space.gravity = (0, -1000)
-        >>> body = easymunk.Body()
-        >>> body.position = (0, 0) # will be positioned in the top left corner
-        >>> space.debug_draw(options)
-
-        To flip the drawing its possible to set the module property
-        :py:data:`positive_y_is_up` to True. Then the pygame drawing will flip
-        the simulation upside down before drawing::
-
-        >>> positive_y_is_up = True
-        >>> body = easymunk.Body()
-        >>> body.position = (0, 0)
-        >>> # Body will be position in bottom left corner
-
-        :Parameters:
-                surface : pygame.Surface
-                    Surface that the objects will be drawn on
-        """
-        self.surface = surface
+class DrawOptions(SpaceDebugDrawOptions):
+    def __init__(self, mod=pyxel) -> None:
+        """Draw a easymunk.Space on a pyxel canvas."""
+        self.mod = pyxel
         super(DrawOptions, self).__init__()
 
     def draw_circle(
@@ -131,20 +57,10 @@ class DrawOptions(easymunk.SpaceDebugDrawOptions):
         outline_color: SpaceDebugColor,
         fill_color: SpaceDebugColor,
     ) -> None:
-        p = to_pygame(pos, self.surface)
-
-        pygame.draw.circle(self.surface, fill_color.as_int(), p, round(radius), 0)
-
-        circle_edge = pos + Vec2d(radius, 0).rotated(angle)
-        p2 = to_pygame(circle_edge, self.surface)
-        line_r = 2 if radius > 20 else 1
-        pygame.draw.lines(self.surface, outline_color.as_int(), False, [p, p2], line_r)
+        return self.mod.circ(*pos, radius, fill_color)
 
     def draw_segment(self, a: Vec2d, b: Vec2d, color: SpaceDebugColor) -> None:
-        p1 = to_pygame(a, self.surface)
-        p2 = to_pygame(b, self.surface)
-
-        pygame.draw.aalines(self.surface, color.as_int(), False, [p1, p2])
+        ...
 
     def draw_fat_segment(
         self,
@@ -154,37 +70,7 @@ class DrawOptions(easymunk.SpaceDebugDrawOptions):
         outline_color: SpaceDebugColor,
         fill_color: SpaceDebugColor,
     ) -> None:
-        p1 = to_pygame(a, self.surface)
-        p2 = to_pygame(b, self.surface)
-
-        r = round(max(1, radius * 2))
-        pygame.draw.lines(self.surface, fill_color.as_int(), False, [p1, p2], r)
-        if r > 2:
-            orthog = [abs(p2[1] - p1[1]), abs(p2[0] - p1[0])]
-            if orthog[0] == 0 and orthog[1] == 0:
-                return
-            scale = radius / (orthog[0] * orthog[0] + orthog[1] * orthog[1]) ** 0.5
-            orthog[0] = round(orthog[0] * scale)
-            orthog[1] = round(orthog[1] * scale)
-            points = [
-                (p1[0] - orthog[0], p1[1] - orthog[1]),
-                (p1[0] + orthog[0], p1[1] + orthog[1]),
-                (p2[0] + orthog[0], p2[1] + orthog[1]),
-                (p2[0] - orthog[0], p2[1] - orthog[1]),
-            ]
-            pygame.draw.polygon(self.surface, fill_color.as_int(), points)
-            pygame.draw.circle(
-                self.surface,
-                fill_color.as_int(),
-                (round(p1[0]), round(p1[1])),
-                round(radius),
-            )
-            pygame.draw.circle(
-                self.surface,
-                fill_color.as_int(),
-                (round(p2[0]), round(p2[1])),
-                round(radius),
-            )
+        ...
 
     def draw_polygon(
         self,
@@ -193,45 +79,9 @@ class DrawOptions(easymunk.SpaceDebugDrawOptions):
         outline_color: SpaceDebugColor,
         fill_color: SpaceDebugColor,
     ) -> None:
-        ps = [to_pygame(v, self.surface) for v in verts]
-        ps += [ps[0]]
-
-        pygame.draw.polygon(self.surface, fill_color.as_int(), ps)
-
-        if radius > 0:
-            for i in range(len(verts)):
-                a = verts[i]
-                b = verts[(i + 1) % len(verts)]
-                self.draw_fat_segment(a, b, radius, outline_color, outline_color)
+        ...
 
     def draw_dot(
         self, size: float, pos: Tuple[float, float], color: SpaceDebugColor
     ) -> None:
-        p = to_pygame(pos, self.surface)
-        pygame.draw.circle(self.surface, color.as_int(), p, round(size), 0)
-
-
-def get_mouse_pos(surface: pygame.Surface) -> Tuple[int, int]:
-    """Get position of the mouse pointer in pymunk coordinates."""
-    p = pygame.mouse.get_pos()
-    return from_pygame(p, surface)
-
-
-def to_pygame(p: Tuple[float, float], surface: pygame.Surface) -> Tuple[int, int]:
-    """Convenience method to convert pymunk coordinates to pygame surface
-    local coordinates.
-
-    Note that in case positive_y_is_up is False, this function wont actually do
-    anything except converting the point to integers.
-    """
-    if positive_y_is_up:
-        return round(p[0]), surface.get_height() - round(p[1])
-    else:
-        return round(p[0]), round(p[1])
-
-
-def from_pygame(p: Tuple[float, float], surface: pygame.Surface) -> Tuple[int, int]:
-    """Convenience method to convert pygame surface local coordinates to
-    pymunk coordinates
-    """
-    return to_pygame(p, surface)
+        ...

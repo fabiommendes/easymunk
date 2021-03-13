@@ -74,6 +74,8 @@ When False::
 
 
 class DrawOptions(easymunk.SpaceDebugDrawOptions):
+    surface: pygame.Surface
+
     def __init__(self, surface: pygame.Surface = None) -> None:
         """Draw a easymunk.Space on a pygame.Surface object.
 
@@ -128,12 +130,12 @@ class DrawOptions(easymunk.SpaceDebugDrawOptions):
         super(DrawOptions, self).__init__()
 
     def draw_circle(
-            self,
-            pos: Vec2d,
-            angle: float,
-            radius: float,
-            outline_color: SpaceDebugColor,
-            fill_color: SpaceDebugColor,
+        self,
+        pos: Vec2d,
+        angle: float,
+        radius: float,
+        outline_color: SpaceDebugColor,
+        fill_color: SpaceDebugColor,
     ) -> None:
         p = to_pygame(pos, self.surface)
         pygame.draw.circle(self.surface, fill_color.as_int(), p, round(radius), 0)
@@ -148,12 +150,12 @@ class DrawOptions(easymunk.SpaceDebugDrawOptions):
         pygame.draw.aalines(self.surface, color.as_int(), False, [p1, p2])
 
     def draw_fat_segment(
-            self,
-            a: Tuple[float, float],
-            b: Tuple[float, float],
-            radius: float,
-            outline_color: SpaceDebugColor,
-            fill_color: SpaceDebugColor,
+        self,
+        a: Tuple[float, float],
+        b: Tuple[float, float],
+        radius: float,
+        outline_color: SpaceDebugColor,
+        fill_color: SpaceDebugColor,
     ) -> None:
         p1 = to_pygame(a, self.surface)
         p2 = to_pygame(b, self.surface)
@@ -188,11 +190,11 @@ class DrawOptions(easymunk.SpaceDebugDrawOptions):
             )
 
     def draw_polygon(
-            self,
-            verts: Sequence[Tuple[float, float]],
-            radius: float,
-            outline_color: SpaceDebugColor,
-            fill_color: SpaceDebugColor,
+        self,
+        verts: Sequence[Tuple[float, float]],
+        radius: float,
+        outline_color: SpaceDebugColor,
+        fill_color: SpaceDebugColor,
     ) -> None:
         ps = [to_pygame(v, self.surface) for v in verts]
         ps += [ps[0]]
@@ -206,7 +208,7 @@ class DrawOptions(easymunk.SpaceDebugDrawOptions):
                 self.draw_fat_segment(a, b, radius, outline_color, outline_color)
 
     def draw_dot(
-            self, size: float, pos: Tuple[float, float], color: SpaceDebugColor
+        self, size: float, pos: Tuple[float, float], color: SpaceDebugColor
     ) -> None:
         p = to_pygame(pos, self.surface)
         pygame.draw.circle(self.surface, color.as_int(), p, round(size), 0)

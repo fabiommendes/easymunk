@@ -3,6 +3,7 @@ __docformat__ = "reStructuredText"
 import logging
 import platform
 import weakref
+from functools import lru_cache
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -15,31 +16,59 @@ from typing import (
     Tuple,
     Union,
     TypeVar,
+    Iterator,
 )
 
 import sidekick.api as sk
 
-from . import _chipmunk_cffi, _version, vec2d
+from . import _chipmunk_cffi, _version
 from ._mixins import PickleMixin, FilterElementsMixin, _State
+from .arbiter import Arbiter
 from .body import Body
+from .collections import Shapes, Bodies, Constraints
 from .collision_handler import CollisionHandler
 from .constraints import Constraint
-from .contact_point_set import ContactPointSet, contact_point_set_from_cffi
+from .contact_point_set import contact_point_set_from_cffi
 from .query_info import PointQueryInfo, SegmentQueryInfo, ShapeQueryInfo
 from .shape_filter import ShapeFilter
 from .shapes import Shape
-from .space_debug_draw_options import SpaceDebugDrawOptions
-from .util import void, init_attributes
-from .vec2d import Vec2d, vec2d_from_cffi
+from .util import (
+    void,
+    init_attributes,
+    shape_id,
+    cffi_body,
+    get_nursery,
+    get_cffi_ref,
+    clear_nursery,
+)
+from .vec2d import Vec2d, vec2d_from_cffi, VecLike
 
 if TYPE_CHECKING:
     from .bb import BB
+    from .space_debug_draw_options import SpaceDebugDrawOptions
 
 cp = _chipmunk_cffi.lib
 ffi = _chipmunk_cffi.ffi
 
+DEBUG_DRAW_PYGAME = sk.import_later(".pygame:DrawOptions", package=__package__)
+DEBUG_DRAW_PYXEL = sk.import_later(".pyxel:DrawOptions", package=__package__)
+DEBUG_DRAW_PYGLET = sk.import_later(".pyglet:DrawOptions", package=__package__)
+
 _AddableObjects = Union[Body, Shape, Constraint]
-T = TypeVar("T")
+S = TypeVar("S", bound="Space")
+
+POINT_QUERY_ARGS = """
+        Args:
+            point:
+                Where to check for collision in the Space.
+            distance:
+                Match within this tolerance. If a distance of 0.0 is used, the
+                point must lie inside a shape. Negative values mean that
+                the point must be a under a certain depth within a shape to be
+                considered a match.
+            filter:
+                Only pick shapes matching the filter.
+"""
 
 
 class Space(PickleMixin, FilterElementsMixin):
@@ -83,7 +112,8 @@ class Space(PickleMixin, FilterElementsMixin):
     ]
     _init_kwargs = set(_pickle_attrs_general)
 
-    iterations: int = property(
+    iterations: int
+    iterations = property(  # type: ignore
         lambda self: cp.cpSpaceGetIterations(self._space),
         lambda self, value: void(cp.cpSpaceSetIterations(self._space, value)),
         doc="""Iterations allow you to control the accuracy of the solver.
@@ -104,17 +134,19 @@ class Space(PickleMixin, FilterElementsMixin):
         sufficient for most simple games.
         """,
     )
-    gravity: Vec2d = property(
+    gravity: Vec2d
+    gravity = property(  # type: ignore
         lambda self: vec2d_from_cffi(cp.cpSpaceGetGravity(self._space)),
         lambda self, g: void(cp.cpSpaceSetGravity(self._space, g)),
         doc="""Global gravity applied to the space.
 
         Defaults to (0,0). Can be overridden on a per body basis by writing
         custom integration functions and set it on the body:
-        :py:meth:`pymunk.Body.velocity_func`.
+        :py:meth:`easymunk.Body.velocity_func`.
         """,
     )
-    damping: float = property(
+    damping: float
+    damping = property(  # type: ignore
         lambda self: cp.cpSpaceGetDamping(self._space),
         lambda self, damping: void(cp.cpSpaceSetDamping(self._space, damping)),
         doc="""Amount of simple damping to apply to the space.
@@ -124,7 +156,8 @@ class Space(PickleMixin, FilterElementsMixin):
         body basis.
         """,
     )
-    idle_speed_threshold = property(
+    idle_speed_threshold: float
+    idle_speed_threshold = property(  # type: ignore
         lambda self: cp.cpSpaceGetIdleSpeedThreshold(self._space),
         lambda self, value: void(cp.cpSpaceSetIdleSpeedThreshold(self._space, value)),
         doc="""Speed threshold for a body to be considered idle.
@@ -133,7 +166,8 @@ class Space(PickleMixin, FilterElementsMixin):
         based on gravity.
         """,
     )
-    sleep_time_threshold = property(
+    sleep_time_threshold: float
+    sleep_time_threshold = property(  # type: ignore
         lambda self: cp.cpSpaceGetSleepTimeThreshold(self._space),
         lambda self, value: void(cp.cpSpaceSetSleepTimeThreshold(self._space, value)),
         doc="""Time a group of bodies must remain idle in order to fall
@@ -142,7 +176,8 @@ class Space(PickleMixin, FilterElementsMixin):
         The default value of `inf` disables the sleeping algorithm.
         """,
     )
-    collision_slop: float = property(
+    collision_slop: float
+    collision_slop = property(  # type: ignore
         lambda self: cp.cpSpaceGetCollisionSlop(self._space),
         lambda self, value: void(cp.cpSpaceSetCollisionSlop(self._space, value)),
         doc="""Amount of overlap between shapes that is allowed.
@@ -151,7 +186,8 @@ class Space(PickleMixin, FilterElementsMixin):
         overlapping. It defaults to 0.1.
         """,
     )
-    collision_bias = property(
+    collision_bias: float
+    collision_bias = property(  # type: ignore
         lambda self: cp.cpSpaceGetCollisionBias(self._space),
         lambda self, value: void(cp.cpSpaceSetCollisionBias(self._space, value)),
         doc="""Determines how fast overlapping shapes are pushed apart.
@@ -170,7 +206,8 @@ class Space(PickleMixin, FilterElementsMixin):
             Very very few games will need to change this value.
         """,
     )
-    collision_persistence: int = property(
+    collision_persistence: int
+    collision_persistence = property(  # type: ignore
         lambda self: cp.cpSpaceGetCollisionPersistence(self._space),
         lambda self, value: void(cp.cpSpaceSetCollisionPersistence(self._space, value)),
         doc="""The number of frames the space keeps collision solutions
@@ -183,14 +220,16 @@ class Space(PickleMixin, FilterElementsMixin):
             Very very few games will need to change this value.
         """,
     )
-    current_time_step: int = property(
+    current_time_step: int
+    current_time_step = property(  # type: ignore
         lambda self: cp.cpSpaceGetCurrentTimeStep(self._space),
         doc="""Retrieves the current (if you are in a callback from
         Space.step()) or most recent (outside of a Space.step() call)
         timestep.
         """,
     )
-    threads: int = property(
+    threads: int
+    threads = property(  # type: ignore
         lambda self: int(cp.cpHastySpaceGetThreads(self._space))
         if self.threaded
         else 1,
@@ -207,23 +246,23 @@ class Space(PickleMixin, FilterElementsMixin):
         """,
     )
 
-    @property
-    def shapes(self) -> List[Shape]:
+    @sk.lazy
+    def shapes(self) -> Shapes:
         """A list of all the shapes added to this space
 
         (includes both static and non-static)
         """
-        return list(self._shapes.values())
+        return Shapes(self, self._shapes.values())
 
-    @property
-    def bodies(self) -> List[Body]:
+    @sk.lazy
+    def bodies(self) -> Bodies:
         """A list of the bodies added to this space"""
-        return list(self._bodies)
+        return Bodies(self, self._bodies)
 
-    @property
-    def constraints(self) -> List[Constraint]:
+    @sk.lazy
+    def constraints(self) -> Constraints:
         """A list of the constraints added to this space"""
-        return list(self._constraints)
+        return Constraints(self, self._constraints)
 
     @sk.lazy
     def static_body(self) -> Body:
@@ -234,7 +273,8 @@ class Space(PickleMixin, FilterElementsMixin):
         """
         body = Body(body_type=Body.STATIC)
         body._space = weakref.proxy(self)
-        cp.cpSpaceAddBody(self._space, body._body)
+
+        cp.cpSpaceAddBody(self._space, cffi_body(body))
         return body
 
     @property
@@ -322,14 +362,13 @@ class Space(PickleMixin, FilterElementsMixin):
         """
 
         self.threaded = threaded and platform.system() != "Windows"
-
         if self.threaded:
             cp_space = cp.cpHastySpaceNew()
             freefunc = cp.cpHastySpaceFree
         else:
             cp_space = cp.cpSpaceNew()
             freefunc = cp.cpSpaceFree
-        self._space = ffi.gc(cp_space, cffi_free_space(freefunc))
+        self._space: Any = ffi.gc(cp_space, cffi_free_space(freefunc))
 
         # To prevent the gc to collect the callbacks.
         self._handlers: Dict[Any, CollisionHandler] = {}
@@ -337,12 +376,11 @@ class Space(PickleMixin, FilterElementsMixin):
 
         self._removed_shapes: Dict[int, Shape] = {}
         self._shapes: Dict[int, Shape] = {}
-        self._bodies: Dict[Body, None] = {}
-        self._constraints: Dict[Constraint, None] = {}
+        self._bodies: Set[Body] = set()
+        self._constraints: Set[Constraint] = set()
         self._add_later: Set[_AddableObjects] = set()
         self._remove_later: Set[_AddableObjects] = set()
-        self._locked = False
-        self._forces = []
+        self._locked: bool = False
 
         # Save attributes
         init_attributes(self, self._init_kwargs, kwargs)
@@ -393,28 +431,24 @@ class Space(PickleMixin, FilterElementsMixin):
 
         for k, v in state["special"]:
             if k == "easymunk_version":
-                assert _version.version == v, (
-                    f"Pymunk version {v} of pickled object does not match current Pymunk "
-                    f""
-                    f""
-                    f""
-                    f""
-                    f""
-                    f"version {_version.version}"
-                )
+                if _version.version != v:
+                    raise ValueError(
+                        f"Pymunk version {v} of pickled object does not match current "
+                        f"Pymunk version {_version.version}"
+                    )
             elif k == "bodies":
                 self.add(*v)
             elif k == "static_body":
                 self.static_body = v
                 v._space = weakref.proxy(self)
-                cp.cpSpaceAddBody(self._space, v._body)
+                cp.cpSpaceAddBody(self._space, v._cffi_ref)
             elif k == "shapes":
                 self.add(*v)
             elif k == "constraints":
                 self.add(*v)
             elif k == "_handlers":
                 for k2, hd in v:
-                    if k2 == None:
+                    if k2 is None:
                         h = self.add_default_collision_handler()
                     elif isinstance(k2, tuple):
                         h = self.add_collision_handler(k2[0], k2[1])
@@ -429,7 +463,16 @@ class Space(PickleMixin, FilterElementsMixin):
                     if "_separate_base" in hd:
                         h.separate = hd["_separate_base"]
 
-    def add(self: T, *objs: _AddableObjects) -> T:
+    def _iter_bodies(self) -> Iterator["Body"]:
+        return iter(self._bodies)
+
+    def _iter_shapes(self) -> Iterator["Shape"]:
+        return iter(self._shapes.values())
+
+    def _iter_constraints(self) -> Iterator["Constraint"]:
+        return iter(self._constraints)
+
+    def add(self: S, *objs: _AddableObjects, add_children=True) -> S:
         """Add one or many shapes, bodies or constraints (joints) to the space
 
         Unlike Chipmunk and earlier versions of pymunk its now allowed to add
@@ -443,23 +486,31 @@ class Space(PickleMixin, FilterElementsMixin):
 
         # add bodies first, since the shapes require their bodies to be
         # already added. This allows code like space.add(shape, body).
+        nursery = set()
+        other_objs = []
         for o in objs:
             if isinstance(o, Body):
+                if add_children:
+                    nursery.update(get_nursery(o))
+                    nursery.update(o.shapes)
+                    nursery.update(o.constraints)
                 self._add_body(o)
-
-        for o in objs:
-            if isinstance(o, Body):
-                pass
-            elif isinstance(o, Shape):
-                self._add_shape(o)
-            elif isinstance(o, Constraint):
-                self._add_constraint(o)
             else:
-                raise Exception(f"Unsupported type  {type(o)} of {o}.")
+                other_objs.append(o)
+
+        other_objs = [o for o in other_objs if o not in nursery]
+        for group in (nursery, other_objs):
+            for o in group:
+                if isinstance(o, Shape):
+                    self._add_shape(o)
+                elif isinstance(o, Constraint):
+                    self._add_constraint(o)
+                else:
+                    raise Exception(f"Unsupported type  {type(o)} of {o}.")
 
         return self
 
-    def remove(self: T, *objs: _AddableObjects) -> T:
+    def remove(self: S, *objs: _AddableObjects, remove_children=True) -> S:
         """Remove one or many shapes, bodies or constraints from the space
 
         Unlike Chipmunk and earlier versions of Pymunk its now allowed to
@@ -487,38 +538,43 @@ class Space(PickleMixin, FilterElementsMixin):
         return self
 
     def _add_shape(self, shape: "Shape") -> None:
-        if shape._id in self._shapes:
+        if shape_id(shape) in self._shapes:
             raise ValueError("shape already added to space")
 
         shape._space = weakref.proxy(self)
-        self._shapes[shape._id] = shape
-        cp.cpSpaceAddShape(self._space, shape._shape)
+        self._shapes[shape_id(shape)] = shape
+        cp.cpSpaceAddShape(self._space, get_cffi_ref(shape))
+        clear_nursery(shape)
 
     def _add_body(self, body: "Body") -> None:
         if body in self._bodies:
             raise ValueError("body already added to space")
 
         body._space = weakref.proxy(self)
-        self._bodies[body] = None
-        cp.cpSpaceAddBody(self._space, body._body)
+        self._bodies.add(body)
+        cp.cpSpaceAddBody(self._space, get_cffi_ref(body))
+        clear_nursery(body)
 
     def _add_constraint(self, constraint: "Constraint") -> None:
         if constraint in self._constraints:
             ValueError("constraint already added to space")
 
-        self._constraints[constraint] = None
-        cp.cpSpaceAddConstraint(self._space, constraint._constraint)
+        self._constraints.add(constraint)
+        cp.cpSpaceAddConstraint(self._space, get_cffi_ref(constraint))
+        clear_nursery(constraint)
 
     def _remove_shape(self, shape: "Shape") -> None:
-        if shape._id not in self._shapes:
+        id_ = shape_id(shape)
+        if id_ not in self._shapes:
             raise ValueError("shape not in space, already removed?")
-        self._removed_shapes[shape._id] = shape
+        self._removed_shapes[id_] = shape
 
         # During GC at program exit sometimes the shape might already be removed. Then
         # skip this step.
-        if cp.cpSpaceContainsShape(self._space, shape._shape):
-            cp.cpSpaceRemoveShape(self._space, shape._shape)
-        del self._shapes[shape._id]
+        ref = get_cffi_ref(shape)
+        if cp.cpSpaceContainsShape(self._space, ref):
+            cp.cpSpaceRemoveShape(self._space, ref)
+        del self._shapes[id_]
 
     def _remove_body(self, body: "Body") -> None:
         if body not in self._bodies:
@@ -527,9 +583,10 @@ class Space(PickleMixin, FilterElementsMixin):
 
         # During GC at program exit sometimes the shape might already be removed. Then
         # skip this step.
-        if cp.cpSpaceContainsBody(self._space, body._body):
-            cp.cpSpaceRemoveBody(self._space, body._body)
-        del self._bodies[body]
+        ref = get_cffi_ref(body)
+        if cp.cpSpaceContainsBody(self._space, ref):
+            cp.cpSpaceRemoveBody(self._space, ref)
+        self._bodies.remove(body)
 
     def _remove_constraint(self, constraint: "Constraint") -> None:
         """Removes a constraint from the space"""
@@ -537,31 +594,32 @@ class Space(PickleMixin, FilterElementsMixin):
             raise ValueError("constraint not in space, already removed?")
 
         # During GC at program exit sometimes the constraint might already be removed.
-        # Then skip this steip.
-        if cp.cpSpaceContainsConstraint(self._space, constraint._constraint):
-            cp.cpSpaceRemoveConstraint(self._space, constraint._constraint)
-        del self._constraints[constraint]
+        # Then skip this step.
+        ref = get_cffi_ref(constraint)
+        if cp.cpSpaceContainsConstraint(self._space, ref):
+            cp.cpSpaceRemoveConstraint(self._space, ref)
+        self._constraints.remove(constraint)
 
-    def reindex_shape(self: T, shape: Shape) -> T:
+    def reindex_shape(self: S, shape: Shape) -> S:
         """Update the collision detection data for a specific shape in the
         space.
         """
-        cp.cpSpaceReindexShape(self._space, shape._shape)
+        cp.cpSpaceReindexShape(self._space, get_cffi_ref(shape))
         return self
 
-    def reindex_shapes_for_body(self: T, body: Body) -> T:
+    def reindex_shapes_for_body(self: S, body: Body) -> S:
         """Reindex all the shapes for a certain body."""
-        cp.cpSpaceReindexShapesForBody(self._space, body._body)
+        cp.cpSpaceReindexShapesForBody(self._space, get_cffi_ref(body))
         return self
 
-    def reindex_static(self: T) -> T:
+    def reindex_static(self: S) -> S:
         """Update the collision detection info for the static shapes in the
         space. You only need to call this if you move one of the static shapes.
         """
         cp.cpSpaceReindexStatic(self._space)
         return self
 
-    def use_spatial_hash(self: T, dim: float, count: int) -> T:
+    def use_spatial_hash(self: S, dim: float, count: int) -> S:
         """Switch the space to use a spatial hash instead of the bounding box
         tree.
 
@@ -595,7 +653,7 @@ class Space(PickleMixin, FilterElementsMixin):
         cp.cpSpaceUseSpatialHash(self._space, dim, count)
         return self
 
-    def step(self, dt: float) -> None:
+    def step(self: S, dt: float) -> S:
         """Update the space for the given time step.
 
         Using a fixed time step is highly recommended. Doing so will increase
@@ -637,12 +695,11 @@ class Space(PickleMixin, FilterElementsMixin):
             self._post_step_callbacks[key](self)
 
         self._post_step_callbacks = {}
+        return self
 
-    def add_collision_handler(
-        self, collision_type_a: int, collision_type_b: int
-    ) -> CollisionHandler:
+    def add_collision_handler(self, a: int, b: int) -> CollisionHandler:
         """Return the :py:class:`CollisionHandler` for collisions between
-        objects of type collision_type_a and collision_type_b.
+        objects of type "a" and "b".
 
         Fill the desired collision callback functions, for details see the
         :py:class:`CollisionHandler` object.
@@ -653,25 +710,20 @@ class Space(PickleMixin, FilterElementsMixin):
         set to builtin callbacks that perform the default behavior (call the
         wildcard handlers, and accept all collisions).
 
-        :param int collision_type_a: Collision type a
-        :param int collision_type_b: Collision type b
+        :param int a: Collision type a
+        :param int b: Collision type b
 
         :rtype: :py:class:`CollisionHandler`
         """
-        key = min(collision_type_a, collision_type_b), max(
-            collision_type_a, collision_type_b
-        )
+        key = min(a, b), max(a, b)
         if key in self._handlers:
             return self._handlers[key]
 
-        h = cp.cpSpaceAddCollisionHandler(
-            self._space, collision_type_a, collision_type_b
-        )
-        ch = CollisionHandler(h, self)
-        self._handlers[key] = ch
-        return ch
+        ptr = cp.cpSpaceAddCollisionHandler(self._space, a, b)
+        self._handlers[key] = handler = CollisionHandler(ptr, self)
+        return handler
 
-    def add_wildcard_collision_handler(self, collision_type_a: int) -> CollisionHandler:
+    def add_wildcard_collision_handler(self, col_type: int) -> CollisionHandler:
         """Add a wildcard collision handler for given collision type.
 
         This handler will be used any time an object with this type collides
@@ -688,17 +740,16 @@ class Space(PickleMixin, FilterElementsMixin):
         :py:func:`~CollisionHandler.post_solve` and
         :py:func:`~CollisionHandler.separate`.
 
-        :param int collision_type_a: Collision type
+        :param int col_type: Collision type
         :rtype: :py:class:`CollisionHandler`
         """
 
-        if collision_type_a in self._handlers:
-            return self._handlers[collision_type_a]
+        if col_type in self._handlers:
+            return self._handlers[col_type]
 
-        h = cp.cpSpaceAddWildcardHandler(self._space, collision_type_a)
-        ch = CollisionHandler(h, self)
-        self._handlers[collision_type_a] = ch
-        return ch
+        ptr = cp.cpSpaceAddWildcardHandler(self._space, col_type)
+        self._handlers[col_type] = handler = CollisionHandler(ptr, self)
+        return handler
 
     def add_default_collision_handler(self) -> CollisionHandler:
         """Return a reference to the default collision handler or that is
@@ -712,16 +763,13 @@ class Space(PickleMixin, FilterElementsMixin):
         if None in self._handlers:
             return self._handlers[None]
 
-        _h = cp.cpSpaceAddDefaultCollisionHandler(self._space)
-        h = CollisionHandler(_h, self)
-        self._handlers[None] = h
-        return h
+        ptr = cp.cpSpaceAddDefaultCollisionHandler(self._space)
+        self._handlers[None] = handler = CollisionHandler(ptr, self)
+        return handler
 
     def add_post_step_callback(
         self,
-        callback_function: Callable[
-            ..., None
-        ],  # TODO: Fix me once PEP-612 is implemented
+        callback_function: Callable[..., None],
         key: Hashable,
         *args: Any,
         **kwargs: Any,
@@ -758,78 +806,54 @@ class Space(PickleMixin, FilterElementsMixin):
         if key in self._post_step_callbacks:
             return False
 
-        def f(x):  # type: ignore
+        def f(_):  # type: ignore
             callback_function(self, key, *args, **kwargs)
 
         self._post_step_callbacks[key] = f
         return True
 
+    # noinspection PyShadowingBuiltins
     def point_query(
-        self, point: Tuple[float, float], max_distance: float, shape_filter: ShapeFilter
+        self, point: VecLike, distance: float = 0, filter: ShapeFilter = None
     ) -> List[PointQueryInfo]:
-        """Query space at point for shapes within the given distance range.
+        f"""Query space at point for shapes within the given distance range.
 
         The filter is applied to the query and follows the same rules as the
-        collision detection. If a maxDistance of 0.0 is used, the point must
-        lie inside a shape. Negative max_distance is also allowed meaning that
-        the point must be a under a certain depth within a shape to be
-        considered a match.
+        collision detection. See :py:class:`ShapeFilter` for details about how
+        the shape_filter parameter can be used.
 
-        See :py:class:`ShapeFilter` for details about how the shape_filter
-        parameter can be used.
+        {POINT_QUERY_ARGS}
 
-        .. Note::
+        Note:
             Sensor shapes are included in the result (In
             :py:meth:`Space.point_query_nearest` they are not)
 
-        :param point: Where to check for collision in the Space
-        :type point: :py:class:`~vec2d.Vec2d` or (float,float)
-        :param float max_distance: Match only within this distance
-        :param ShapeFilter shape_filter: Only pick shapes matching the filter
-
-        :rtype: [:py:class:`PointQueryInfo`]
+        Result:
+            A list of point queries.
         """
-        assert len(point) == 2
-        query_hits: List[PointQueryInfo] = []
 
         @ffi.callback("cpSpacePointQueryFunc")
-        def cf(_shape, point, distance, gradient, data):  # type: ignore
-            # space = ffi.from_handle(data)
-            shape = self._get_shape(_shape)
-            p = PointQueryInfo(
-                shape, Vec2d(point.x, point.y), distance, Vec2d(gradient.x, gradient.y)
-            )
-            nonlocal query_hits
-            query_hits.append(p)
+        def cb(shape, pt, dist, gradient, _data):
+            shape = shape_from_cffi(self, shape)
+            if shape:
+                vec = Vec2d(pt.x, pt.y)
+                grad = Vec2d(gradient.x, gradient.y)
+                result.append(PointQueryInfo(shape, vec, dist, grad))
 
+        result: List[PointQueryInfo] = []
+        filter_ = filter or ShapeFilter()
         data = ffi.new_handle(self)
-        cp.cpSpacePointQuery(self._space, point, max_distance, shape_filter, cf, data)
-        return query_hits
+        cp.cpSpacePointQuery(self._space, point, distance, filter_, cb, data)
+        return result
 
-    def _get_shape(self, _shape: Any) -> Optional[Shape]:
-        if not bool(_shape):
-            return None
-
-        shapeid = int(ffi.cast("int", cp.cpShapeGetUserData(_shape)))
-
-        if shapeid in self._shapes:
-            return self._shapes[shapeid]
-        elif shapeid in self._removed_shapes:
-            return self._removed_shapes[shapeid]
-        else:
-            return None
-
+    # noinspection PyShadowingBuiltins
     def point_query_nearest(
-        self, point: Tuple[float, float], max_distance: float, shape_filter: ShapeFilter
+        self, point: VecLike, distance: float = 0.0, filter: ShapeFilter = None
     ) -> Optional[PointQueryInfo]:
-        """Query space at point the nearest shape within the given distance
+        f"""Query space at point the nearest shape within the given distance
         range.
 
-        The filter is applied to the query and follows the same rules as the
-        collision detection. If a maxDistance of 0.0 is used, the point must
-        lie inside a shape. Negative max_distance is also allowed meaning that
-        the point must be a under a certain depth within a shape to be
-        considered a match.
+        {POINT_QUERY_ARGS}
 
         See :py:class:`ShapeFilter` for details about how the shape_filter
         parameter can be used.
@@ -838,36 +862,26 @@ class Space(PickleMixin, FilterElementsMixin):
             Sensor shapes are not included in the result (In
             :py:meth:`Space.point_query` they are)
 
-        :param point: Where to check for collision in the Space
-        :type point: :py:class:`~vec2d.Vec2d` or (float,float)
-        :param float max_distance: Match only within this distance
-        :param ShapeFilter shape_filter: Only pick shapes matching the filter
-
-        :rtype: :py:class:`PointQueryInfo` or None
+        Result:
+            The resulting point query.
         """
-        assert len(point) == 2
         info = ffi.new("cpPointQueryInfo *")
-        _shape = cp.cpSpacePointQueryNearest(
-            self._space, point, max_distance, shape_filter, info
-        )
-
-        shape = self._get_shape(_shape)
-
-        if shape != None:
-            return PointQueryInfo(
-                shape,
-                Vec2d(info.point.x, info.point.y),
-                info.distance,
-                Vec2d(info.gradient.x, info.gradient.y),
-            )
+        filter = filter or ShapeFilter()
+        ptr = cp.cpSpacePointQueryNearest(self._space, point, distance, filter, info)
+        shape = shape_from_cffi(self, ptr)
+        if shape:
+            pos = Vec2d(info.point.x, info.point.y)
+            grad = Vec2d(info.gradient.x, info.gradient.y)
+            return PointQueryInfo(shape, pos, info.distance, grad)
         return None
 
+    # noinspection PyShadowingBuiltins
     def segment_query(
         self,
-        start: Tuple[float, float],
-        end: Tuple[float, float],
-        radius: float,
-        shape_filter: ShapeFilter,
+        start: VecLike,
+        end: VecLike,
+        radius: float = 0.0,
+        filter: ShapeFilter = None,
     ) -> List[SegmentQueryInfo]:
         """Query space along the line segment from start to end with the
         given radius.
@@ -875,130 +889,100 @@ class Space(PickleMixin, FilterElementsMixin):
         The filter is applied to the query and follows the same rules as the
         collision detection.
 
-        See :py:class:`ShapeFilter` for details about how the shape_filter
-        parameter can be used.
+        Args:
+            start: Starting point
+            end: End point
+            radius: Radius
+            filter: Shape filter
 
-        .. Note::
+        Note:
             Sensor shapes are included in the result (In
             :py:meth:`Space.segment_query_first` they are not)
-
-        :param start: Starting point
-        :param end: End point
-        :param float radius: Radius
-        :param ShapeFilter shape_filter: Shape filter
-
-        :rtype: [:py:class:`SegmentQueryInfo`]
         """
-        assert len(start) == 2
-        assert len(end) == 2
-        query_hits: List[SegmentQueryInfo] = []
 
         @ffi.callback("cpSpaceSegmentQueryFunc")
-        def cf(_shape, point, normal, alpha, data):  # type: ignore
-            shape = self._get_shape(_shape)
-            p = SegmentQueryInfo(
-                shape, Vec2d(point.x, point.y), Vec2d(normal.x, normal.y), alpha
-            )
-            query_hits.append(p)
+        def cb(ptr, point, normal, alpha, _data):
+            shape = shape_from_cffi(self, ptr)
+            if shape:
+                pt = Vec2d(point.x, point.y)
+                normal = Vec2d(normal.x, normal.y)
+                query_hits.append(SegmentQueryInfo(shape, pt, normal, alpha))
 
+        query_hits: List[SegmentQueryInfo] = []
+        filter = filter or ShapeFilter()
         data = ffi.new_handle(self)
-        cp.cpSpaceSegmentQuery(self._space, start, end, radius, shape_filter, cf, data)
+        cp.cpSpaceSegmentQuery(self._space, start, end, radius, filter, cb, data)
         return query_hits
 
+    # noinspection PyShadowingBuiltins
     def segment_query_first(
         self,
         start: Tuple[float, float],
         end: Tuple[float, float],
-        radius: float,
-        shape_filter: ShapeFilter,
+        radius: float = 0.0,
+        filter: ShapeFilter = None,
     ) -> Optional[SegmentQueryInfo]:
         """Query space along the line segment from start to end with the
         given radius.
 
-        The filter is applied to the query and follows the same rules as the
-        collision detection.
-
-        .. Note::
-            Sensor shapes are not included in the result (In
-            :py:meth:`Space.segment_query` they are)
-
-        See :py:class:`ShapeFilter` for details about how the shape_filter
-        parameter can be used.
-
-        :rtype: :py:class:`SegmentQueryInfo` or None
+        Similar to :py:meth:`Space.segment_query`, but return the first query
+        or None.
         """
-        assert len(start) == 2
-        assert len(end) == 2
-        info = ffi.new("cpSegmentQueryInfo *")
-        _shape = cp.cpSpaceSegmentQueryFirst(
-            self._space, start, end, radius, shape_filter, info
-        )
 
-        shape = self._get_shape(_shape)
-        if shape != None:
-            return SegmentQueryInfo(
-                shape,
-                Vec2d(info.point.x, info.point.y),
-                Vec2d(info.normal.x, info.normal.y),
-                info.alpha,
-            )
+        info = ffi.new("cpSegmentQueryInfo *")
+        filter = filter or ShapeFilter()
+        ptr = cp.cpSpaceSegmentQueryFirst(self._space, start, end, radius, filter, info)
+        shape = shape_from_cffi(self, ptr)
+        if shape is not None:
+            pos = Vec2d(info.point.x, info.point.y)
+            normal = Vec2d(info.normal.x, info.normal.y)
+            return SegmentQueryInfo(shape, pos, normal, info.alpha)
         return None
 
-    def bb_query(self, bb: "BB", shape_filter: ShapeFilter) -> List[Shape]:
+    # noinspection PyShadowingBuiltins
+    def bb_query(self, bb: "BB", filter: ShapeFilter = None) -> List[Shape]:
         """Query space to find all shapes near bb.
 
         The filter is applied to the query and follows the same rules as the
         collision detection.
 
-        .. Note::
+        Note:
             Sensor shapes are included in the result
-
-        :param bb: Bounding box
-        :param shape_filter: Shape filter
-
-        :rtype: [:py:class:`Shape`]
         """
 
-        query_hits = []
-
         @ffi.callback("cpSpaceBBQueryFunc")
-        def cf(_shape, data):  # type: ignore
-            shape = self._get_shape(_shape)
-            assert shape is not None
-            nonlocal query_hits
-            query_hits.append(shape)
+        def cb(ptr, _):
+            shape = shape_from_cffi(self, ptr)
+            if shape:
+                query_hits.append(shape)
 
+        query_hits: List[Shape] = []
         data = ffi.new_handle(self)
-        cp.cpSpaceBBQuery(self._space, bb, shape_filter, cf, data)
+        cp.cpSpaceBBQuery(self._space, bb, filter, cb, data)
         return query_hits
 
     def shape_query(self, shape: Shape) -> List[ShapeQueryInfo]:
         """Query a space for any shapes overlapping the given shape
 
-        .. Note::
+        Note:
             Sensor shapes are included in the result
-
-        :param shape: Shape to query with
-        :type shape: :py:class:`Circle`, :py:class:`Poly` or :py:class:`Segment`
-
-        :rtype: [:py:class:`ShapeQueryInfo`]
         """
 
-        query_hits = []
-
         @ffi.callback("cpSpaceShapeQueryFunc")
-        def cf(_shape, _points, _data):
-            found_shape = self._get_shape(_shape)
-            point_set = contact_point_set_from_cffi(_points)
-            info = ShapeQueryInfo(found_shape, point_set)
-            query_hits.append(info)
+        def cb(ptr, points, _):
+            obj = shape_from_cffi(self, ptr)
+            if obj:
+                point_set = contact_point_set_from_cffi(points)
+                query_hits.append(ShapeQueryInfo(obj, point_set))
 
+        query_hits: List[ShapeQueryInfo] = []
         data = ffi.new_handle(self)
-        cp.cpSpaceShapeQuery(self._space, shape._shape, cf, data)
-
+        cp.cpSpaceShapeQuery(self._space, get_cffi_ref(shape), cb, data)
         return query_hits
 
-    def debug_draw(self, options: SpaceDebugDrawOptions) -> None:
+    def debug_draw(
+        self: S, options: Union["SpaceDebugDrawOptions", str, None] = None
+    ) -> S:
         """Debug draw the current state of the space using the supplied drawing
         options.
 
@@ -1015,16 +999,33 @@ class Space(PickleMixin, FilterElementsMixin):
 
         :type options: :py:class:`SpaceDebugDrawOptions`
         """
-        if options._use_chipmunk_debug_draw:
-            h = ffi.new_handle(self)
-            # we need to hold h until the end of cpSpaceDebugDraw to prevent GC
-            options._options.data = h
 
-            with options:
-                cp.cpSpaceDebugDraw(self._space, options._options)
-        else:
+        if options is None or isinstance(options, str):
+            options = get_debug_options(options)
+
+        if options.bypass_chipmunk:
             for shape in self.shapes:
                 options.draw_shape(shape)
+        else:
+            # We need to hold h until the end of cpSpaceDebugDraw to prevent GC
+            options._options.data = ptr = ffi.new_handle(self)
+            with options:
+                cp.cpSpaceDebugDraw(self._space, options._options)
+            del ptr
+        return self
+
+
+@lru_cache
+def get_debug_options(opt) -> "SpaceDebugDrawOptions":
+    if opt is None:
+        return get_debug_options("pygame")
+    elif opt == "pygame":
+        return DEBUG_DRAW_PYGAME()
+    elif opt == "pyglet":
+        return DEBUG_DRAW_PYGLET()
+    elif opt == "pyxel":
+        return DEBUG_DRAW_PYXEL()
+    raise ValueError(f"invalid debug draw option: {opt}")
 
 
 @sk.curry(2)
@@ -1064,3 +1065,21 @@ def cffi_free_space(free_cb, cp_space):
 
     logging.debug("spacefree free %s", cp_space)
     free_cb(cp_space)
+
+
+# noinspection PyProtectedMember
+def shape_from_cffi(space: Space, ptr) -> Optional[Shape]:
+    """Internal function that returns shape from cffi pointer."""
+    if not bool(ptr):
+        return None
+
+    id_ = int(ffi.cast("int", cp.cpShapeGetUserData(ptr)))
+    if id_ in space._shapes:
+        return space._shapes[id_]
+    elif id_ in space._removed_shapes:
+        return space._removed_shapes[id_]
+    else:
+        return None
+
+
+Arbiter._shape_from_cffi = staticmethod(shape_from_cffi)

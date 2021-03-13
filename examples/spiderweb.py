@@ -113,7 +113,7 @@ mouse_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
 def on_mouse_press(x, y, button, modifiers):
     mouse_body.position = Vec2d(x, y)
     hit = space.point_query_nearest((x, y), 10, easymunk.ShapeFilter())
-    if hit != None:
+    if hit is not None:
         global selected
         body = hit.shape.body
         rest_length = mouse_body.position.distance(body.position)
@@ -128,7 +128,7 @@ def on_mouse_press(x, y, button, modifiers):
 @window.event
 def on_mouse_release(x, y, button, modifiers):
     global selected
-    if selected != None:
+    if selected is not None:
         space.remove(selected)
         selected = None
 

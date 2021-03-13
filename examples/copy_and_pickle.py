@@ -90,7 +90,7 @@ def main():
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 # find all bodies with a circle shape in all spaces
                 for s in space1.shapes + space2.shapes:
-                    if isinstance(s, easymunk.Circle) and s.body != None:
+                    if isinstance(s, easymunk.Circle) and s.body is not None:
                         s.body.apply_impulse_at_local_point((20000, 0))
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_p:
                 pygame.image.save(screen, "copy_and_pickle.png")

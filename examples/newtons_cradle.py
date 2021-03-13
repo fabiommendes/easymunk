@@ -171,11 +171,11 @@ def main():
                     body.apply_impulse_at_local_point((-6000, 0))
 
             elif event.type == pygame.MOUSEBUTTONDOWN and is_interactive:
-                if selected != None:
+                if selected is not None:
                     space.remove(selected)
                 p = from_pygame(Vec2d(*event.pos))
                 hit = space.point_query_nearest(p, 0, pm.ShapeFilter())
-                if hit != None:
+                if hit is not None:
                     shape = hit.shape
                     rest_length = mouse_body.position.distance(shape.body.position)
                     ds = pm.DampedSpring(
@@ -185,7 +185,7 @@ def main():
                     selected = ds
 
             elif event.type == pygame.MOUSEBUTTONUP and is_interactive:
-                if selected != None:
+                if selected is not None:
                     space.remove(selected)
                     selected = None
 

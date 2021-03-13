@@ -190,7 +190,7 @@ def main():
 
         well_grounded = False
         if (
-            grounding["body"] != None
+            grounding["body"] is not None
             and abs(grounding["normal"].x / grounding["normal"].y) < feet.friction
         ):
             well_grounded = True
@@ -241,14 +241,14 @@ def main():
 
         feet.surface_velocity = -target_vx, 0
 
-        if grounding["body"] != None:
+        if grounding["body"] is not None:
             feet.friction = -PLAYER_GROUND_ACCEL / space.gravity.y
             head.friction = HEAD_FRICTION
         else:
             feet.friction, head.friction = 0, 0
 
         # Air control
-        if grounding["body"] == None:
+        if grounding["body"] is None:
             body.velocity = Vec2d(
                 cpflerpconst(
                     body.velocity.x,
@@ -288,7 +288,7 @@ def main():
         space.debug_draw(draw_options)
 
         direction_offset = 48 + (1 * direction + 1) // 2 * 48
-        if grounding["body"] != None and abs(target_vx) > 1:
+        if grounding["body"] is not None and abs(target_vx) > 1:
             animation_offset = 32 * (frame_number // 8 % 4)
         elif grounding["body"] is None:
             animation_offset = 32 * 1

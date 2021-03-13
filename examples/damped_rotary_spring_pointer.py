@@ -30,7 +30,7 @@ def main():
     moment = easymunk.moment_for_poly(1, ps)
     gun_body = easymunk.Body(1, moment)
     gun_body.position = Vec2d(300, 300)
-    gun_shape = easymunk.Poly(gun_body, ps)
+    gun_shape = easymunk.Poly(ps, body=gun_body)
 
     rest_angle = 0
     stiffness = 125000.0

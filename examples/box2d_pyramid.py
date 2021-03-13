@@ -22,7 +22,7 @@ class PyramidDemo:
         self.space.gravity = (0.0, -900.0)
         self.space.sleep_time_threshold = 0.3
         # ground
-        shape = easymunk.Segment(self.space.static_body, (5, 100), (595, 100), 1.0)
+        shape = easymunk.Segment((5, 100), (595, 100), 1.0, self.space.static_body)
         shape.friction = 1.0
         self.space.add(shape)
 
@@ -41,7 +41,7 @@ class PyramidDemo:
                 moment = easymunk.moment_for_poly(mass, points, (0, 0))
                 body = easymunk.Body(mass, moment)
                 body.position = y
-                shape = easymunk.Poly(body, points)
+                shape = easymunk.Poly(points, body=body)
                 shape.friction = 1
                 self.space.add(body, shape)
 

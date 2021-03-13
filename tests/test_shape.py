@@ -7,12 +7,12 @@ import easymunk as mk
 
 class UnitTestShape(unittest.TestCase):
     def testId(self) -> None:
-        c = mk.Circle(None, 4)
+        c = mk.Circle(4, body=None)
         self.assertGreater(c._id, 0)
 
     def testPointQuery(self) -> None:
         b = mk.Body(1, 1)
-        c = mk.Circle(b, 5)
+        c = mk.Circle(5, body=b)
         c.cache_bb()
 
         info = c.point_query((0, 0))
@@ -31,7 +31,7 @@ class UnitTestShape(unittest.TestCase):
 
     def testSegmentQuery(self) -> None:
         b = mk.Body(1, 1, position=(10, 10))
-        c = mk.Circle(b, 5)
+        c = mk.Circle(5, body=b)
         c.cache_bb()
         assert c.segment_query((-50, 0), (50, 0)) is None
 
@@ -47,19 +47,19 @@ class UnitTestShape(unittest.TestCase):
         assert info.alpha == approx(0.5646446609406)
 
     def testMass(self) -> None:
-        c = mk.Circle(None, 1)
+        c = mk.Circle(1, body=None)
         assert c.mass == 0
         c.mass = 2
         assert c.mass == 2
 
     def testDensity(self) -> None:
-        c = mk.Circle(None, 1)
+        c = mk.Circle(1, body=None)
         assert c.density == 0
         c.density = 2
         assert c.density == 2
 
     def testMoment(self) -> None:
-        c = mk.Circle(None, 5)
+        c = mk.Circle(5, body=None)
         assert c.moment == 0
 
         c.density = 2
@@ -70,24 +70,24 @@ class UnitTestShape(unittest.TestCase):
         assert c.moment == approx(25)
 
     def testArea(self) -> None:
-        c = mk.Circle(None, 5)
+        c = mk.Circle(5, body=None)
         assert c.area == 78.53981633974483
 
     def testCenterOfGravity(self) -> None:
-        c = mk.Circle(None, 5)
+        c = mk.Circle(5, body=None)
         assert c.center_of_gravity == (0, 0)
 
-        c = mk.Circle(None, 5, (10, 5))
+        c = mk.Circle(5, (10, 5), None)
         assert c.center_of_gravity.x == 10
         assert c.center_of_gravity.y == 5
 
     def testNoBody(self) -> None:
-        c = mk.Circle(None, 1)
+        c = mk.Circle(1, body=None)
         assert c.body is None
 
     def testRemoveBody(self) -> None:
         b = mk.Body(1, 1)
-        c = mk.Circle(b, 1)
+        c = mk.Circle(1, body=b)
         c.body = None
 
         assert c.body is None
@@ -96,7 +96,7 @@ class UnitTestShape(unittest.TestCase):
     def testSwitchBody(self) -> None:
         b1 = mk.Body(1, 1)
         b2 = mk.Body(1, 1)
-        c = mk.Circle(b1, 1)
+        c = mk.Circle(1, body=b1)
         assert c.body == b1
         assert c in b1.shapes
         assert c not in b2.shapes
@@ -107,7 +107,7 @@ class UnitTestShape(unittest.TestCase):
 
     def testSensor(self) -> None:
         b1 = mk.Body(1, 1)
-        c = mk.Circle(b1, 1)
+        c = mk.Circle(1, body=b1)
         assert not c.sensor
 
         c.sensor = True
@@ -115,42 +115,42 @@ class UnitTestShape(unittest.TestCase):
 
     def testElasticity(self) -> None:
         b1 = mk.Body(1, 1)
-        c = mk.Circle(b1, 1)
+        c = mk.Circle(1, body=b1)
         assert c.elasticity == 0
         c.elasticity = 1
         assert c.elasticity == 1
 
     def testFriction(self) -> None:
         b1 = mk.Body(1, 1)
-        c = mk.Circle(b1, 1)
+        c = mk.Circle(1, body=b1)
         assert c.friction == 0
         c.friction = 1
         assert c.friction == 1
 
     def testSurfaceVelocity(self) -> None:
         b1 = mk.Body(1, 1)
-        c = mk.Circle(b1, 1)
+        c = mk.Circle(1, body=b1)
         assert c.surface_velocity == (0, 0)
         c.surface_velocity = (1, 2)
         assert c.surface_velocity == (1, 2)
 
     def testCollisionType(self) -> None:
         b1 = mk.Body(1, 1)
-        c = mk.Circle(b1, 1)
+        c = mk.Circle(1, body=b1)
         assert c.collision_type == 0
         c.collision_type = 1
         assert c.collision_type == 1
 
     def testFilter(self) -> None:
         b1 = mk.Body(1, 1)
-        c = mk.Circle(b1, 1)
+        c = mk.Circle(1, body=b1)
         assert c.filter == mk.ShapeFilter(0, 0xFFFFFFFF, 0xFFFFFFFF)
         c.filter = mk.ShapeFilter(1, 0xFFFFFFF2, 0xFFFFFFF3)
         assert c.filter == mk.ShapeFilter(1, 0xFFFFFFF2, 0xFFFFFFF3)
 
     def testSpace(self) -> None:
         b1 = mk.Body(1, 1)
-        c = mk.Circle(b1, 1)
+        c = mk.Circle(1, body=b1)
         assert c.space is None
         s = mk.Space()
         s.add(b1, c)
@@ -158,11 +158,11 @@ class UnitTestShape(unittest.TestCase):
 
     def testShapesCollide(self) -> None:
         b1 = mk.Body(1, 1)
-        s1 = mk.Circle(b1, 10)
+        s1 = mk.Circle(10, body=b1)
 
         b2 = mk.Body(1, 1)
         b2.position = 30, 30
-        s2 = mk.Circle(b2, 10)
+        s2 = mk.Circle(10, body=b2)
 
         c = s1.shapes_collide(s2)
         assert c.normal == (1, 0)
@@ -174,7 +174,7 @@ class UnitTestShape(unittest.TestCase):
 
     def testPickle(self) -> None:
         b = mk.Body(1, 2)
-        c = mk.Circle(b, 3, (4, 5))
+        c = mk.Circle(3, (4, 5), b)
         c.sensor = True
         c.collision_type = 6
         c.filter = mk.ShapeFilter()
@@ -195,7 +195,7 @@ class UnitTestShape(unittest.TestCase):
         assert c.mass == c2.mass
         assert c.body.mass == c2.body.mass
 
-        c = mk.Circle(None, 1)
+        c = mk.Circle(1, body=None)
         c.density = 3
 
         s = pickle.dumps(c)
@@ -210,35 +210,35 @@ class UnitTestShape(unittest.TestCase):
 class UnitTestCircle(unittest.TestCase):
     def testCircleBB(self) -> None:
         b = mk.Body(10, 10)
-        c = mk.Circle(b, 5)
+        c = mk.Circle(5, body=b)
 
         c.cache_bb()
 
         assert c.bb == mk.BB(-5.0, -5.0, 5.0, 5.0)
 
     def testCircleNoBody(self) -> None:
-        c = mk.Circle(None, 5)
+        c = mk.Circle(5, body=None)
 
         bb = c.update_transform(mk.Transform(1, 2, 3, 4, 5, 6))
         assert c.bb == bb
         assert c.bb == mk.BB(0, 1, 10, 11)
 
     def test_offset(self) -> None:
-        c = mk.Circle(None, 5, offset=(1, 2))
+        c = mk.Circle(5, offset=(1, 2), body=None)
         assert c.offset == (1, 2)
 
         c.offset = (3, 4)
         assert c.offset == (3, 4)
 
     def test_radius(self) -> None:
-        c = mk.Circle(None, 5)
+        c = mk.Circle(5, body=None)
         assert c.radius == 5
 
         c.radius = 3
         assert c.radius == 3
 
     def testPickle(self) -> None:
-        c = mk.Circle(None, 3, (4, 5))
+        c = mk.Circle(3, (4, 5), None)
 
         s = pickle.dumps(c)
         c2 = pickle.loads(s)
@@ -251,14 +251,14 @@ class UnitTestSegment(unittest.TestCase):
     def testBB(self) -> None:
         s = mk.Space()
         b = mk.Body(10, 10)
-        c = mk.Segment(b, (2, 2), (2, 3), 2)
+        c = mk.Segment((2, 2), (2, 3), 2, b)
 
         c.cache_bb()
 
         assert c.bb == mk.BB(0, 0, 4.0, 5.0)
 
     def test_properties(self) -> None:
-        c = mk.Segment(None, (2, 2), (2, 3), 4)
+        c = mk.Segment((2, 2), (2, 3), 4, None)
 
         assert c.a == (2, 2)
         assert c.b == (2, 3)
@@ -273,15 +273,15 @@ class UnitTestSegment(unittest.TestCase):
         assert c.radius == 5
 
     def testSetNeighbors(self) -> None:
-        c = mk.Segment(None, (2, 2), (2, 3), 1)
+        c = mk.Segment((2, 2), (2, 3), 1, None)
         c.set_neighbors((2, 2), (2, 3))
 
     def testSegmentSegmentCollision(self) -> None:
         s = mk.Space()
         b1 = mk.Body(10, 10)
-        c1 = mk.Segment(b1, (-1, -1), (1, 1), 1)
+        c1 = mk.Segment((-1, -1), (1, 1), 1, b1)
         b2 = mk.Body(10, 10)
-        c2 = mk.Segment(b2, (1, -1), (-1, 1), 1)
+        c2 = mk.Segment((1, -1), (-1, 1), 1, b2)
 
         s.add(b1, b2, c1, c2)
 
@@ -297,7 +297,7 @@ class UnitTestSegment(unittest.TestCase):
         assert 1 == self.num_of_begins
 
     def testPickle(self) -> None:
-        c = mk.Segment(None, (1, 2), (3, 4), 5)
+        c = mk.Segment((1, 2), (3, 4), 5, None)
 
         s = pickle.dumps(c)
         c2 = pickle.loads(s)
@@ -309,20 +309,18 @@ class UnitTestSegment(unittest.TestCase):
 
 class UnitTestPoly(unittest.TestCase):
     def testInit(self) -> None:
-        c = mk.Poly(None, [(0, 0), (10, 10), (20, 0), (-10, 10)], None, 0)
+        c = mk.Poly([(0, 0), (10, 10), (20, 0), (-10, 10)], None, 0, None)
 
         b = mk.Body(1, 2)
-        c = mk.Poly(
-            b, [(0, 0), (10, 10), (20, 0), (-10, 10)], mk.Transform.identity(), 6
-        )
+        c = mk.Poly([(0, 0), (10, 10), (20, 0), (-10, 10)], mk.Transform.identity(), 6, b)
 
     def test_vertices(self) -> None:
         vs = [(-10, 10), (0, 0), (20, 0), (10, 10)]
-        c = mk.Poly(None, vs, None, 0)
+        c = mk.Poly(vs, None, 0, None)
 
         assert c.get_vertices() == vs
 
-        c2 = mk.Poly(None, vs, mk.Transform(1, 2, 3, 4, 5, 6), 0)
+        c2 = mk.Poly(vs, mk.Transform(1, 2, 3, 4, 5, 6), 0, None)
 
         vs2 = [(5.0, 6.0), (25.0, 26.0), (45.0, 66.0), (25.0, 46.0)]
         assert c2.get_vertices() == vs2
@@ -336,38 +334,38 @@ class UnitTestPoly(unittest.TestCase):
         assert c.get_vertices() == vs3
 
     def testBB(self) -> None:
-        c = mk.Poly(None, [(2, 2), (4, 3), (3, 5)])
+        c = mk.Poly([(2, 2), (4, 3), (3, 5)], body=None)
         bb = c.update_transform(mk.Transform.identity())
         assert bb == c.bb
         assert c.bb == mk.BB(2, 2, 4, 5)
 
         b = mk.Body(1, 2)
-        c = mk.Poly(b, [(2, 2), (4, 3), (3, 5)])
+        c = mk.Poly([(2, 2), (4, 3), (3, 5)], body=b)
         c.cache_bb()
         assert c.bb == mk.BB(2, 2, 4, 5)
 
         s = mk.Space()
         b = mk.Body(1, 2)
-        c = mk.Poly(b, [(2, 2), (4, 3), (3, 5)])
+        c = mk.Poly([(2, 2), (4, 3), (3, 5)], body=b)
         s.add(b, c)
         assert c.bb == mk.BB(2, 2, 4, 5)
 
     def test_radius(self) -> None:
-        c = mk.Poly(None, [(2, 2), (4, 3), (3, 5)], radius=10)
+        c = mk.Poly([(2, 2), (4, 3), (3, 5)], radius=10, body=None)
         assert c.radius == 10
 
         c.radius = 20
         assert c.radius == 20
 
     def testCreateBox(self) -> None:
-        c = mk.Poly.create_box(None, (4, 2), 3)
+        c = mk.Poly.create_box((4, 2), 3, None)
         assert c.get_vertices() == [(2, -1), (2, 1), (-2, 1), (-2, -1)]
 
-        c = mk.Poly.create_box_bb(None, mk.BB(1, 2, 3, 4), 3)
+        c = mk.Poly.create_box_bb(mk.BB(1, 2, 3, 4), 3, None)
         assert c.get_vertices() == [(3, 2), (3, 4), (1, 4), (1, 2)]
 
     def testPickle(self) -> None:
-        c = mk.Poly(None, [(1, 2), (3, 4), (5, 6)], radius=5)
+        c = mk.Poly([(1, 2), (3, 4), (5, 6)], radius=5, body=None)
 
         s = pickle.dumps(c)
         c2 = pickle.loads(s)

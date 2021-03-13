@@ -11,7 +11,8 @@ from typing import (
     TypeVar,
     Union,
     Tuple,
-    List, Iterator,
+    List,
+    Iterator,
 )
 from weakref import WeakSet
 
@@ -29,6 +30,7 @@ from .arbiter import Arbiter
 from .collections import Shapes, Constraints
 from .util import void, set_attrs, py_space, init_attributes
 from .vec2d import Vec2d, VecLike, vec2d_from_cffi
+from .shapes import MakeShapeMixin
 
 if TYPE_CHECKING:
     from .shape_filter import ShapeFilter
@@ -37,9 +39,9 @@ if TYPE_CHECKING:
     from .shapes import Shape, Circle, Poly, Segment
     from .bb import BB
 else:
-    Circle = sk.import_later('.shapes:Circle', __package__)
-    Segment = sk.import_later('.shapes:Segment', __package__)
-    Poly = sk.import_later('.shapes:Poly', __package__)
+    Circle = sk.import_later(".shapes:Circle", __package__)
+    Segment = sk.import_later(".shapes:Segment", __package__)
+    Poly = sk.import_later(".shapes:Poly", __package__)
 
 B = TypeVar("B", bound="Body")
 _BodyType = int
@@ -47,7 +49,9 @@ _PositionFunc = Callable[["Body", float], None]
 _VelocityFunc = Callable[["Body", Vec2d, float, float], None]
 
 
-class Body(PickleMixin, TypingAttrMixing, HasBBMixin, FilterElementsMixin):
+class Body(
+    MakeShapeMixin, PickleMixin, TypingAttrMixing, HasBBMixin, FilterElementsMixin
+):
     """A rigid body
 
     * Use forces to modify the rigid bodies if possible. This is likely to be
@@ -140,7 +144,7 @@ class Body(PickleMixin, TypingAttrMixing, HasBBMixin, FilterElementsMixin):
     #
     @staticmethod
     def update_velocity(
-            body: "Body", gravity: VecLike, damping: float, dt: float
+        body: "Body", gravity: VecLike, damping: float, dt: float
     ) -> None:
         """Default rigid body velocity integration function.
 
@@ -371,7 +375,7 @@ class Body(PickleMixin, TypingAttrMixing, HasBBMixin, FilterElementsMixin):
         v2 = self.velocity.dot(self.velocity)
         w2 = self.angular_velocity * self.angular_velocity
         return 0.5 * (
-                (self.mass * v2 if v2 else 0.0) + (self.moment * w2 if w2 else 0.0)
+            (self.mass * v2 if v2 else 0.0) + (self.moment * w2 if w2 else 0.0)
         )
 
     @property
@@ -465,11 +469,11 @@ class Body(PickleMixin, TypingAttrMixing, HasBBMixin, FilterElementsMixin):
         return int(ffi.cast("int", lib.cpBodyGetUserData(self._cffi_ref)))
 
     def __init__(
-            self,
-            mass: float = 0,
-            moment: float = 0,
-            body_type: _BodyType = DYNAMIC,
-            **kwargs,
+        self,
+        mass: float = 0,
+        moment: float = 0,
+        body_type: _BodyType = DYNAMIC,
+        **kwargs,
     ) -> None:
         """Create a new Body
 
@@ -578,10 +582,11 @@ class Body(PickleMixin, TypingAttrMixing, HasBBMixin, FilterElementsMixin):
         )
         Body._id_counter += 1
 
-    def cache_bb(self):
-        for s in self.shapes:
-            s.cache_bb()
-        return self.bb
+    def _create_shape(self, cls, args, kwargs):
+        shape = cls(*args, body=self, **kwargs)
+        if self.space is not None:
+            self.space.add(shape)
+        return shape
 
     def _set_velocity_func(self, func: _VelocityFunc) -> None:
         @ffi.callback("cpBodyVelocityFunc")
@@ -600,6 +605,11 @@ class Body(PickleMixin, TypingAttrMixing, HasBBMixin, FilterElementsMixin):
         self._position_func_base = func
         self._position_func = _impl
         lib.cpBodySetPositionUpdateFunc(self._cffi_ref, _impl)
+
+    def cache_bb(self):
+        for s in self.shapes:
+            s.cache_bb()
+        return self.bb
 
     def apply_force(self: B, force) -> B:
         """
@@ -630,7 +640,7 @@ class Body(PickleMixin, TypingAttrMixing, HasBBMixin, FilterElementsMixin):
         return self
 
     def apply_force_at_local_point(
-            self: B, force: VecLike, point: VecLike = (0, 0)
+        self: B, force: VecLike, point: VecLike = (0, 0)
     ) -> B:
         """Add the local force force to body as if applied from the body
         local point.
@@ -644,7 +654,7 @@ class Body(PickleMixin, TypingAttrMixing, HasBBMixin, FilterElementsMixin):
         return self
 
     def apply_impulse_at_local_point(
-            self: B, impulse: VecLike, point: VecLike = (0, 0)
+        self: B, impulse: VecLike, point: VecLike = (0, 0)
     ) -> B:
         """Add the local impulse impulse to body as if applied from the body
         local point.
@@ -690,7 +700,7 @@ class Body(PickleMixin, TypingAttrMixing, HasBBMixin, FilterElementsMixin):
         return self
 
     def each_arbiter(
-            self: B, func: Callable[..., None] = set_attrs, *args: Any, **kwargs: Any
+        self: B, func: Callable[..., None] = set_attrs, *args: Any, **kwargs: Any
     ) -> B:
         """Run func on each of the arbiters on this body.
 
@@ -874,12 +884,12 @@ class Body(PickleMixin, TypingAttrMixing, HasBBMixin, FilterElementsMixin):
         for shape in other.shapes:
             if isinstance(shape, Circle):
                 offset = self.world_to_local(other.local_to_world(shape.offset))
-                shape = Circle(self, shape.radius, offset)
+                shape = Circle(shape.radius, offset, self)
             elif isinstance(shape, Poly):
                 vertices = [
                     self.world_to_local(v) for v in shape.get_vertices(world=True)
                 ]
-                shape = Poly(self, vertices, radius=shape.radius)
+                shape = Poly(vertices, radius=shape.radius, body=self)
             else:
                 raise NotImplementedError
 
@@ -944,17 +954,18 @@ class ShapeMixin:
     """
     Base class for bodies with a single shape.
     """
-    radius: float = sk.delegate_to('shape', mutable=True)
-    area: float = sk.delegate_to('shape')
-    collision_type: int = sk.delegate_to('shape')
-    filter: "ShapeFilter" = sk.delegate_to('shape')
-    elasticity: float = sk.delegate_to('shape')
-    friction: float = sk.delegate_to('shape')
-    surface_velocity: Vec2d = sk.delegate_to('shape')
-    bb: "BB" = sk.delegate_to('shape')
-    point_query = sk.delegate_to('shape')
-    segment_query = sk.delegate_to('shape')
-    shapes_collide = sk.delegate_to('shape')
+
+    radius: float = sk.delegate_to("shape", mutable=True)
+    area: float = sk.delegate_to("shape")
+    collision_type: int = sk.delegate_to("shape")
+    filter: "ShapeFilter" = sk.delegate_to("shape")
+    elasticity: float = sk.delegate_to("shape")
+    friction: float = sk.delegate_to("shape")
+    surface_velocity: Vec2d = sk.delegate_to("shape")
+    bb: "BB" = sk.delegate_to("shape")
+    point_query = sk.delegate_to("shape")
+    segment_query = sk.delegate_to("shape")
+    shapes_collide = sk.delegate_to("shape")
     body: "Body" = property(lambda self: self)
 
 
@@ -962,35 +973,38 @@ class CircleBody(ShapeMixin, Body):
     """
     A body attached to a single circular shape.
     """
-    offset: Vec2d = sk.delegate_to('shape', mutable=True)
+
+    offset: Vec2d = sk.delegate_to("shape", mutable=True)
 
     def __init__(self, radius, *args, offset=(0, 0), **kwargs):
         super().__init__(*args, **kwargs)
-        self.shape: "Circle" = Circle(self, radius, offset=offset)
+        self.shape: "Circle" = Circle(radius, offset=offset, body=self)
 
 
 class PolyBody(ShapeMixin, Body):
     """
     A body attached to a single circular shape.
     """
-    get_vertices = sk.delegate_to('shape')
-    set_vertices = sk.delegate_to('shape')
+
+    get_vertices = sk.delegate_to("shape")
+    set_vertices = sk.delegate_to("shape")
 
     def __init__(self, vertices, *args, radius=0, **kwargs):
         super().__init__(*args, **kwargs)
-        self.shape: "Poly" = Poly(self, vertices, radius=radius)
+        self.shape: "Poly" = Poly(vertices, radius=radius, body=self)
 
 
 class SegmentBody(ShapeMixin, Body):
     """
     A body attached to a single circular shape.
     """
-    a: Vec2d = sk.delegate_to('shape', mutable=True)
-    b: Vec2d = sk.delegate_to('shape', mutable=True)
+
+    a: Vec2d = sk.delegate_to("shape", mutable=True)
+    b: Vec2d = sk.delegate_to("shape", mutable=True)
 
     def __init__(self, a, b, *args, radius=0, **kwargs):
         super().__init__(*args, **kwargs)
-        self.shape: "Segment" = Segment(self, a, b, radius)
+        self.shape: "Segment" = Segment(a, b, radius, self)
 
 
 #

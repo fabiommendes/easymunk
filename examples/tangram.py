@@ -24,7 +24,7 @@ class Tangram:
         a = Vec2d(20, 30)
         b = Vec2d(self.width - 20, 70)
         body = self.space.static_body
-        line = lambda u, v: mk.Segment(body, u, v, radius=10.0, friction=1.0)
+        line = lambda u, v: mk.Segment(u, v, radius=10.0, body=body, friction=1.0)
         shapes = [line(a, b), line(a, a + (-10, 200)), line(b, b + (10, 200))]
         self.space.add(*shapes)
 
@@ -40,11 +40,8 @@ class Tangram:
         L = 100
         pos = Vec2d(self.width // 2, self.height // 2 + 100)
         add = self.space.add
-        shape = mk.Poly(
-            mk.Body(position=pos + (L, 0)),
-            vertices=[(0, 0), (L, 0), (0, L)],
-            density=1,
-        )
+        shape = mk.Poly(vertices=[(0, 0), (L, 0), (0, L)],
+                        body=mk.Body(position=pos + (L, 0)), density=1)
 
         yield add(t1 := shape.body)
         yield add(sqr := t1.copy().move(L, L).rotate(180).fuse_with(t1).move(-L, 0))

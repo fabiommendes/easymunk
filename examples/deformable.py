@@ -52,7 +52,7 @@ def generate_geometry(surface, space):
         for i in range(len(line) - 1):
             p1 = line[i]
             p2 = line[i + 1]
-            shape = easymunk.Segment(space.static_body, p1, p2, 1)
+            shape = easymunk.Segment(p1, p2, 1, space.static_body)
             shape.friction = 0.5
             shape.color = pygame.Color("red")
             shape.generated = True
@@ -67,10 +67,10 @@ def main():
     space = easymunk.Space()
     space.gravity = 0, 980
     static = [
-        easymunk.Segment(space.static_body, (0, -50), (-50, 650), 5),
-        easymunk.Segment(space.static_body, (0, 650), (650, 650), 5),
-        easymunk.Segment(space.static_body, (650, 650), (650, -50), 5),
-        easymunk.Segment(space.static_body, (-50, -50), (650, -50), 5),
+        easymunk.Segment((0, -50), (-50, 650), 5, space.static_body),
+        easymunk.Segment((0, 650), (650, 650), 5, space.static_body),
+        easymunk.Segment((650, 650), (650, -50), 5, space.static_body),
+        easymunk.Segment((-50, -50), (650, -50), 5, space.static_body),
     ]
     for s in static:
         s.collision_type = 1
@@ -94,7 +94,7 @@ def main():
         moment = easymunk.moment_for_circle(mass, 0, 10)
         body = easymunk.Body(mass, moment)
         body.position = 450, 120
-        shape = easymunk.Circle(body, 10)
+        shape = easymunk.Circle(10, body=body)
         shape.friction = 0.5
         space.add(body, shape)
 
@@ -130,7 +130,7 @@ def main():
                 moment = easymunk.moment_for_circle(mass, 0, 10)
                 body = easymunk.Body(mass, moment)
                 body.position = pygame.mouse.get_pos()
-                shape = easymunk.Circle(body, 10)
+                shape = easymunk.Circle(10, body=body)
                 shape.friction = 0.5
                 space.add(body, shape)
             else:

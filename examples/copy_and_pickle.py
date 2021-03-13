@@ -36,13 +36,13 @@ def main():
             p2 = box[0]
         else:
             p2 = box[i + 1]
-        l = easymunk.Segment(space1.static_body, p1, p2, 5)
+        l = easymunk.Segment(p1, p2, 5, space1.static_body)
         l.elasticity = 0.5
         l.friction = 1
 
         space1.add(l)
 
-    template_box = easymunk.Poly.create_box(easymunk.Body(), (20, 20))
+    template_box = easymunk.Poly.create_box((20, 20), body=easymunk.Body())
     template_box.mass = 1
     template_box.friction = 1
 
@@ -54,7 +54,7 @@ def main():
 
     b = easymunk.Body()
     b.position = 30, 270
-    ball = easymunk.Circle(b, 20)
+    ball = easymunk.Circle(20, body=b)
     ball.mass = 20
     ball.friction = 1
     ball.color = pygame.Color("red")

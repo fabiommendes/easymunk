@@ -26,7 +26,7 @@ class UnitTestSpace(unittest.TestCase):
         self.b1.position = 10, 0
         self.b2.position = 20, 0
 
-        self.s1, self.s2 = p.Circle(self.b1, 5), p.Circle(self.b2, 10)
+        self.s1, self.s2 = p.Circle(5, body=self.b1), p.Circle(10, body=self.b2)
         self.s.add(self.s1, self.s2)
         pass
 
@@ -112,12 +112,12 @@ class UnitTestSpace(unittest.TestCase):
         assert s.bodies == [b]
         assert s.shapes == []
 
-        c1 = p.Circle(b, 10)
+        c1 = p.Circle(10, body=b)
         s.add(c1)
         assert s.bodies == [b]
         assert s.shapes == [c1]
 
-        c2 = p.Circle(b, 15)
+        c2 = p.Circle(15, body=b)
         s.add(c2)
         assert len(s.shapes) == 2
         assert c1 in s.shapes
@@ -133,8 +133,8 @@ class UnitTestSpace(unittest.TestCase):
     def testAddRemoveFromBody(self) -> None:
         s = p.Space()
         b = p.Body(1, 2)
-        c1 = p.Circle(b, 5)
-        c2 = p.Circle(b, 10)
+        c1 = p.Circle(5, body=b)
+        c2 = p.Circle(10, body=b)
         s.add(b)
         assert s.bodies == [b]
         assert s.shapes == {c1, c2}
@@ -143,15 +143,15 @@ class UnitTestSpace(unittest.TestCase):
         s = p.Space()
 
         b1 = p.Body(1, 2)
-        c1 = p.Circle(b1, 2)
+        c1 = p.Circle(2, body=b1)
 
         b2 = p.Body(1, 2)
-        c2 = p.Circle(b2, 2)
+        c2 = p.Circle(2, body=b2)
 
         s.add(b1, b2, c1, c2)
 
         b = p.Body(1, 2)
-        c = p.Circle(b, 2)
+        c = p.Circle(2, body=b)
 
         def pre_solve_add(arb: p.Arbiter, space: p.Space, data: Any) -> bool:
             space.add(b, c)
@@ -199,7 +199,7 @@ class UnitTestSpace(unittest.TestCase):
     def testPointQueryNearestWithShapeFilter(self) -> None:
         s = p.Space()
         b1 = p.Body(1, 1)
-        s1 = p.Circle(b1, 10)
+        s1 = p.Circle(10, body=b1)
         s.add(b1, s1)
 
         tests = [
@@ -230,12 +230,12 @@ class UnitTestSpace(unittest.TestCase):
         s = p.Space()
         b1 = p.Body(1, 1)
         b1.position = 19, 0
-        s1 = p.Circle(b1, 10)
+        s1 = p.Circle(10, body=b1)
         s.add(b1, s1)
 
         b2 = p.Body(1, 1)
         b2.position = 0, 0
-        s2 = p.Circle(b2, 10)
+        s2 = p.Circle(10, body=b2)
         s.add(b2, s2)
         s1.filter = p.ShapeFilter(categories=0b10, mask=0b01)
         hits = s.point_query((23, 0), 0, p.ShapeFilter(categories=0b01, mask=0b10))
@@ -263,7 +263,7 @@ class UnitTestSpace(unittest.TestCase):
 
     def testPointQuerySensor(self) -> None:
         s = p.Space()
-        c = p.Circle(s.static_body, 10)
+        c = p.Circle(10, body=s.static_body)
         c.sensor = True
         s.add(c)
         hits = s.point_query((0, 0), 100, p.ShapeFilter())
@@ -273,7 +273,7 @@ class UnitTestSpace(unittest.TestCase):
         s = p.Space()
         b1 = p.Body(1, 1)
         b1.position = 19, 0
-        s1 = p.Circle(b1, 10)
+        s1 = p.Circle(10, body=b1)
         s.add(b1, s1)
 
         hit = s.point_query_nearest((23, 0), 0, p.ShapeFilter())
@@ -295,7 +295,7 @@ class UnitTestSpace(unittest.TestCase):
 
     def testPointQueryNearestSensor(self) -> None:
         s = p.Space()
-        c = p.Circle(s.static_body, 10)
+        c = p.Circle(10, body=s.static_body)
         c.sensor = True
         s.add(c)
         hit = s.point_query_nearest((0, 0), 100, p.ShapeFilter())
@@ -306,12 +306,12 @@ class UnitTestSpace(unittest.TestCase):
 
         b1 = p.Body(1, 1)
         b1.position = 19, 0
-        s1 = p.Circle(b1, 10)
+        s1 = p.Circle(10, body=b1)
         s.add(b1, s1)
 
         b2 = p.Body(1, 1)
         b2.position = 0, 0
-        s2 = p.Circle(b2, 10)
+        s2 = p.Circle(10, body=b2)
         s.add(b2, s2)
 
         bb = p.BB(-7, -7, 7, 7)
@@ -322,7 +322,7 @@ class UnitTestSpace(unittest.TestCase):
 
     def testBBQuerySensor(self) -> None:
         s = p.Space()
-        c = p.Circle(s.static_body, 10)
+        c = p.Circle(10, body=s.static_body)
         c.sensor = True
         s.add(c)
         hits = s.bb_query(p.BB(0, 0, 10, 10), p.ShapeFilter())
@@ -331,7 +331,7 @@ class UnitTestSpace(unittest.TestCase):
     def testShapeQuery(self) -> None:
         self._setUp()
         b = p.Body(body_type=p.Body.KINEMATIC)
-        s = p.Circle(b, 2)
+        s = p.Circle(2, body=b)
         b.position = 20, 1
 
         hits = self.s.shape_query(s)
@@ -342,16 +342,16 @@ class UnitTestSpace(unittest.TestCase):
 
     def testShapeQuerySensor(self) -> None:
         s = p.Space()
-        c = p.Circle(s.static_body, 10)
+        c = p.Circle(10, body=s.static_body)
         c.sensor = True
         s.add(c)
-        hits = s.shape_query(p.Circle(None, 200))
+        hits = s.shape_query(p.Circle(200, body=None))
         assert len(hits) == 1
 
     def testStaticPointQueries(self) -> None:
         self._setUp()
         b = p.Body(body_type=p.Body.KINEMATIC)
-        c = p.Circle(b, 10)
+        c = p.Circle(10, body=b)
         b.position = -50, -50
 
         self.s.add(b, c)
@@ -368,7 +368,7 @@ class UnitTestSpace(unittest.TestCase):
         s = p.Space()
 
         b = p.Body(body_type=p.Body.KINEMATIC)
-        c = p.Circle(b, 10)
+        c = p.Circle(10, body=b)
 
         s.add(b, c)
 
@@ -383,7 +383,7 @@ class UnitTestSpace(unittest.TestCase):
     def testReindexShapesForBody(self) -> None:
         s = p.Space()
         b = p.Body(body_type=p.Body.STATIC)
-        c = p.Circle(b, 10)
+        c = p.Circle(10, body=b)
 
         s.add(b, c)
 
@@ -399,7 +399,7 @@ class UnitTestSpace(unittest.TestCase):
     def testReindexStatic(self) -> None:
         s = p.Space()
         b = p.Body(body_type=p.Body.STATIC)
-        c = p.Circle(b, 10)
+        c = p.Circle(10, body=b)
 
         s.add(b, c)
 
@@ -414,11 +414,11 @@ class UnitTestSpace(unittest.TestCase):
     def testReindexStaticCollision(self) -> None:
         s = p.Space()
         b1 = p.Body(10, 1000)
-        c1 = p.Circle(b1, 10)
+        c1 = p.Circle(10, body=b1)
         b1.position = Vec2d(20, 20)
 
         b2 = p.Body(body_type=p.Body.STATIC)
-        s2 = p.Segment(b2, (-10, 0), (10, 0), 1)
+        s2 = p.Segment((-10, 0), (10, 0), 1, b2)
 
         s.add(b1, c1)
         s.add(b2, s2)
@@ -445,12 +445,12 @@ class UnitTestSpace(unittest.TestCase):
 
         b1 = p.Body(1, 1)
         b1.position = 19, 0
-        s1 = p.Circle(b1, 10)
+        s1 = p.Circle(10, body=b1)
         s.add(b1, s1)
 
         b2 = p.Body(1, 1)
         b2.position = 0, 0
-        s2 = p.Circle(b2, 10)
+        s2 = p.Circle(10, body=b2)
         s.add(b2, s2)
 
         hits = s.segment_query((-13, 0), (131, 0), 0, p.ShapeFilter())
@@ -471,7 +471,7 @@ class UnitTestSpace(unittest.TestCase):
 
     def testSegmentQuerySensor(self) -> None:
         s = p.Space()
-        c = p.Circle(s.static_body, 10)
+        c = p.Circle(10, body=s.static_body)
         c.sensor = True
         s.add(c)
         hits = s.segment_query((-20, 0), (20, 0), 1, p.ShapeFilter())
@@ -482,12 +482,12 @@ class UnitTestSpace(unittest.TestCase):
 
         b1 = p.Body(1, 1)
         b1.position = 19, 0
-        s1 = p.Circle(b1, 10)
+        s1 = p.Circle(10, body=b1)
         s.add(b1, s1)
 
         b2 = p.Body(1, 1)
         b2.position = 0, 0
-        s2 = p.Circle(b2, 10)
+        s2 = p.Circle(10, body=b2)
         s.add(b2, s2)
 
         hit = s.segment_query_first((-13, 0), (131, 0), 0, p.ShapeFilter())
@@ -503,7 +503,7 @@ class UnitTestSpace(unittest.TestCase):
 
     def testSegmentQueryFirstSensor(self) -> None:
         s = p.Space()
-        c = p.Circle(s.static_body, 10)
+        c = p.Circle(10, body=s.static_body)
         c.sensor = True
         s.add(c)
         hit = s.segment_query_first((-20, 0), (20, 0), 1, p.ShapeFilter())
@@ -512,7 +512,7 @@ class UnitTestSpace(unittest.TestCase):
     def testStaticSegmentQueries(self) -> None:
         self._setUp()
         b = p.Body(body_type=p.Body.KINEMATIC)
-        c = p.Circle(b, 10)
+        c = p.Circle(10, body=b)
         b.position = -50, -50
 
         self.s.add(b, c)
@@ -527,9 +527,9 @@ class UnitTestSpace(unittest.TestCase):
     def testCollisionHandlerBegin(self) -> None:
         s = p.Space()
         b1 = p.Body(1, 1)
-        c1 = p.Circle(b1, 10)
+        c1 = p.Circle(10, body=b1)
         b2 = p.Body(1, 1)
-        c2 = p.Circle(b2, 10)
+        c2 = p.Circle(10, body=b2)
         s.add(b1, c1, b2, c2)
 
         self.hits = 0
@@ -550,9 +550,9 @@ class UnitTestSpace(unittest.TestCase):
     def testCollisionHandlerBeginNoReturn(self) -> None:
         s = p.Space()
         b1 = p.Body(1, 1)
-        c1 = p.Circle(b1, 10)
+        c1 = p.Circle(10, body=b1)
         b2 = p.Body(1, 1)
-        c2 = p.Circle(b2, 10)
+        c2 = p.Circle(10, body=b2)
         s.add(b1, c1, b2, c2)
 
         with warnings.catch_warnings(record=True) as w:
@@ -571,10 +571,10 @@ class UnitTestSpace(unittest.TestCase):
     def testCollisionHandlerPreSolve(self) -> None:
         s = p.Space()
         b1 = p.Body(1, 1)
-        c1 = p.Circle(b1, 10)
+        c1 = p.Circle(10, body=b1)
         c1.collision_type = 1
         b2 = p.Body(1, 1)
-        c2 = p.Circle(b2, 10)
+        c2 = p.Circle(10, body=b2)
         s.add(b1, c1, b2, c2)
 
         d = {}
@@ -597,9 +597,9 @@ class UnitTestSpace(unittest.TestCase):
     def testCollisionHandlerPreSolveNoReturn(self) -> None:
         s = p.Space()
         b1 = p.Body(1, 1)
-        c1 = p.Circle(b1, 10)
+        c1 = p.Circle(10, body=b1)
         b2 = p.Body(1, 1)
-        c2 = p.Circle(b2, 10)
+        c2 = p.Circle(10, body=b2)
         s.add(b1, c1, b2, c2)
 
         def pre_solve(arb: p.Arbiter, space: p.Space, data: Any) -> bool:
@@ -631,11 +631,11 @@ class UnitTestSpace(unittest.TestCase):
         s = p.Space()
 
         b1 = p.Body(1, 1)
-        c1 = p.Circle(b1, 10)
+        c1 = p.Circle(10, body=b1)
         b1.position = 9, 11
 
         b2 = p.Body(body_type=p.Body.STATIC)
-        c2 = p.Circle(b2, 10)
+        c2 = p.Circle(10, body=b2)
         b2.position = 0, 0
 
         s.add(b1, c1, b2, c2)
@@ -658,13 +658,13 @@ class UnitTestSpace(unittest.TestCase):
     def testCollisionHandlerRemoveSeparateAdd(self) -> None:
         s = p.Space()
         b1 = p.Body(1, 10)
-        c1 = p.Circle(b1, 10)
-        c2 = p.Circle(s.static_body, 5)
+        c1 = p.Circle(10, body=b1)
+        c2 = p.Circle(5, body=s.static_body)
 
         s.add(b1, c1, c2)
 
         def separate(*_: Any) -> None:
-            s.add(p.Circle(s.static_body, 2))
+            s.add(p.Circle(2, body=s.static_body))
             s.remove(c1)
 
         s.add_default_collision_handler().separate = separate
@@ -682,9 +682,9 @@ class UnitTestSpace(unittest.TestCase):
     def testWildcardCollisionHandler(self) -> None:
         s = p.Space()
         b1 = p.Body(1, 1)
-        c1 = p.Circle(b1, 10)
+        c1 = p.Circle(10, body=b1)
         b2 = p.Body(1, 1)
-        c2 = p.Circle(b2, 10)
+        c2 = p.Circle(10, body=b2)
         s.add(b1, c1, b2, c2)
 
         d = {}
@@ -709,10 +709,10 @@ class UnitTestSpace(unittest.TestCase):
     def testDefaultCollisionHandler(self) -> None:
         s = p.Space()
         b1 = p.Body(1, 1)
-        c1 = p.Circle(b1, 10)
+        c1 = p.Circle(10, body=b1)
         c1.collision_type = 1
         b2 = p.Body(1, 1)
-        c2 = p.Circle(b2, 10)
+        c2 = p.Circle(10, body=b2)
         c2.collision_type = 2
         s.add(b1, c1, b2, c2)
 
@@ -735,7 +735,7 @@ class UnitTestSpace(unittest.TestCase):
         s.add(b1, b2)
         b1.position = 10, 0
         b2.position = 20, 0
-        s1, s2 = p.Circle(b1, 5), p.Circle(b2, 10)
+        s1, s2 = p.Circle(5, body=b1), p.Circle(10, body=b2)
         s.add(s1, s2)
 
         self.calls = 0
@@ -770,7 +770,7 @@ class UnitTestSpace(unittest.TestCase):
         s = p.Space()
 
         b1 = p.Body(1, 3)
-        s1 = p.Circle(b1, 5)
+        s1 = p.Circle(5, body=b1)
         s.add(b1, s1)
         s.step(1)
         o = p.SpaceDebugDrawOptions()
@@ -893,10 +893,10 @@ class UnitTestSpace(unittest.TestCase):
         b1 = p.Body(1, 2)
         b2 = p.Body(3, 4)
         b3 = p.Body(5, 6)
-        c1 = p.Circle(b1, 7)
-        c2 = p.Circle(b1, 8)
-        c3 = p.Circle(b2, 9)
-        c4 = p.Circle(s.static_body, 10)
+        c1 = p.Circle(7, body=b1)
+        c2 = p.Circle(8, body=b1)
+        c3 = p.Circle(9, body=b2)
+        c4 = p.Circle(10, body=s.static_body)
         s.add(b1, b2, b3, c1, c2, c3, c4)
         s.static_body.custom = "x"
 

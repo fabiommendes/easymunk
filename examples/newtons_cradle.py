@@ -125,7 +125,7 @@ def main():
         body = pm.Body(mass, moment)
         body.position = (x, -125 + offset_y)
         body.start_position = Vec2d(*body.position)
-        shape = pm.Circle(body, radius)
+        shape = pm.Circle(radius, body=body)
         shape.elasticity = 0.9999999
         space.add(body, shape)
         bodies.append(body)

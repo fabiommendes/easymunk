@@ -30,8 +30,8 @@ def main():
 
     # walls
     static_lines = [
-        easymunk.Segment(space.static_body, Vec2d(111, 320), Vec2d(407, 354), 1.0),
-        easymunk.Segment(space.static_body, Vec2d(407, 354), Vec2d(407, 257), 1.0),
+        easymunk.Segment(Vec2d(111, 320), Vec2d(407, 354), 1.0, space.static_body),
+        easymunk.Segment(Vec2d(407, 354), Vec2d(407, 257), 1.0, space.static_body),
     ]
     space.add(*static_lines)
 
@@ -55,7 +55,7 @@ def main():
             body = easymunk.Body(mass, inertia)
             x = random.randint(115, 350)
             body.position = x, 200
-            shape = easymunk.Circle(body, radius, Vec2d(0, 0))
+            shape = easymunk.Circle(radius, Vec2d(0, 0), body)
             shape.color = pygame.Color("lightgrey")
             space.add(body, shape)
             balls.append(shape)

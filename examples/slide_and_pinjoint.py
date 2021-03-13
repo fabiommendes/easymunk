@@ -24,7 +24,7 @@ def add_ball(space):
     body = easymunk.Body(mass, inertia)
     x = random.randint(120, 380)
     body.position = x, 50
-    shape = easymunk.Circle(body, radius, (0, 0))
+    shape = easymunk.Circle(radius, (0, 0), body)
     shape.friction = 1
     space.add(body, shape)
     return shape
@@ -40,8 +40,8 @@ def add_L(space):
 
     body = easymunk.Body(10, 10000)
     body.position = (300, 300)
-    l1 = easymunk.Segment(body, (-145, 0), (255.0, 0.0), 1)
-    l2 = easymunk.Segment(body, (-145, 0), (-145.0, -25.0), 1)
+    l1 = easymunk.Segment((-145, 0), (255.0, 0.0), 1, body)
+    l2 = easymunk.Segment((-145, 0), (-145.0, -25.0), 1, body)
     l1.friction = 1
     l2.friction = 1
     rotation_center_joint = easymunk.PinJoint(

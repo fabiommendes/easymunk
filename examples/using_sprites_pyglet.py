@@ -30,8 +30,8 @@ space.gravity = Vec2d(0.0, -900.0)
 
 # Static line
 static_lines = [
-    easymunk.Segment(space.static_body, (11.0, 280.0), (407.0, 246.0), 0.0),
-    easymunk.Segment(space.static_body, (407.0, 246.0), (407.0, 343.0), 0.0),
+    easymunk.Segment((11.0, 280.0), (407.0, 246.0), 0.0, space.static_body),
+    easymunk.Segment((407.0, 246.0), (407.0, 343.0), 0.0, space.static_body),
 ]
 for l in static_lines:
     l.friction = 0.5
@@ -97,7 +97,7 @@ def spawn_logo(dt):
     mass = 10
     moment = easymunk.moment_for_poly(mass, vs)
     body = easymunk.Body(mass, moment)
-    shape = easymunk.Poly(body, vs)
+    shape = easymunk.Poly(vs, body=body)
     shape.friction = 0.5
     body.position = x, y
     body.angle = angle

@@ -73,14 +73,14 @@ def main():
 
     # box walls
     static = [
-        easymunk.Segment(space.static_body, (10, 50), (300, 50), 3),
-        easymunk.Segment(space.static_body, (300, 50), (325, 50), 3),
-        easymunk.Segment(space.static_body, (325, 50), (350, 50), 3),
-        easymunk.Segment(space.static_body, (350, 50), (375, 50), 3),
-        easymunk.Segment(space.static_body, (375, 50), (680, 50), 3),
-        easymunk.Segment(space.static_body, (680, 50), (680, 370), 3),
-        easymunk.Segment(space.static_body, (680, 370), (10, 370), 3),
-        easymunk.Segment(space.static_body, (10, 370), (10, 50), 3),
+        easymunk.Segment((10, 50), (300, 50), 3, space.static_body),
+        easymunk.Segment((300, 50), (325, 50), 3, space.static_body),
+        easymunk.Segment((325, 50), (350, 50), 3, space.static_body),
+        easymunk.Segment((350, 50), (375, 50), 3, space.static_body),
+        easymunk.Segment((375, 50), (680, 50), 3, space.static_body),
+        easymunk.Segment((680, 50), (680, 370), 3, space.static_body),
+        easymunk.Segment((680, 370), (10, 370), 3, space.static_body),
+        easymunk.Segment((10, 370), (10, 50), 3, space.static_body),
     ]
     static[1].color = pygame.Color("red")
     static[2].color = pygame.Color("green")
@@ -88,22 +88,22 @@ def main():
 
     # rounded shape
     rounded = [
-        easymunk.Segment(space.static_body, (500, 50), (520, 60), 3),
-        easymunk.Segment(space.static_body, (520, 60), (540, 80), 3),
-        easymunk.Segment(space.static_body, (540, 80), (550, 100), 3),
-        easymunk.Segment(space.static_body, (550, 100), (550, 150), 3),
+        easymunk.Segment((500, 50), (520, 60), 3, space.static_body),
+        easymunk.Segment((520, 60), (540, 80), 3, space.static_body),
+        easymunk.Segment((540, 80), (550, 100), 3, space.static_body),
+        easymunk.Segment((550, 100), (550, 150), 3, space.static_body),
     ]
 
     # static platforms
     platforms = [
-        easymunk.Segment(space.static_body, (170, 50), (270, 150), 3)
+        easymunk.Segment((170, 50), (270, 150), 3, space.static_body)
         # , easymunk.Segment(space.static_body, (270, 100), (300, 100), 5)
         ,
-        easymunk.Segment(space.static_body, (400, 150), (450, 150), 3),
-        easymunk.Segment(space.static_body, (400, 200), (450, 200), 3),
-        easymunk.Segment(space.static_body, (220, 200), (300, 200), 3),
-        easymunk.Segment(space.static_body, (50, 250), (200, 250), 3),
-        easymunk.Segment(space.static_body, (10, 370), (50, 250), 3),
+        easymunk.Segment((400, 150), (450, 150), 3, space.static_body),
+        easymunk.Segment((400, 200), (450, 200), 3, space.static_body),
+        easymunk.Segment((220, 200), (300, 200), 3, space.static_body),
+        easymunk.Segment((50, 250), (200, 250), 3, space.static_body),
+        easymunk.Segment((10, 370), (50, 250), 3, space.static_body),
     ]
 
     for s in static + platforms + rounded:
@@ -116,14 +116,14 @@ def main():
     platform_path_index = 0
     platform_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
     platform_body.position = 650, 100
-    s = easymunk.Segment(platform_body, (-25, 0), (25, 0), 5)
+    s = easymunk.Segment((-25, 0), (25, 0), 5, platform_body)
     s.friction = 1.0
     s.group = 1
     s.color = pygame.Color("blue")
     space.add(platform_body, s)
 
     # pass through platform
-    passthrough = easymunk.Segment(space.static_body, (270, 100), (320, 100), 5)
+    passthrough = easymunk.Segment((270, 100), (320, 100), 5, space.static_body)
     passthrough.color = pygame.Color("yellow")
     passthrough.friction = 1.0
     passthrough.collision_type = 2
@@ -142,9 +142,9 @@ def main():
     body = easymunk.Body(5, float("inf"))
     body.position = 100, 100
 
-    head = easymunk.Circle(body, 10, (0, 5))
-    head2 = easymunk.Circle(body, 10, (0, 13))
-    feet = easymunk.Circle(body, 10, (0, -5))
+    head = easymunk.Circle(10, (0, 5), body)
+    head2 = easymunk.Circle(10, (0, 13), body)
+    feet = easymunk.Circle(10, (0, -5), body)
     # Since we use the debug draw we need to hide these circles. To make it
     # easy we just set their color to black.
     feet.color = 0, 0, 0, 0

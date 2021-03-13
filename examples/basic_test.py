@@ -30,7 +30,7 @@ def main():
             body = easymunk.Body(mass, inertia)
             x = random.randint(115, 350)
             body.position = x, 400
-            shape = easymunk.Circle(body, radius, Vec2d(0, 0))
+            shape = easymunk.Circle(radius, Vec2d(0, 0), body)
             space.add(body, shape)
             balls.append(shape)
 

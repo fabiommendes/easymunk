@@ -26,11 +26,11 @@ balls = []
 
 # walls
 static_lines = [
-    easymunk.Segment(space.static_body, (150, 500), (50, 50), 1.0),
-    easymunk.Segment(space.static_body, (450, 500), (550, 50), 1.0),
-    easymunk.Segment(space.static_body, (50, 50), (300, 0), 1.0),
-    easymunk.Segment(space.static_body, (300, 0), (550, 50), 1.0),
-    easymunk.Segment(space.static_body, (300, 180), (400, 200), 1.0),
+    easymunk.Segment((150, 500), (50, 50), 1.0, space.static_body),
+    easymunk.Segment((450, 500), (550, 50), 1.0, space.static_body),
+    easymunk.Segment((50, 50), (300, 0), 1.0, space.static_body),
+    easymunk.Segment((300, 0), (550, 50), 1.0, space.static_body),
+    easymunk.Segment((300, 180), (400, 200), 1.0, space.static_body),
 ]
 for line in static_lines:
     line.elasticity = 0.7
@@ -44,7 +44,7 @@ moment = easymunk.moment_for_poly(mass, fp)
 # right flipper
 r_flipper_body = easymunk.Body(mass, moment)
 r_flipper_body.position = 450, 500
-r_flipper_shape = easymunk.Poly(r_flipper_body, fp)
+r_flipper_shape = easymunk.Poly(fp, body=r_flipper_body)
 space.add(r_flipper_body, r_flipper_shape)
 
 r_flipper_joint_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
@@ -59,7 +59,7 @@ space.add(j, s)
 # left flipper
 l_flipper_body = easymunk.Body(mass, moment)
 l_flipper_body.position = 150, 500
-l_flipper_shape = easymunk.Poly(l_flipper_body, [(-x, y) for x, y in fp])
+l_flipper_shape = easymunk.Poly([(-x, y) for x, y in fp], body=l_flipper_body)
 space.add(l_flipper_body, l_flipper_shape)
 
 l_flipper_joint_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
@@ -77,7 +77,7 @@ r_flipper_shape.elasticity = l_flipper_shape.elasticity = 0.4
 for p in [(240, 100), (360, 100)]:
     body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
     body.position = p
-    shape = easymunk.Circle(body, 10)
+    shape = easymunk.Circle(10, body=body)
     shape.elasticity = 1.5
     space.add(body, shape)
 
@@ -103,7 +103,7 @@ while running:
             body = easymunk.Body(mass, inertia)
             x = random.randint(115, 350)
             body.position = x, 200
-            shape = easymunk.Circle(body, radius, (0, 0))
+            shape = easymunk.Circle(radius, (0, 0), body)
             shape.elasticity = 0.95
             space.add(body, shape)
             balls.append(shape)

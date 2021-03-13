@@ -11,13 +11,13 @@ class UnitTestArbiter(unittest.TestCase):
         s.gravity = 0, -100
 
         b1 = p.Body(1, 1)
-        c1 = p.Circle(b1, 10)
+        c1 = p.Circle(10, body=b1)
         b1.position = Vec2d(0, 25)
         c1.collision_type = 1
         c1.elasticity = 0.6
 
         b2 = p.Body(body_type=p.Body.STATIC)
-        c2 = p.Circle(b2, 10)
+        c2 = p.Circle(10, body=b2)
         c2.collision_type = 2
         c2.elasticity = 0.3
 
@@ -40,13 +40,13 @@ class UnitTestArbiter(unittest.TestCase):
         s.gravity = 0, -100
 
         b1 = p.Body(1, float("inf"))
-        c1 = p.Circle(b1, 10)
+        c1 = p.Circle(10, body=b1)
         b1.position = Vec2d(10, 25)
         c1.collision_type = 1
         c1.friction = 0.6
 
         b2 = p.Body(body_type=p.Body.STATIC)
-        c2 = p.Circle(b2, 10)
+        c2 = p.Circle(10, body=b2)
         c2.collision_type = 2
         c2.friction = 0.3
 
@@ -69,13 +69,13 @@ class UnitTestArbiter(unittest.TestCase):
         s.gravity = 0, -100
 
         b1 = p.Body(1, float("inf"))
-        c1 = p.Circle(b1, 10)
+        c1 = p.Circle(10, body=b1)
         b1.position = 10, 25
         c1.collision_type = 1
         c1.surface_velocity = (3, 0)
 
         b2 = p.Body(body_type=p.Body.STATIC)
-        c2 = p.Circle(b2, 10)
+        c2 = p.Circle(10, body=b2)
         c2.collision_type = 2
         c2.surface_velocity = (5, 0)
 
@@ -99,12 +99,12 @@ class UnitTestArbiter(unittest.TestCase):
         s.gravity = 0, -100
 
         b1 = p.Body(1, 30)
-        c1 = p.Circle(b1, 10)
+        c1 = p.Circle(10, body=b1)
         b1.position = 5, 3
         c1.collision_type = 1
 
         b2 = p.Body(body_type=p.Body.STATIC)
-        c2 = p.Circle(b2, 10)
+        c2 = p.Circle(10, body=b2)
         c2.collision_type = 2
 
         s.add(b1, c1, b2, c2)
@@ -156,13 +156,13 @@ class UnitTestArbiter(unittest.TestCase):
         s.gravity = 0, -100
 
         b1 = p.Body(1, 30)
-        c1 = p.Circle(b1, 10)
+        c1 = p.Circle(10, body=b1)
         b1.position = 5, 3
         c1.collision_type = 1
         c1.friction = 0.5
 
         b2 = p.Body(body_type=p.Body.STATIC)
-        c2 = p.Circle(b2, 10)
+        c2 = p.Circle(10, body=b2)
         c2.collision_type = 2
         c2.friction = 0.8
 
@@ -186,13 +186,13 @@ class UnitTestArbiter(unittest.TestCase):
         s.gravity = 0, -100
 
         b1 = p.Body(1, 30)
-        c1 = p.Circle(b1, 10)
+        c1 = p.Circle(10, body=b1)
         b1.position = 5, 3
         c1.collision_type = 1
         c1.friction = 0.5
 
         b2 = p.Body(body_type=p.Body.STATIC)
-        c2 = p.Circle(b2, 10)
+        c2 = p.Circle(10, body=b2)
         c2.collision_type = 2
         c2.friction = 0.8
 
@@ -211,13 +211,13 @@ class UnitTestArbiter(unittest.TestCase):
         s.gravity = 0, -100
 
         b1 = p.Body(1, 30)
-        c1 = p.Circle(b1, 10)
+        c1 = p.Circle(10, body=b1)
         b1.position = 5, 3
         c1.collision_type = 1
         c1.friction = 0.5
 
         b2 = p.Body(body_type=p.Body.STATIC)
-        c2 = p.Circle(b2, 10)
+        c2 = p.Circle(10, body=b2)
         c2.collision_type = 2
         c2.friction = 0.8
 
@@ -245,8 +245,8 @@ class UnitTestArbiter(unittest.TestCase):
 
         b1 = p.Body(1, 30)
         b1.position = 5, 10
-        c1 = p.Circle(b1, 10)
-        c2 = p.Circle(s.static_body, 10)
+        c1 = p.Circle(10, body=b1)
+        c2 = p.Circle(10, body=s.static_body)
 
         s.add(b1, c1, c2)
 
@@ -264,13 +264,13 @@ class UnitTestArbiter(unittest.TestCase):
         s.gravity = 0, -100
 
         b1 = p.Body(1, 30)
-        c1 = p.Circle(b1, 10)
+        c1 = p.Circle(10, body=b1)
         b1.position = 5, 3
         c1.collision_type = 1
         c1.friction = 0.5
 
         b2 = p.Body(body_type=p.Body.STATIC)
-        c2 = p.Circle(b2, 10)
+        c2 = p.Circle(10, body=b2)
         c2.collision_type = 2
         c2.friction = 0.8
 
@@ -308,13 +308,13 @@ class UnitTestArbiter(unittest.TestCase):
         s.gravity = 0, -100
 
         b1 = p.Body(1, 30)
-        c1 = p.Circle(b1, 10)
+        c1 = p.Circle(10, body=b1)
         b1.position = 5, 3
         c1.collision_type = 1
         c1.friction = 0.5
 
         b2 = p.Body(body_type=p.Body.STATIC)
-        c2 = p.Circle(b2, 10)
+        c2 = p.Circle(10, body=b2)
         c2.collision_type = 2
         c2.friction = 0.8
 

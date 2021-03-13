@@ -1,4 +1,5 @@
-from math import pi, sin
+from abc import abstractmethod, ABC
+from math import pi
 
 __docformat__ = "reStructuredText"
 
@@ -6,25 +7,24 @@ import logging
 from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple, TypeVar, Iterable
 
 from .mat22 import Mat22
-
-if TYPE_CHECKING:
-    from .space import Space
-
 from .util import void, cffi_body, inner_shapes, py_space, init_attributes
 from ._chipmunk_cffi import ffi, lib
-from ._mixins import PickleMixin, _State, TypingAttrMixing, HasBBMixin
+from ._mixins import HasBBMixin
 from .bb import BB
-from .body import Body
 from .contact_point_set import ContactPointSet, contact_point_set_from_cffi
 from .query_info import PointQueryInfo, SegmentQueryInfo
 from .shape_filter import ShapeFilter, shape_filter_from_cffi
 from .transform import Transform
 from .vec2d import Vec2d, VecLike, vec2d_from_cffi
 
+if TYPE_CHECKING:
+    from .space import Space
+    from .body import Body
+
 S = TypeVar("S", bound="Shape")
 
 
-class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
+class Shape(HasBBMixin):
     """Base class for all the shapes.
 
     You usually dont want to create instances of this class directly but use
@@ -36,24 +36,16 @@ class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
     """
 
     _pickle_attrs_init = [
-        *PickleMixin._pickle_attrs_init,
-        "body",
-    ]
-    _pickle_attrs_general = [
-        *PickleMixin._pickle_attrs_general,
         "sensor",
         "collision_type",
         "filter",
         "elasticity",
         "friction",
         "surface_velocity",
+        "body",
     ]
-    _pickle_attrs_skip = [
-        *PickleMixin._pickle_attrs_skip,
-        "mass",
-        "density",
-    ]
-    _init_kwargs = {*_pickle_attrs_general, *_pickle_attrs_skip}
+    _pickle_meta_hide = {"_body", "_cffi_ref", "_nursery"}
+    _init_kwargs = {*_pickle_attrs_init, "mass", "moment", "density"}
     _space = None  # Weak ref to the space holding this body (if any)
     _body = None
     _cffi_ref = None
@@ -229,14 +221,9 @@ class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
         else:
             return None
 
-    def __init__(
-        self,
-        body: Optional["Body"],
-        shape: ffi.CData,
-        space: Optional["Space"] = None,
-        name: Optional[str] = None,
-        **kwargs,
-    ) -> None:
+    def __init__(self, shape: ffi.CData, body: Optional["Body"] = None,
+                 space: Optional["Space"] = None, name: Optional[str] = None,
+                 **kwargs) -> None:
         self._nursery = []
         self._body = body
         if body is not None:
@@ -249,23 +236,21 @@ class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
         if space is not None:
             space.add(self)
 
-    def _iter_bounding_boxes(self) -> Iterable["BB"]:
-        yield self.bb
+    def __getstate__(self):
+        meta = dict(self.__dict__)
+        args = [getattr(self, k) for k in self._pickle_attrs_init]
+        for k in self._pickle_meta_hide:
+            meta.pop(k)
+        if self.density:
+            meta['density'] = self.density
+        return args, meta
 
-    def __getstate__(self) -> _State:
-        """Return the state of this object
-
-        This method allows the usage of the :mod:`copy` and :mod:`pickle`
-        modules with this class.
-        """
-        d = super().__getstate__()
-
-        if self.mass > 0:
-            d["general"].append(("mass", self.mass))
-        if self.density > 0:
-            d["general"].append(("density", self.density))
-
-        return d
+    def __setstate__(self, state):
+        args, meta = state
+        kwargs = {k: v for k, v in zip(self._pickle_attrs_init, args)}
+        self.__init__(**kwargs)
+        for k, v in meta.items():
+            setattr(self, k, v)
 
     def __repr__(self, *args):
         if args:
@@ -283,6 +268,9 @@ class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
         if body is not None:
             inner_shapes(body).add(self),
         self._body = body
+
+    def _iter_bounding_boxes(self) -> Iterable["BB"]:
+        yield self.bb
 
     def update_transform(self, transform: Transform) -> BB:
         """Update, cache and return the bounding box of a shape with an
@@ -323,7 +311,7 @@ class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
         return None
 
     def segment_query(
-        self, start: VecLike, end: VecLike, radius: float = 0.0
+            self, start: VecLike, end: VecLike, radius: float = 0.0
     ) -> Optional[SegmentQueryInfo]:
         """Check if the line segment from start to end intersects the shape.
 
@@ -351,10 +339,10 @@ class Shape(PickleMixin, TypingAttrMixing, HasBBMixin):
         return self.prepare()
 
     def prepare(self, body=None):
-        state = self.__getstate__()
-        state["init"][0] = "body", body
+        args, meta = self.__getstate__()
+        args[-1] = body
         new = object.__new__(type(self))
-        new.__setstate__(state)
+        new.__setstate__((args, meta))
         return new
 
 
@@ -364,7 +352,7 @@ class Circle(Shape):
     This is the fastest and simplest collision shape
     """
 
-    _pickle_attrs_init = Shape._pickle_attrs_init + ["radius", "offset"]
+    _pickle_attrs_init = ["radius", "offset", *Shape._pickle_attrs_init]
     radius: float
     radius = property(  # type: ignore
         lambda self: lib.cpCircleShapeGetRadius(self._cffi_ref),
@@ -392,13 +380,8 @@ class Circle(Shape):
         """,
     )
 
-    def __init__(
-        self,
-        body: Optional["Body"],
-        radius: float,
-        offset: VecLike = (0, 0),
-        **kwargs,
-    ) -> None:
+    def __init__(self, radius: float, offset: VecLike = (0, 0),
+                 body: Optional["Body"] = None, **kwargs) -> None:
         """body is the body attach the circle to, offset is the offset from the
         body's center of gravity in body local coordinates.
 
@@ -407,7 +390,7 @@ class Circle(Shape):
         before adding the shape to a space or used for a space shape query.
         """
         shape = lib.cpCircleShapeNew(cffi_body(body), radius, offset)
-        super().__init__(body, shape, **kwargs)
+        super().__init__(shape, body, **kwargs)
 
     def __repr__(self):
         return super().__repr__(f"{self.radius}, offset={tuple(self.offset)}")
@@ -424,7 +407,7 @@ class Segment(Shape):
     thickness.
     """
 
-    _pickle_attrs_init = Shape._pickle_attrs_init + ["a", "b", "radius"]
+    _pickle_attrs_init = ["a", "b", "radius", *Shape._pickle_attrs_init]
     radius: float
     radius = property(  # type: ignore
         lambda self: lib.cpSegmentShapeGetRadius(self._cffi_ref),
@@ -462,14 +445,8 @@ class Segment(Shape):
         doc="The normal",
     )
 
-    def __init__(
-        self,
-        body: Optional[Body],
-        a: VecLike,
-        b: VecLike,
-        radius: float,
-        **kwargs,
-    ) -> None:
+    def __init__(self, a: VecLike, b: VecLike, radius: float,
+                 body: Optional["Body"] = None, **kwargs) -> None:
         """Create a Segment
 
         It is legal to send in None as body argument to indicate that this
@@ -482,7 +459,7 @@ class Segment(Shape):
         :param float radius: The thickness of the segment
         """
         shape = lib.cpSegmentShapeNew(cffi_body(body), a, b, radius)
-        super().__init__(body, shape, **kwargs)
+        super().__init__(shape, body, **kwargs)
 
     def __repr__(self):
         args = f"{tuple(self.a)}, {tuple(self.b)}, radius={self.radius}"
@@ -504,6 +481,7 @@ class Poly(Shape):
     Slowest, but most flexible collision shape.
     """
 
+    _pickle_attrs_init = ["radius", "vertices", *Shape._pickle_attrs_init]
     radius: float
     radius = property(  # type: ignore
         lambda self: lib.cpPolyShapeGetRadius(self._cffi_ref),
@@ -517,14 +495,15 @@ class Poly(Shape):
             what you are doing!
         """,
     )
+    vertices: List[VecLike]
+    vertices = property(  # type: ignore
+        lambda self: self.get_vertices(),
+        lambda self, vs: void(self.set_vertices(vs)),
+    )
 
-    @staticmethod
-    def create_box(
-        body: Optional["Body"],
-        size: VecLike = (10, 10),
-        radius: float = 0,
-        **kwargs,
-    ) -> "Poly":
+    @classmethod
+    def create_box(cls, size: Tuple[float, float] = (10, 10), radius: float = 0.0,
+                   body: Optional["Body"] = None, **kwargs) -> "Poly":
         """Convenience function to create a box given a width and height.
 
         The boxes will always be centered at the center of gravity of the
@@ -534,22 +513,19 @@ class Poly(Shape):
         Adding a small radius will bevel the corners and can significantly
         reduce problems where the box gets stuck on seams in your geometry.
 
-        :param Body body: The body to attach the poly to
-        :param size: Size of the box as (width, height)
-        :type size: (`float, float`)
-        :param float radius: Radius of poly
-        :rtype: :py:class:`Poly`
+        Args:
+            body: The body to attach the poly to
+            size: Size of the box as (width, height)
+            radius: Radius of poly
         """
-
-        poly = Poly.__new__(Poly)
+        poly = cls.__new__(Poly)
         shape = lib.cpBoxShapeNew(cffi_body(body), size[0], size[1], radius)
-        Shape.__init__(poly, body, shape, **kwargs)
+        Shape.__init__(poly, shape, body, **kwargs)
         return poly
 
-    @staticmethod
-    def create_box_bb(
-        body: Optional["Body"], bb: BB, radius: float = 0, **kwargs
-    ) -> "Poly":
+    @classmethod
+    def create_box_bb(cls, bb: BB, radius: float = 0.0, body: Optional["Body"] = None,
+                      **kwargs) -> "Poly":
         """Convenience function to create a box shape from a :py:class:`BB`.
 
         The boxes will always be centered at the center of gravity of the
@@ -559,26 +535,21 @@ class Poly(Shape):
         Adding a small radius will bevel the corners and can significantly
         reduce problems where the box gets stuck on seams in your geometry.
 
-        :param Body body: The body to attach the poly to
-        :param BB bb: Size of the box
-        :param float radius: Radius of poly
-        :rtype: :py:class:`Poly`
+        Args:
+            body: The body to attach the poly to
+            bb: Size of the box
+            radius: Radius of poly
         """
 
-        poly = Poly.__new__(Poly)
+        poly = cls.__new__(cls)
         shape = lib.cpBoxShapeNew2(cffi_body(body), bb, radius)
-        Shape.__init__(poly, body, shape, **kwargs)
+        Shape.__init__(poly, shape, body, **kwargs)
         return poly
 
     @staticmethod
-    def create_regular_poly(
-        body: Optional["Body"],
-        n: int,
-        size: float,
-        radius: float = 0,
-        angle: float = 0,
-        **kwargs,
-    ) -> "Poly":
+    def create_regular_poly(n: int, size: float, radius: float = 0.0, angle: float = 0.0,
+                            offset: VecLike = (0, 0), body: Optional["Body"] = None,
+                            **kwargs) -> "Poly":
         """Convenience function to create a regular polygon of n sides of a
         given size.
 
@@ -592,30 +563,17 @@ class Poly(Shape):
         Adding a small radius will bevel the corners and can significantly
         reduce problems where the box gets stuck on seams in your geometry.
 
-        :param Body body: The body to attach the poly to
-        :param int n: Number of sides
-        :param float size: Length of each side
-        :param float radius: Radius of poly
-        :param float angle: Rotation angle.
-        :rtype: :py:class:`Poly`
+        Args:
+            body: The body to attach the poly to
+            n: Number of sides
+            size: Length of each side
+            radius: Radius of poly
+            angle: Rotation angle.
         """
+        return Poly(vertices(n, size, angle, offset), radius=radius, body=body, **kwargs)
 
-        inner_angle = 2 * pi / n
-        distance = size / 2 / sin(inner_angle / 2)
-        vertices = [Vec2d(distance, 0).rotated(angle)]
-        while len(vertices) < n:
-            vertices.append(vertices[-1].rotated(inner_angle))
-
-        return Poly(body, vertices, radius=radius, **kwargs)
-
-    def __init__(
-        self,
-        body: Optional["Body"],
-        vertices: Sequence[VecLike],
-        transform: Optional[Transform] = None,
-        radius: float = 0,
-        **kwargs,
-    ) -> None:
+    def __init__(self, vertices: Sequence[VecLike], transform: Optional[Transform] = None,
+                 radius: float = 0, body: Optional["Body"] = None, **kwargs) -> None:
         """Create a polygon.
 
         A convex hull will be calculated from the vertexes automatically.
@@ -666,25 +624,12 @@ class Poly(Shape):
         shape = lib.cpPolyShapeNew(
             cffi_body(body), len(vertices), vertices, transform, radius
         )
-        super().__init__(body, shape, **kwargs)
+        super().__init__(shape, body, **kwargs)
 
     def __repr__(self):
         vertices = [tuple(v) for v in self.get_vertices()]
         args = f"{vertices}, radius={self.radius}"
         return super().__repr__(args)
-
-    def __getstate__(self) -> _State:
-        """Return the state of this object
-
-        This method allows the usage of the :mod:`copy` and :mod:`pickle`
-        modules with this class.
-        """
-        d = super(Poly, self).__getstate__()
-
-        d["init"].append(("vertices", self.get_vertices()))
-        d["init"].append(("transform", None))
-        d["init"].append(("radius", self.radius))
-        return d
 
     def get_vertices(self, *, world: bool = False) -> List[Vec2d]:
         """Return list of vertices in local coordinates.
@@ -702,11 +647,11 @@ class Poly(Shape):
         return vs
 
     def set_vertices(
-        self: S,
-        vertices: Sequence[VecLike],
-        transform: Optional[Transform] = None,
-        *,
-        world: bool = False,
+            self: S,
+            vertices: Sequence[VecLike],
+            transform: Optional[Transform] = None,
+            *,
+            world: bool = False,
     ) -> S:
         """Set the vertices of the poly.
 
@@ -725,6 +670,83 @@ class Poly(Shape):
             return self
         lib.cpPolyShapeSetVerts(self._cffi_ref, len(vertices), vertices, transform)
         return self
+
+
+class MakeShapeMixin(ABC):
+    """
+    Create shapes and possibly bodies in object.
+    """
+
+    @abstractmethod
+    def _create_shape(self, cls, args, kwargs):
+        raise NotImplementedError
+
+    def create_circle(self, radius: float, offset: VecLike = (0, 0), **kwargs):
+        """
+        Create a new circle with given radius and offset.
+        """
+        return self._create_shape(Circle, (radius, offset), kwargs)
+
+    def create_segment(self, a: VecLike, b: VecLike, radius: float = 1.0, **kwargs):
+        """
+        Create a new segment from point a to point b.
+        """
+        return self._create_shape(Segment, (a, b, radius), kwargs)
+
+    def create_poly(
+            self,
+            vertices: Iterable[VecLike],
+            transform: "Transform" = None,
+            radius: float = 0.0,
+            **kwargs,
+    ):
+        """
+        Create polygon from vertices.
+        """
+        return self._create_shape(Poly, (vertices, transform, radius), kwargs)
+
+    def create_box(
+            self,
+            shape: Tuple[float, float],
+            offset: VecLike = (0, 0),
+            transform: "Transform" = None,
+            radius: float = 0.0,
+            **kwargs,
+    ):
+        """
+        Create a boxed-shaped polygon with given shape.
+        """
+        width, height = shape
+        w, h = width / 2, height / 2
+        x, y = offset
+        vs = [(x - w, y - h), (x + w, y - h), (x + w, y + h), (x - w, y + h)]
+        return self.create_poly(vs, transform, radius, **kwargs)
+
+    def create_box_bb(self, bb: "BB", offset: VecLike = (0, 0), **kwargs):
+        """
+        Create a boxed-shaped polygon from bounding box.
+        """
+        return self.create_poly(tuple(v + offset for v in bb.vertices()), **kwargs)
+
+    def create_regular_poly(
+            self, n: int, size: float, offset: VecLike = (0, 0), angle=0.0, **kwargs
+    ):
+        """
+        Create a regular polygon with n sides.
+        """
+        return self.create_poly(vertices(n, size, angle, offset), **kwargs)
+
+
+def vertices(
+        n: int, size: float, delta: float, offset: VecLike = (0, 0)
+) -> List[Vec2d]:
+    """
+    Return list of vertices to represent a regular polygon of size n.
+    """
+    u = Vec2d(size, 0).rotated(delta)
+    origin = Vec2d(*offset)
+    delta = 2 * pi / n
+    return [origin + u.rotated(delta * i) for i in range(n)]
 
 
 def cffi_free_shape(cp_shape):

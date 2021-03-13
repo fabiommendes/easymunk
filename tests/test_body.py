@@ -175,7 +175,7 @@ class UnitTestBody(unittest.TestCase):
 
         b = p.Body()
         b.mass = 2
-        c = p.Circle(b, 10, (2, 3))
+        c = p.Circle(10, (2, 3), b)
         c.mass = 3
 
         self.assertEqual(b.mass, 0)
@@ -231,8 +231,8 @@ class UnitTestBody(unittest.TestCase):
         s = p.Space()
         b1 = p.Body(1, 1)
         b2 = p.Body(1, 1)
-        c1 = p.Circle(b1, 10)
-        c2 = p.Circle(b2, 10)
+        c1 = p.Circle(10, body=b1)
+        c2 = p.Circle(10, body=b2)
         s.add(b1, b2, c1, c2)
         s.step(1)
 
@@ -262,8 +262,8 @@ class UnitTestBody(unittest.TestCase):
         s = p.Space()
         b1 = p.Body(1, 1)
         s.add(b1)
-        s1 = p.Circle(b1, 3)
-        s2 = p.Segment(b1, (0, 0), (1, 2), 1)
+        s1 = p.Circle(3, body=b1)
+        s2 = p.Segment((0, 0), (1, 2), 1, b1)
 
         self.assertTrue(s1 in b1.shapes)
         self.assertTrue(s2 in b1.shapes)

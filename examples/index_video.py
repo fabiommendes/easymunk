@@ -86,13 +86,13 @@ for line in line_set:
 
     if True:
         for i in range(len(line) - 1):
-            shape = easymunk.Segment(space.static_body, line[i], line[i + 1], 1)
+            shape = easymunk.Segment(line[i], line[i + 1], 1, space.static_body)
             shape.friction = 0.5
             shape.color = (255, 255, 255, 255)
             space.add(shape)
 
 
-floor = easymunk.Segment(space.static_body, (-100, 300), (1000, 220), 5)
+floor = easymunk.Segment((-100, 300), (1000, 220), 5, space.static_body)
 floor.friction = 1.0
 space.add(floor)
 
@@ -102,7 +102,7 @@ def big_ball(space):
     radius = 50
     moment = easymunk.moment_for_circle(mass, 0, radius)
     b = easymunk.Body(mass, moment)
-    c = easymunk.Circle(b, radius)
+    c = easymunk.Circle(radius, body=b)
     c.friction = 1
     c.color = 255, 0, 0, 255
     b.position = 800, 100
@@ -117,7 +117,7 @@ def boxfloor(space):
 
     moment = easymunk.moment_for_poly(mass, vs)
     b = easymunk.Body(mass, moment)
-    s = easymunk.Poly(b, vs)
+    s = easymunk.Poly(vs, body=b)
     s.friction = 1
     s.color = 0, 0, 0, 255
     b.position = 600, 50
@@ -134,7 +134,7 @@ def box(space):
     mass = 10
     moment = easymunk.moment_for_box(mass, (40, 20))
     b = easymunk.Body(mass, moment)
-    s = easymunk.Poly.create_box(b, (40, 20))
+    s = easymunk.Poly.create_box((40, 20), body=b)
     s.friction = 1
     b.position = 600, box_y
     box_y -= 30
@@ -150,7 +150,7 @@ def car(space):
     radius = 25
     moment = easymunk.moment_for_circle(mass, 20, radius)
     wheel1_b = easymunk.Body(mass, moment)
-    wheel1_s = easymunk.Circle(wheel1_b, radius)
+    wheel1_s = easymunk.Circle(radius, body=wheel1_b)
     wheel1_s.friction = 1.5
     wheel1_s.color = wheel_color
     space.add(wheel1_b, wheel1_s)
@@ -159,7 +159,7 @@ def car(space):
     radius = 25
     moment = easymunk.moment_for_circle(mass, 20, radius)
     wheel2_b = easymunk.Body(mass, moment)
-    wheel2_s = easymunk.Circle(wheel2_b, radius)
+    wheel2_s = easymunk.Circle(radius, body=wheel2_b)
     wheel2_s.friction = 1.5
     wheel2_s.color = wheel_color
     space.add(wheel2_b, wheel2_s)
@@ -168,11 +168,11 @@ def car(space):
     size = (50, 30)
     moment = easymunk.moment_for_box(mass, size)
     chassi_b = easymunk.Body(mass, moment)
-    chassi_s = easymunk.Poly.create_box(chassi_b, size)
+    chassi_s = easymunk.Poly.create_box(size, body=chassi_b)
     space.add(chassi_b, chassi_s)
 
     vs = [(0, 0), (25, 45), (0, 45)]
-    shovel_s = easymunk.Poly(chassi_b, vs, transform=easymunk.Transform(tx=85))
+    shovel_s = easymunk.Poly(vs, transform=easymunk.Transform(tx=85), body=chassi_b)
     shovel_s.friction = 0.5
     shovel_s.color = shovel_color
     space.add(shovel_s)
@@ -200,7 +200,7 @@ def cannon(space):
     radius = 15
     moment = easymunk.moment_for_circle(mass, 0, radius)
     b = easymunk.Body(mass, moment)
-    s = easymunk.Circle(b, radius)
+    s = easymunk.Circle(radius, body=b)
     s.color = 219, 52, 152, 255
     b.position = 700, -50
     space.add(b, s)
@@ -241,7 +241,7 @@ while True:
                 radius = 8
                 moment = easymunk.moment_for_circle(mass, 0, radius)
                 b = easymunk.Body(mass, moment)
-                c = easymunk.Circle(b, radius)
+                c = easymunk.Circle(radius, body=b)
                 c.friction = 1
                 x = random.randint(100, 400)
                 b.position = x, 0

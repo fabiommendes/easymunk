@@ -65,8 +65,8 @@ class BouncyBalls:
         """
         static_body = self._space.static_body
         static_lines = [
-            mk.Segment(static_body, (111.0, 600 - 280), (407.0, 600 - 246), 0.0),
-            mk.Segment(static_body, (407.0, 600 - 246), (407.0, 600 - 343), 0.0),
+            mk.Segment((111.0, 600 - 280), (407.0, 600 - 246), 0.0, static_body),
+            mk.Segment((407.0, 600 - 246), (407.0, 600 - 343), 0.0, static_body),
         ]
         for line in static_lines:
             line.elasticity = 0.95
@@ -109,7 +109,7 @@ class BouncyBalls:
         body = mk.Body(mass, inertia)
         x = random.randint(115, 350)
         body.position = x, 200
-        shape = mk.Circle(body, radius, (0, 0))
+        shape = mk.Circle(radius, (0, 0), body)
         shape.elasticity = 0.95
         shape.friction = 0.9
         self._space.add(body, shape)

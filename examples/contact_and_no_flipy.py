@@ -36,8 +36,8 @@ def main():
 
     # walls
     static_lines = [
-        pm.Segment(space.static_body, (111.0, 320.0), (407.0, 354.0), 0.0),
-        pm.Segment(space.static_body, (407.0, 354.0), (407.0, 257.0), 0.0),
+        pm.Segment((111.0, 320.0), (407.0, 354.0), 0.0, space.static_body),
+        pm.Segment((407.0, 354.0), (407.0, 257.0), 0.0, space.static_body),
     ]
     space.add(*static_lines)
 
@@ -65,7 +65,7 @@ def main():
             body = pm.Body(mass, inertia)
             x = random.randint(115, 350)
             body.position = x, 200
-            shape = pm.Circle(body, radius, (0, 0))
+            shape = pm.Circle(radius, (0, 0), body)
             space.add(body, shape)
             balls.append(shape)
 

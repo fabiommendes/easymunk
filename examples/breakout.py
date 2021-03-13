@@ -29,7 +29,7 @@ def spawn_ball(space, position, direction):
     ball_body = easymunk.Body(1, float("inf"))
     ball_body.position = position
 
-    ball_shape = easymunk.Circle(ball_body, 5)
+    ball_shape = easymunk.Circle(5, body=ball_body)
     ball_shape.color = pygame.Color("green")
     ball_shape.elasticity = 1.0
     ball_shape.collision_type = collision_types["ball"]
@@ -64,7 +64,7 @@ def setup_level(space, player_body):
             y = y * 10 + 400
             brick_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
             brick_body.position = x, y
-            brick_shape = easymunk.Poly.create_box(brick_body, (20, 10))
+            brick_shape = easymunk.Poly.create_box((20, 10), body=brick_body)
             brick_shape.elasticity = 1.0
             brick_shape.color = pygame.Color("blue")
             brick_shape.group = 1
@@ -95,9 +95,9 @@ def main():
     # Game area
     # walls - the left-top-right walls
     static_lines = [
-        easymunk.Segment(space.static_body, (50, 50), (50, 550), 2),
-        easymunk.Segment(space.static_body, (50, 550), (550, 550), 2),
-        easymunk.Segment(space.static_body, (550, 550), (550, 50), 2),
+        easymunk.Segment((50, 50), (50, 550), 2, space.static_body),
+        easymunk.Segment((50, 550), (550, 550), 2, space.static_body),
+        easymunk.Segment((550, 550), (550, 50), 2, space.static_body),
     ]
     for line in static_lines:
         line.color = pygame.Color("lightgray")
@@ -106,7 +106,7 @@ def main():
     space.add(*static_lines)
 
     # bottom - a sensor that removes anything touching it
-    bottom = easymunk.Segment(space.static_body, (50, 50), (550, 50), 2)
+    bottom = easymunk.Segment((50, 50), (550, 50), 2, space.static_body)
     bottom.sensor = True
     bottom.collision_type = collision_types["bottom"]
     bottom.color = pygame.Color("red")
@@ -124,7 +124,7 @@ def main():
     player_body = easymunk.Body(500, float("inf"))
     player_body.position = 300, 100
 
-    player_shape = easymunk.Segment(player_body, (-50, 0), (50, 0), 8)
+    player_shape = easymunk.Segment((-50, 0), (50, 0), 8, player_body)
     player_shape.color = pygame.Color("red")
     player_shape.elasticity = 1.0
     player_shape.collision_type = collision_types["player"]

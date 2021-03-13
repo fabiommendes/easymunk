@@ -202,6 +202,7 @@ class Constraint(PickleMixin, TypingAttrMixing):
         self._pre_solve_func = func
 
         if func is not None:
+
             @ffi.callback("cpConstraintPreSolveFunc")
             def _impl(_constraint, _space) -> None:
                 if self.a.space is None:
@@ -227,6 +228,7 @@ class Constraint(PickleMixin, TypingAttrMixing):
     def post_solve(self, func: Optional[SolveFunc]) -> None:
         self._post_solve_func = func
         if func is not None:
+
             @ffi.callback("cpConstraintPostSolveFunc")
             def _impl(_constraint, _space) -> None:
                 if self.a.space is None:
@@ -302,12 +304,12 @@ class PinJoint(Constraint):
     )
 
     def __init__(
-            self,
-            a: "Body",
-            b: "Body",
-            anchor_a: VecLike = (0, 0),
-            anchor_b: VecLike = (0, 0),
-            **kwargs,
+        self,
+        a: "Body",
+        b: "Body",
+        anchor_a: VecLike = (0, 0),
+        anchor_b: VecLike = (0, 0),
+        **kwargs,
     ):
         """a and b are the two bodies to connect, and anchor_a and anchor_b are
         the anchor points on those bodies.
@@ -347,14 +349,14 @@ class SlideJoint(Constraint):
 
     # noinspection PyShadowingBuiltins
     def __init__(
-            self,
-            a: "Body",
-            b: "Body",
-            anchor_a: VecLike,
-            anchor_b: VecLike,
-            min: float,
-            max: float,
-            **kwargs,
+        self,
+        a: "Body",
+        b: "Body",
+        anchor_a: VecLike,
+        anchor_b: VecLike,
+        min: float,
+        max: float,
+        **kwargs,
     ):
         """a and b are the two bodies to connect, anchor_a and anchor_b are the
         anchor points on those bodies, and min and max define the allowed
@@ -377,11 +379,11 @@ class PivotJoint(Constraint):
     anchor_b: Vec2d = anchor_property("PivotJointB")
 
     def __init__(
-            self,
-            a: "Body",
-            b: "Body",
-            *args: Union[VecLike, Tuple[VecLike, VecLike]],
-            **kwargs,
+        self,
+        a: "Body",
+        b: "Body",
+        *args: Union[VecLike, Tuple[VecLike, VecLike]],
+        **kwargs,
     ):
         """a and b are the two bodies to connect, and pivot is the point in
         world coordinates of the pivot.
@@ -442,13 +444,13 @@ class GrooveJoint(Constraint):
     )
 
     def __init__(
-            self,
-            a: "Body",
-            b: "Body",
-            groove_a: VecLike,
-            groove_b: VecLike,
-            anchor_b: VecLike,
-            **kwargs,
+        self,
+        a: "Body",
+        b: "Body",
+        groove_a: VecLike,
+        groove_b: VecLike,
+        anchor_b: VecLike,
+        **kwargs,
     ):
         """The groove goes from groove_a to groove_b on body a, and the pivot
         is attached to anchor_b on body b.
@@ -482,15 +484,15 @@ class DampedSpring(Constraint):
     damping: float = cp_property("DampedSpring", "Damping", doc=DAMPING)
 
     def __init__(
-            self,
-            a: "Body",
-            b: "Body",
-            anchor_a: VecLike,
-            anchor_b: VecLike,
-            rest_length: float,
-            stiffness: float,
-            damping: float,
-            **kwargs,
+        self,
+        a: "Body",
+        b: "Body",
+        anchor_a: VecLike,
+        anchor_b: VecLike,
+        rest_length: float,
+        stiffness: float,
+        damping: float,
+        **kwargs,
     ):
         """Defined much like a slide joint.
 
@@ -530,13 +532,13 @@ class DampedRotarySpring(Constraint):
     damping: float = cp_property("DampedRotarySpring", "Damping", doc=DAMPING)
 
     def __init__(
-            self,
-            a: "Body",
-            b: "Body",
-            rest_angle: float,
-            stiffness: float,
-            damping: float,
-            **kwargs,
+        self,
+        a: "Body",
+        b: "Body",
+        rest_angle: float,
+        stiffness: float,
+        damping: float,
+        **kwargs,
     ):
         """Like a damped spring, but works in an angular fashion.
 

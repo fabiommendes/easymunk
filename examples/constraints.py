@@ -35,12 +35,11 @@ box_size = 200
 w = screen.get_width()
 h = screen.get_height()
 for i in range(6):
-    sw = easymunk.Segment(space.static_body, (0, i * box_size), (w, i * box_size), 1)
+    sw = easymunk.Segment((0, i * box_size), (w, i * box_size), 1, space.static_body)
     sw.friction = 1
     sw.elasticity = 1
-    sh = easymunk.Segment(
-        space.static_body, (i * box_size, 0), (i * box_size, h - box_size), 1
-    )
+    sh = easymunk.Segment((i * box_size, 0), (i * box_size, h - box_size), 1,
+                          space.static_body)
     sh.friction = 1
     sh.elasticity = 1
     space.add(sw, sh)
@@ -49,7 +48,7 @@ for i in range(6):
 def add_ball(space, pos, box_offset):
     body = easymunk.Body()
     body.position = Vec2d(*pos) + box_offset
-    shape = easymunk.Circle(body, 20)
+    shape = easymunk.Circle(20, body=body)
     shape.mass = 1
     shape.friction = 0.7
     space.add(body, shape)
@@ -59,7 +58,7 @@ def add_ball(space, pos, box_offset):
 def add_bar(space, pos, box_offset):
     body = easymunk.Body()
     body.position = Vec2d(*pos) + box_offset
-    shape = easymunk.Segment(body, (0, 40), (0, -40), 6)
+    shape = easymunk.Segment((0, 40), (0, -40), 6, body)
     shape.mass = 2
     shape.friction = 0.7
     space.add(body, shape)
@@ -69,7 +68,7 @@ def add_bar(space, pos, box_offset):
 def add_lever(space, pos, box_offset):
     body = easymunk.Body()
     body.position = pos + Vec2d(*box_offset) + (0, -20)
-    shape = easymunk.Segment(body, (0, 20), (0, -20), 5)
+    shape = easymunk.Segment((0, 20), (0, -20), 5, body)
     shape.mass = 1
     shape.friction = 0.7
     space.add(body, shape)

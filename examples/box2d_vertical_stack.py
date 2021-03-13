@@ -36,10 +36,8 @@ class Main(pyglet.window.Window):
         self.space.sleep_time_threshold = 0.3
 
         static_lines = [
-            easymunk.Segment(self.space.static_body, Vec2d(20, 55), Vec2d(600, 55), 1),
-            easymunk.Segment(
-                self.space.static_body, Vec2d(550, 55), Vec2d(550, 400), 1
-            ),
+            easymunk.Segment(Vec2d(20, 55), Vec2d(600, 55), 1, self.space.static_body),
+            easymunk.Segment(Vec2d(550, 55), Vec2d(550, 400), 1, self.space.static_body),
         ]
         for l in static_lines:
             l.friction = 0.3
@@ -52,7 +50,7 @@ class Main(pyglet.window.Window):
                 moment = easymunk.moment_for_box(mass, (size, size))
                 body = easymunk.Body(mass, moment)
                 body.position = Vec2d(300 + x * 50, 105 + y * (size + 0.1))
-                shape = easymunk.Poly.create_box(body, (size, size))
+                shape = easymunk.Poly.create_box((size, size), body=body)
                 shape.friction = 0.3
                 self.space.add(body, shape)
 
@@ -72,7 +70,7 @@ class Main(pyglet.window.Window):
             moment = easymunk.moment_for_circle(mass, 0, r, (0, 0))
             body = easymunk.Body(mass, moment)
             body.position = (0, 165)
-            shape = easymunk.Circle(body, r, (0, 0))
+            shape = easymunk.Circle(r, (0, 0), body)
             shape.friction = 0.3
             shape.color = (255, 150, 150, 255)
             self.space.add(body, shape)

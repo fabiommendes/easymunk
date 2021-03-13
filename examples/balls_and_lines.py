@@ -37,7 +37,7 @@ def main():
 
     # Mouse
     mouse_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
-    mouse_shape = easymunk.Circle(mouse_body, 3, (0, 0))
+    mouse_shape = easymunk.Circle(3, (0, 0), mouse_body)
     mouse_shape.collision_type = COLLTYPE_MOUSE
     space.add(mouse_body, mouse_shape)
 
@@ -62,7 +62,7 @@ def main():
                 p = event.pos[X], flipy(event.pos[Y])
                 body = easymunk.Body(10, 100)
                 body.position = p
-                shape = easymunk.Circle(body, 10, (0, 0))
+                shape = easymunk.Circle(10, (0, 0), body)
                 shape.friction = 0.5
                 shape.collision_type = COLLTYPE_BALL
                 space.add(body, shape)
@@ -75,9 +75,8 @@ def main():
                 if line_point1 is not None:
 
                     line_point2 = Vec2d(event.pos[X], flipy(event.pos[Y]))
-                    shape = easymunk.Segment(
-                        space.static_body, line_point1, line_point2, 0.0
-                    )
+                    shape = easymunk.Segment(line_point1, line_point2, 0.0,
+                                             space.static_body)
                     shape.friction = 0.99
                     space.add(shape)
                     static_lines.append(shape)
@@ -93,7 +92,7 @@ def main():
         if pygame.key.get_mods() & pygame.KMOD_SHIFT and pygame.mouse.get_pressed()[0]:
             body = easymunk.Body(10, 10)
             body.position = mouse_pos
-            shape = easymunk.Circle(body, 10, (0, 0))
+            shape = easymunk.Circle(10, (0, 0), body)
             shape.collision_type = COLLTYPE_BALL
             space.add(body, shape)
             balls.append(shape)

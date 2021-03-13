@@ -83,7 +83,7 @@ class PhysicsDemo:
         ball_body = pm.Body(mass, moment)
         ball_body.position = Vec2d(*point)
 
-        ball_shape = pm.Circle(ball_body, radius)
+        ball_shape = pm.Circle(radius, body=ball_body)
         ball_shape.friction = 1.5
         ball_shape.collision_type = COLLTYPE_DEFAULT
         self.space.add(ball_body, ball_shape)
@@ -99,7 +99,7 @@ class PhysicsDemo:
         # moment = 1000
         body = pm.Body(mass, moment)
         body.position = Vec2d(*pos)
-        shape = pm.Poly(body, points)
+        shape = pm.Poly(points, body=body)
         shape.friction = 0.5
         shape.collision_type = COLLTYPE_DEFAULT
         self.space.add(body, shape)
@@ -114,7 +114,7 @@ class PhysicsDemo:
             v1 = Vec2d(points[i].x, points[i].y)
             v2 = Vec2d(points[i + 1].x, points[i + 1].y)
             wall_body = pm.Body(body_type=pm.Body.STATIC)
-            wall_shape = pm.Segment(wall_body, v1, v2, 0.0)
+            wall_shape = pm.Segment(v1, v2, 0.0, wall_body)
             wall_shape.friction = 1.0
             wall_shape.collision_type = COLLTYPE_DEFAULT
             self.space.add(wall_body, wall_shape)

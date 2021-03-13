@@ -17,7 +17,7 @@ def create_arrow():
     # moment = easymunk.moment_for_poly(mass, vs)
     arrow_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
 
-    arrow_shape = easymunk.Poly(arrow_body, vs)
+    arrow_shape = easymunk.Poly(vs, body=arrow_body)
     arrow_shape.friction = 0.5
     arrow_shape.collision_type = 1
     arrow_shape.density = 0.1
@@ -71,14 +71,14 @@ def main():
 
     # walls - the left-top-right walls
     static: List[easymunk.Shape] = [
-        easymunk.Segment(space.static_body, (50, 550), (50, 50), 5),
-        easymunk.Segment(space.static_body, (50, 50), (650, 50), 5),
-        easymunk.Segment(space.static_body, (650, 50), (650, 550), 5),
-        easymunk.Segment(space.static_body, (50, 550), (650, 550), 5),
+        easymunk.Segment((50, 550), (50, 50), 5, space.static_body),
+        easymunk.Segment((50, 50), (650, 50), 5, space.static_body),
+        easymunk.Segment((650, 50), (650, 550), 5, space.static_body),
+        easymunk.Segment((50, 550), (650, 550), 5, space.static_body),
     ]
 
     b2 = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
-    static.append(easymunk.Circle(b2, 30))
+    static.append(easymunk.Circle(30, body=b2))
     b2.position = 300, 200
 
     for s in static:
@@ -88,7 +88,7 @@ def main():
 
     # "Cannon" that can fire arrows
     cannon_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
-    cannon_shape = easymunk.Circle(cannon_body, 25)
+    cannon_shape = easymunk.Circle(25, body=cannon_body)
     cannon_shape.sensor = True
     cannon_shape.color = (255, 50, 50, 255)
     cannon_body.position = 100, 500

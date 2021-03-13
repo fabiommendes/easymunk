@@ -44,8 +44,8 @@ def main():
 
     # walls
     static_lines = [
-        easymunk.Segment(space.static_body, (11.0, 280.0), (407.0, 246.0), 0.0),
-        easymunk.Segment(space.static_body, (407.0, 246.0), (407.0, 343.0), 0.0),
+        easymunk.Segment((11.0, 280.0), (407.0, 246.0), 0.0, space.static_body),
+        easymunk.Segment((407.0, 246.0), (407.0, 343.0), 0.0, space.static_body),
     ]
     for l in static_lines:
         l.friction = 0.5
@@ -75,7 +75,7 @@ def main():
             body = easymunk.Body(mass, inertia)
             x = random.randint(115, 350)
             body.position = x, 400
-            shape = easymunk.Circle(body, radius, (0, 0))
+            shape = easymunk.Circle(radius, (0, 0), body)
             shape.friction = 0.5
             space.add(body, shape)
             balls.append(shape)

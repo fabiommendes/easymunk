@@ -26,7 +26,7 @@ dist = 0.3
 
 cb = easymunk.Body(1, 1)
 cb.position = c
-s = easymunk.Circle(cb, 15)  # to have something to grab
+s = easymunk.Circle(15, body=cb)  # to have something to grab
 s.filter = easymunk.ShapeFilter(group=web_group)
 s.ignore_draw = True
 space.add(cb, s)
@@ -49,7 +49,7 @@ for x in range(0, 101):
     v = v.scale_to_length(scale * (dist + offset))
 
     b.position = c + v
-    s = easymunk.Circle(b, 15)
+    s = easymunk.Circle(15, body=b)
     s.filter = easymunk.ShapeFilter(group=web_group)
     s.ignore_draw = True
     space.add(b, s)

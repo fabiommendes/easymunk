@@ -42,7 +42,7 @@ class PymunkDemo(RelativeLayout):
             radius = 8
             moment = easymunk.moment_for_circle(mass, 0, radius)
             b = easymunk.Body(mass, moment)
-            c = easymunk.Circle(b, radius)
+            c = easymunk.Circle(radius, body=b)
             c.friction = 1
             x = random.randint(100, 350)
             y = random.randint(300, 340)
@@ -59,7 +59,7 @@ class PymunkDemo(RelativeLayout):
         radius = 50
         moment = easymunk.moment_for_circle(mass, 0, radius)
         b = easymunk.Body(mass, moment)
-        c = easymunk.Circle(b, radius)
+        c = easymunk.Circle(radius, body=b)
         c.friction = 1
         c.color = 255, 0, 0
         b.position = 800, 200
@@ -77,7 +77,7 @@ class PymunkDemo(RelativeLayout):
 
         moment = easymunk.moment_for_poly(mass, vs)
         b = easymunk.Body(mass, moment)
-        s = easymunk.Poly(b, vs)
+        s = easymunk.Poly(vs, body=b)
         s.friction = 1
         s.color = 0, 0, 0
         b.position = 600, 250
@@ -91,7 +91,7 @@ class PymunkDemo(RelativeLayout):
         mass = 10
         moment = easymunk.moment_for_box(mass, (40, 20))
         b = easymunk.Body(mass, moment)
-        s = easymunk.Poly.create_box(b, (40, 20))
+        s = easymunk.Poly.create_box((40, 20), body=b)
         s.friction = 1
         b.position = 600, self.box_y
         self.box_y += 30
@@ -110,7 +110,7 @@ class PymunkDemo(RelativeLayout):
         radius = 25
         moment = easymunk.moment_for_circle(mass, 20, radius)
         wheel1_b = easymunk.Body(mass, moment)
-        wheel1_s = easymunk.Circle(wheel1_b, radius)
+        wheel1_s = easymunk.Circle(radius, body=wheel1_b)
         wheel1_s.friction = 1.5
         wheel1_s.color = wheel_color
         space.add(wheel1_b, wheel1_s)
@@ -119,7 +119,7 @@ class PymunkDemo(RelativeLayout):
         radius = 25
         moment = easymunk.moment_for_circle(mass, 20, radius)
         wheel2_b = easymunk.Body(mass, moment)
-        wheel2_s = easymunk.Circle(wheel2_b, radius)
+        wheel2_s = easymunk.Circle(radius, body=wheel2_b)
         wheel2_s.friction = 1.5
         wheel2_s.color = wheel_color
         space.add(wheel2_b, wheel2_s)
@@ -128,11 +128,11 @@ class PymunkDemo(RelativeLayout):
         size = (50, 30)
         moment = easymunk.moment_for_box(mass, size)
         chassi_b = easymunk.Body(mass, moment)
-        chassi_s = easymunk.Poly.create_box(chassi_b, size)
+        chassi_s = easymunk.Poly.create_box(size, body=chassi_b)
         space.add(chassi_b, chassi_s)
 
         vs = [(0, 0), (0, -45), (25, -45)]
-        shovel_s = easymunk.Poly(chassi_b, vs, transform=easymunk.Transform(tx=85))
+        shovel_s = easymunk.Poly(vs, transform=easymunk.Transform(tx=85), body=chassi_b)
         shovel_s.friction = 0.5
         shovel_s.color = shovel_color
         space.add(shovel_s)
@@ -167,7 +167,7 @@ class PymunkDemo(RelativeLayout):
         radius = 15
         moment = easymunk.moment_for_circle(mass, 0, radius)
         b = easymunk.Body(mass, moment)
-        s = easymunk.Circle(b, radius)
+        s = easymunk.Circle(radius, body=b)
         s.color = 0.86, 0.2, 0.6
         b.position = 700, 400
         space.add(b, s)
@@ -226,7 +226,7 @@ class PymunkDemo(RelativeLayout):
     def create_logo(self, lines, space):
         for line in lines:
             for i in range(len(line) - 1):
-                shape = easymunk.Segment(space.static_body, line[i], line[i + 1], 1)
+                shape = easymunk.Segment(line[i], line[i + 1], 1, space.static_body)
                 shape.friction = 0.5
                 space.add(shape)
 
@@ -251,7 +251,7 @@ class PymunkDemo(RelativeLayout):
                 size=self.logo_img.size,
             )
 
-        floor = easymunk.Segment(space.static_body, (-100, 0), (900, 62), 5)
+        floor = easymunk.Segment((-100, 0), (900, 62), 5, space.static_body)
         floor.friction = 1.0
         space.add(floor)
         with self.canvas:
@@ -330,7 +330,7 @@ class PymunkDemo(RelativeLayout):
             radius = 15
             moment = easymunk.moment_for_circle(mass, 0, radius)
             b = easymunk.Body(mass, moment)
-            s = easymunk.Circle(b, radius)
+            s = easymunk.Circle(radius, body=b)
             s.color = 0.86, 0.2, 0.6
             b.position = d["start"]
             self.space.add(b, s)

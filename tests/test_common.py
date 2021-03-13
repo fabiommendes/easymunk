@@ -50,7 +50,7 @@ class UnitTestBugs(unittest.TestCase):
                     ]
                 ]
                 body = p.Body(10, 20)
-                shape = p.Poly(body, box_points)
+                shape = p.Poly(box_points, body=body)
                 space.add(body, shape)
             space.step(1 / 50.0)
 
@@ -58,16 +58,16 @@ class UnitTestBugs(unittest.TestCase):
         space = p.Space()
 
         b1 = p.Body(1, float("inf"))
-        c1 = p.Circle(b1, 10)
+        c1 = p.Circle(10, body=b1)
         c1.name = "c1"
         c1.collision_type = 2
 
         b2 = p.Body(1, float("inf"))
-        c2 = p.Circle(b2, 10)
+        c2 = p.Circle(10, body=b2)
         c2.name = "c2"
 
         b3 = p.Body(1, float("inf"))
-        c3 = p.Circle(b3, 10)
+        c3 = p.Circle(10, body=b3)
         c3.name = "c3"
 
         b1.position = 0, 0

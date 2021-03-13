@@ -47,7 +47,7 @@ def add_box(space, size, mass):
         random.random() * (480 - 2 * radius) + radius,
     )
 
-    shape = easymunk.Poly.create_box(body, (size, size), 0.0)
+    shape = easymunk.Poly.create_box((size, size), 0.0, body)
     shape.mass = mass
     shape.friction = 0.7
     space.add(shape)
@@ -64,22 +64,22 @@ def init():
     static_body = space.static_body
 
     # Create segments around the edge of the screen.
-    shape = easymunk.Segment(static_body, (1, 1), (1, 480), 1.0)
+    shape = easymunk.Segment((1, 1), (1, 480), 1.0, static_body)
     space.add(shape)
     shape.elasticity = 1
     shape.friction = 1
 
-    shape = easymunk.Segment(static_body, (640, 1), (640, 480), 1.0)
+    shape = easymunk.Segment((640, 1), (640, 480), 1.0, static_body)
     space.add(shape)
     shape.elasticity = 1
     shape.friction = 1
 
-    shape = easymunk.Segment(static_body, (1, 1), (640, 1), 1.0)
+    shape = easymunk.Segment((1, 1), (640, 1), 1.0, static_body)
     space.add(shape)
     shape.elasticity = 1
     shape.friction = 1
 
-    shape = easymunk.Segment(static_body, (1, 480), (640, 480), 1.0)
+    shape = easymunk.Segment((1, 480), (640, 480), 1.0, static_body)
     space.add(shape)
     shape.elasticity = 1
     shape.friction = 1

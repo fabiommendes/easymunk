@@ -335,14 +335,32 @@ class Shape(HasBBMixin):
         points = lib.cpShapesCollide(self._cffi_ref, b._cffi_ref)
         return contact_point_set_from_cffi(points)
 
-    def copy(self):
-        return self.prepare()
+    def copy(self: S, keep_body=False) -> S:
+        """
+        Return a copy of shape detached from body.
+        """
+        return self.prepare(body=self.body if keep_body else None)
 
-    def prepare(self, body=None):
+    def remove(self: S) -> S:
+        """
+        Remove shape from body and from state.
+        """
+        if self.body is not None:
+            self.body = None
+        if self.space is not None:
+            self.space.remove(self)
+        return self
+
+    def prepare(self: S, body=None, **kwargs) -> S:
+        """
+        Prepare a copy of shape possibly changing some parameters.
+        """
         args, meta = self.__getstate__()
         args[-1] = body
         new = object.__new__(type(self))
         new.__setstate__((args, meta))
+        for k, v in kwargs.items():
+            setattr(self, k, v)
         return new
 
 

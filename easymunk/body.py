@@ -28,9 +28,9 @@ from ._mixins import (
 )
 from .arbiter import Arbiter
 from .collections import Shapes, Constraints
+from .shapes import MakeShapeMixin
 from .util import void, set_attrs, py_space, init_attributes
 from .vec2d import Vec2d, VecLike, vec2d_from_cffi
-from .shapes import MakeShapeMixin
 
 if TYPE_CHECKING:
     from .shape_filter import ShapeFilter
@@ -133,6 +133,7 @@ class Body(
         "center_of_gravity",
         "angle",
         "angular_velocity",
+        "space",
     }
 
     _position_func_base: Optional[_PositionFunc] = None  # For pickle
@@ -473,6 +474,8 @@ class Body(
         mass: float = 0,
         moment: float = 0,
         body_type: _BodyType = DYNAMIC,
+        *,
+        space=None,
         **kwargs,
     ) -> None:
         """Create a new Body
@@ -523,6 +526,8 @@ class Body(
 
         self._set_id()
         init_attributes(self, self._init_kwargs, kwargs)
+        if space is not None:
+            space.add(self)
 
     def __getstate__(self) -> _State:
         """Return the state of this object
@@ -950,11 +955,12 @@ class Body(
 #
 # Specialized bodies
 #
-class ShapeMixin:
+class BodyShape(Body):
     """
     Base class for bodies with a single shape.
     """
 
+    # Properties
     radius: float = sk.delegate_to("shape", mutable=True)
     area: float = sk.delegate_to("shape")
     collision_type: int = sk.delegate_to("shape")
@@ -963,25 +969,45 @@ class ShapeMixin:
     friction: float = sk.delegate_to("shape")
     surface_velocity: Vec2d = sk.delegate_to("shape")
     bb: "BB" = sk.delegate_to("shape")
+
+    # Methods
     point_query = sk.delegate_to("shape")
     segment_query = sk.delegate_to("shape")
     shapes_collide = sk.delegate_to("shape")
     body: "Body" = property(lambda self: self)
+    radius_of_gyration_sqr = sk.delegate_to("shape")
+
+    def _extract_options(self, kwargs):
+        opts = {}
+        for k in self._init_kwargs:
+            if k in kwargs:
+                opts[k] = kwargs.pop(k)
+        return opts
+
+    def _post_init(self):
+        if (
+            self.body_type == Body.DYNAMIC
+            and self.mass == 0.0
+            and self.space is not None
+        ):
+            self.mass = self.shape.area
+            self.moment = self.mass * self.radius_of_gyration_sqr()
 
 
-class CircleBody(ShapeMixin, Body):
+class CircleBody(BodyShape, Body):
     """
     A body attached to a single circular shape.
     """
 
     offset: Vec2d = sk.delegate_to("shape", mutable=True)
 
-    def __init__(self, radius, *args, offset=(0, 0), **kwargs):
-        super().__init__(*args, **kwargs)
-        self.shape: "Circle" = Circle(radius, offset=offset, body=self)
+    def __init__(self, radius, *args, offset=(0, 0), density=0, **kwargs):
+        super().__init__(*args, **self._extract_options(kwargs))
+        self.shape: "Circle" = Circle(radius, offset=offset, body=self, **kwargs)
+        self._post_init()
 
 
-class PolyBody(ShapeMixin, Body):
+class PolyBody(BodyShape, Body):
     """
     A body attached to a single circular shape.
     """
@@ -990,11 +1016,12 @@ class PolyBody(ShapeMixin, Body):
     set_vertices = sk.delegate_to("shape")
 
     def __init__(self, vertices, *args, radius=0, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.shape: "Poly" = Poly(vertices, radius=radius, body=self)
+        super().__init__(*args, **self._extract_options(kwargs))
+        self.shape: "Poly" = Poly(vertices, radius=radius, body=self, **kwargs)
+        self._post_init()
 
 
-class SegmentBody(ShapeMixin, Body):
+class SegmentBody(BodyShape, Body):
     """
     A body attached to a single circular shape.
     """
@@ -1003,8 +1030,9 @@ class SegmentBody(ShapeMixin, Body):
     b: Vec2d = sk.delegate_to("shape", mutable=True)
 
     def __init__(self, a, b, *args, radius=0, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.shape: "Segment" = Segment(a, b, radius, self)
+        super().__init__(*args, **self._extract_options(kwargs))
+        self.shape: "Segment" = Segment(a, b, radius, self, **kwargs)
+        self._post_init()
 
 
 #

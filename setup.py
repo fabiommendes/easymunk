@@ -41,7 +41,15 @@ setup(
     install_requires=["cffi > 1.14.0", "sidekick"],
     cffi_modules=["easymunk/pymunk_extension_build.py:ffibuilder"],
     extras_require={
-        "dev": ["pyglet", "pygame", "sphinx", "aafigure", "wheel", "matplotlib"]
+        "dev": [
+            "pyglet",
+            "pygame",
+            "sphinx",
+            "aafigure",
+            "wheel",
+            "matplotlib",
+            "pyxel",
+        ]
     },
     test_suite="tests",
 )

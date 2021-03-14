@@ -312,7 +312,9 @@ class UnitTestPoly(unittest.TestCase):
         c = mk.Poly([(0, 0), (10, 10), (20, 0), (-10, 10)], None, 0, None)
 
         b = mk.Body(1, 2)
-        c = mk.Poly([(0, 0), (10, 10), (20, 0), (-10, 10)], mk.Transform.identity(), 6, b)
+        c = mk.Poly(
+            [(0, 0), (10, 10), (20, 0), (-10, 10)], mk.Transform.identity(), 6, b
+        )
 
     def test_vertices(self) -> None:
         vs = [(-10, 10), (0, 0), (20, 0), (10, 10)]
@@ -358,10 +360,10 @@ class UnitTestPoly(unittest.TestCase):
         assert c.radius == 20
 
     def testCreateBox(self) -> None:
-        c = mk.Poly.create_box((4, 2), 3, None)
+        c = mk.Poly.new_box((4, 2), 3, None)
         assert c.get_vertices() == [(2, -1), (2, 1), (-2, 1), (-2, -1)]
 
-        c = mk.Poly.create_box_bb(mk.BB(1, 2, 3, 4), 3, None)
+        c = mk.Poly.new_box_bb(mk.BB(1, 2, 3, 4), 3, None)
         assert c.get_vertices() == [(3, 2), (3, 4), (1, 4), (1, 2)]
 
     def testPickle(self) -> None:

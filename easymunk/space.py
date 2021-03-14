@@ -539,7 +539,7 @@ class Space(PickleMixin, FilterElementsMixin):
 
     def _add_shape(self, shape: "Shape") -> None:
         if shape_id(shape) in self._shapes:
-            raise ValueError("shape already added to space")
+            return
 
         shape._space = weakref.proxy(self)
         self._shapes[shape_id(shape)] = shape
@@ -548,7 +548,7 @@ class Space(PickleMixin, FilterElementsMixin):
 
     def _add_body(self, body: "Body") -> None:
         if body in self._bodies:
-            raise ValueError("body already added to space")
+            return
 
         body._space = weakref.proxy(self)
         self._bodies.add(body)
@@ -557,7 +557,7 @@ class Space(PickleMixin, FilterElementsMixin):
 
     def _add_constraint(self, constraint: "Constraint") -> None:
         if constraint in self._constraints:
-            ValueError("constraint already added to space")
+            return
 
         self._constraints.add(constraint)
         cp.cpSpaceAddConstraint(self._space, get_cffi_ref(constraint))

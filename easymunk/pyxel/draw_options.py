@@ -44,7 +44,6 @@ ALL_COLORS = [*Color]
 
 
 class DrawOptions(SpaceDebugDrawOptions):
-
     def __init__(self, mod=pyxel, keep_shape_colors=True, wireframe=False):
         self.palette = [self.to_hex_color(c) for c in pyxel.DEFAULT_PALETTE]
         self._line = mod.line
@@ -139,7 +138,7 @@ def fg(col=None) -> int:
 
 
 #
-# Draw Pymunk shapes 
+# Draw Pymunk shapes
 #
 @singledispatch
 def draw(shape, col=None, mod=pyxel):
@@ -156,7 +155,7 @@ def draw(shape, col=None, mod=pyxel):
         method = shape.draw
     except AttributeError:
         name = type(shape).__name__
-        raise TypeError(f'Cannot draw {name} objects')
+        raise TypeError(f"Cannot draw {name} objects")
     else:
         return method(mod, col=col)
 
@@ -175,7 +174,7 @@ def drawb(shape, col=None, mod=pyxel):
         method = shape.drawb
     except AttributeError:
         name = type(shape).__name__
-        raise TypeError(f'Cannot draw {name} objects')
+        raise TypeError(f"Cannot draw {name} objects")
     else:
         return method(mod, col=col)
 
@@ -185,7 +184,7 @@ def drawb(shape, col=None, mod=pyxel):
 #
 @draw.register(Space)
 def draw_space(s: Space, col=None, mod=pyxel):
-    if hasattr(s, 'background_color'):
+    if hasattr(s, "background_color"):
         pyxel.cls(s.background_color)
     elif BACKGROUND_COLOR is not None:
         pyxel.cls(BACKGROUND_COLOR)
@@ -201,7 +200,7 @@ def draw_body(b: Body, col=None, mod=pyxel):
 
 @draw.register(Circle)
 def draw_circle(s: Circle, col=None, mod=pyxel):
-    color = getattr(s, 'color', None)
+    color = getattr(s, "color", None)
     if color is None:
         color = FOREGROUND_COLOR if col is None else col
     mod.circ(*(s.body.position + s.offset), s.radius, color)
@@ -210,7 +209,7 @@ def draw_circle(s: Circle, col=None, mod=pyxel):
 @draw.register(Segment)
 def draw_segment(s: Segment, col=None, mod=pyxel):
     (x1, y1), (x2, y2) = map(s.body.local_to_world, [s.a, s.b])
-    color = getattr(s, 'color', None)
+    color = getattr(s, "color", None)
     if color is None:
         color = FOREGROUND_COLOR if col is None else col
     mod.line(x1, y1, x2, y2, color)
@@ -219,7 +218,7 @@ def draw_segment(s: Segment, col=None, mod=pyxel):
 @draw.register(Poly)
 def draw_poly(s: Poly, col=None, mod=pyxel):
     vertices = [s.body.local_to_world(v) for v in s.get_vertices()]
-    color = getattr(s, 'color', None)
+    color = getattr(s, "color", None)
     if color is None:
         color = FOREGROUND_COLOR if col is None else col
     return draw_filled_poly(vertices, mod, color)
@@ -272,7 +271,7 @@ def drawb_body(b: Body, col=None, mod=pyxel):
 
 @drawb.register(Circle)
 def drawb_circle(s: Circle, col=None, mod=pyxel):
-    color = getattr(s, 'color', None)
+    color = getattr(s, "color", None)
     if color is None:
         color = FOREGROUND_COLOR if col is None else col
     mod.circb(*(s.body.position + s.offset), s.radius, color)
@@ -282,7 +281,7 @@ def drawb_circle(s: Circle, col=None, mod=pyxel):
 def drawb_poly(s: Poly, col=None, mod=pyxel):
     vertices = [s.body.local_to_world(v) for v in s.get_vertices()]
     vertices.append(vertices[0])
-    color = getattr(s, 'color', None)
+    color = getattr(s, "color", None)
     if color is None:
         color = FOREGROUND_COLOR if col is None else col
     return draw_path(vertices, mod, color)

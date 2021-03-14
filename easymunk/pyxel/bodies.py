@@ -6,10 +6,10 @@ from functools import wraps
 import pyxel
 
 from . import Color, DrawOptions
+from . import draw_mods
 from ..body import CircleBody, SegmentBody, PolyBody, Body
 from ..space import Space
 from ..vec2d import Vec2d
-from . import draw_mods
 
 DEFAULT_SPACE = None
 MOMENT_MULTIPLIER = 5.0
@@ -23,13 +23,13 @@ def body_maker(func):
 
     @wraps(func)
     def maker(*args, **kwargs):
-        kwargs.setdefault('space', DEFAULT_SPACE)
-        kwargs.setdefault('elasticity', 1.0)
-        col = kwargs.pop('col', None)
+        kwargs.setdefault("space", DEFAULT_SPACE)
+        kwargs.setdefault("elasticity", 1.0)
+        col = kwargs.pop("col", None)
         if col:
-            kwargs['color'] = col
+            kwargs["color"] = col
         body = func(*args, **kwargs)
-        if 'moment' not in kwargs:
+        if "moment" not in kwargs:
             body.moment *= MOMENT_MULTIPLIER
         return body
 
@@ -53,8 +53,9 @@ def circ(x: float, y: float, r: float, **kwargs) -> CircleBody:
 
 
 @body_maker
-def line(x1: float, y1: float, x2: float, y2: float, radius: float = 1.0,
-         **kwargs) -> SegmentBody:
+def line(
+    x1: float, y1: float, x2: float, y2: float, radius: float = 1.0, **kwargs
+) -> SegmentBody:
     """
     Creates a body with a Segment shape attached to it.
 
@@ -71,8 +72,16 @@ def line(x1: float, y1: float, x2: float, y2: float, radius: float = 1.0,
 
 
 @body_maker
-def tri(x1: float, y1: float, x2: float, y2: float, x3: float, y3: float,
-        radius: float = 0.0, **kwargs) -> PolyBody:
+def tri(
+    x1: float,
+    y1: float,
+    x2: float,
+    y2: float,
+    x3: float,
+    y3: float,
+    radius: float = 0.0,
+    **kwargs
+) -> PolyBody:
     """
     Creates a Pymunk body with a triangular Poly shape attached to it.
 
@@ -92,8 +101,9 @@ def tri(x1: float, y1: float, x2: float, y2: float, x3: float, y3: float,
 
 
 @body_maker
-def rect(x: float, y: float, w: float, h: float, radius: float = 0.0,
-         **kwargs) -> PolyBody:
+def rect(
+    x: float, y: float, w: float, h: float, radius: float = 0.0, **kwargs
+) -> PolyBody:
     """
     Creates a Pymunk body with a triangular Poly shape attached to it.
 
@@ -110,7 +120,9 @@ def rect(x: float, y: float, w: float, h: float, radius: float = 0.0,
 
 
 @body_maker
-def margin(x: int = 0, y: int = 0, width: int = None, height: int = None, **kwargs) -> Body:
+def margin(
+    x: int = 0, y: int = 0, width: int = None, height: int = None, **kwargs
+) -> Body:
     """
     Creates a margin around the screen.
     """
@@ -129,7 +141,14 @@ def margin(x: int = 0, y: int = 0, width: int = None, height: int = None, **kwar
     return body
 
 
-def space(bg: Color = pyxel.COLOR_BLACK, col: Color = pyxel.COLOR_WHITE, mod=pyxel, flip_y=False, wireframe=False, **kwargs):
+def space(
+    bg: Color = pyxel.COLOR_BLACK,
+    col: Color = pyxel.COLOR_WHITE,
+    mod=pyxel,
+    flip_y=False,
+    wireframe=False,
+    **kwargs
+):
     """
     Create a space object.
 
@@ -146,7 +165,7 @@ def space(bg: Color = pyxel.COLOR_BLACK, col: Color = pyxel.COLOR_WHITE, mod=pyx
         draw_options = DrawOptions(mod)
     draw_options.wireframe = wireframe
 
-    def update(dt: float = 1 / getattr(pyxel, 'DEFAULT_FPS', 30)):
+    def update(dt: float = 1 / getattr(pyxel, "DEFAULT_FPS", 30)):
         sp.step(dt)
 
     def draw(clear: bool = False):

@@ -1,5 +1,5 @@
 from abc import abstractmethod, ABC
-from math import pi
+from math import pi, sqrt
 
 __docformat__ = "reStructuredText"
 
@@ -16,16 +16,34 @@ from .query_info import PointQueryInfo, SegmentQueryInfo
 from .shape_filter import ShapeFilter, shape_filter_from_cffi
 from .transform import Transform
 from .vec2d import Vec2d, VecLike, vec2d_from_cffi
+from .geometry import moment_for_segment, moment_for_poly
 
 if TYPE_CHECKING:
     from .space import Space
     from .body import Body
+    import easymunk as mk
 
 S = TypeVar("S", bound="Shape")
 
+SHAPE_BODY_NOTE = """It is legal to send in None as body argument to indicate that this
+    shape is not attached to a body. However, you must attach it to a body
+    before adding the shape to a space or used for a space shape query.
+"""
+SHAPE_ARGS = """sensor: A boolean value if this shape is a sensor or not.
+        collision_type: Arbitrary category in associated with shape. 
+        filter: A collision filter object 
+        elasticity: Elasticity (restitution) coefficient for collisions that 
+            controls body's "bouncyness". Usually in the range 0 = no bounce 
+            to 1 = perfectly elastic.  
+        friction: Friction coefficient.  
+        surface_velocity: Adds a surface velocity vector for things like conveyor belts. 
+        body: body the shape is attached to.
+"""
+
 
 class Shape(HasBBMixin):
-    """Base class for all the shapes.
+    """
+    Base class for all the shapes.
 
     You usually dont want to create instances of this class directly but use
     one of the specialized shapes instead (:py:class:`Circle`,
@@ -200,7 +218,8 @@ class Shape(HasBBMixin):
 
     @property
     def bb(self) -> BB:
-        """The bounding box :py:class:`BB` of the shape.
+        """
+        The bounding box :py:class:`BB` of the shape.
 
         Only guaranteed to be valid after :py:meth:`Shape.cache_bb` or
         :py:meth:`Space.step` is called. Moving a body that a shape is
@@ -213,8 +232,8 @@ class Shape(HasBBMixin):
 
     @property
     def space(self) -> Optional["Space"]:
-        """Get the :py:class:`Space` that shape has been added to (or
-        None).
+        """
+        Get the :py:class:`Space` that shape has been added to (or None).
         """
         if self._space is not None:
             return py_space(self._space)
@@ -222,7 +241,7 @@ class Shape(HasBBMixin):
             return None
 
     def __init__(self, shape: ffi.CData, body: Optional["Body"] = None,
-                 space: Optional["Space"] = None, name: Optional[str] = None,
+                 name: Optional[str] = None,
                  **kwargs) -> None:
         self._nursery = []
         self._body = body
@@ -233,8 +252,8 @@ class Shape(HasBBMixin):
         self._set_id()
         self.name = name
         init_attributes(self, self._init_kwargs, kwargs)
-        if space is not None:
-            space.add(self)
+        if body is not None and body.space is not None:
+            body.space.add(self)
 
     def __getstate__(self):
         meta = dict(self.__dict__)
@@ -273,7 +292,8 @@ class Shape(HasBBMixin):
         yield self.bb
 
     def update_transform(self, transform: Transform) -> BB:
-        """Update, cache and return the bounding box of a shape with an
+        """
+        Update, cache and return the bounding box of a shape with an
         explicit transformation.
 
         Useful if you have a shape without a body and want to use it for
@@ -283,12 +303,16 @@ class Shape(HasBBMixin):
         return BB(ptr.l, ptr.b, ptr.r, ptr.t)
 
     def cache_bb(self) -> BB:
-        """Update and returns the bounding box of this shape"""
+        """
+        Update and returns the bounding box of this shape.
+        """
         ptr = lib.cpShapeCacheBB(self._cffi_ref)
         return BB(ptr.l, ptr.b, ptr.r, ptr.t)
 
     def reindex(self: S) -> S:
-        """Reindex shape in space."""
+        """
+        Reindex shape in space.
+        """
 
         space = self.space
         if space is not None:
@@ -296,7 +320,8 @@ class Shape(HasBBMixin):
         return self
 
     def point_query(self, point: VecLike) -> Optional[PointQueryInfo]:
-        """Check if the given point lies within the shape.
+        """
+        Check if the given point lies within the shape.
 
         A negative distance means the point is within the shape.
         """
@@ -313,9 +338,11 @@ class Shape(HasBBMixin):
     def segment_query(
             self, start: VecLike, end: VecLike, radius: float = 0.0
     ) -> Optional[SegmentQueryInfo]:
-        """Check if the line segment from start to end intersects the shape.
+        """
+        Check if the line segment from start to end intersects the shape.
 
-        Return query info object, if successful."""
+        Return query info object, if successful.
+        """
 
         info = ffi.new("cpSegmentQueryInfo *")
         success = lib.cpShapeSegmentQuery(self._cffi_ref, start, end, radius, info)
@@ -329,9 +356,11 @@ class Shape(HasBBMixin):
         return None
 
     def shapes_collide(self, b: "Shape") -> ContactPointSet:
-        """Get contact information about this shape and shape b.
+        """
+        Get contact information about this shape and shape b.
 
-        It is a NO-OP if body is not in a space."""
+        It is a NO-OP if body is not in a space.
+        """
         points = lib.cpShapesCollide(self._cffi_ref, b._cffi_ref)
         return contact_point_set_from_cffi(points)
 
@@ -363,11 +392,34 @@ class Shape(HasBBMixin):
             setattr(self, k, v)
         return new
 
+    def radius_of_gyration_sqr(self, axis=(0, 0)) -> float:
+        """
+        Radius of gyration squared.
+
+        This is slightly more efficient than calculating radius_of_gyration()**2.
+        """
+        raise NotImplementedError
+
+    def radius_of_gyration(self, axis=(0, 0)) -> float:
+        """
+        Radius of gyration of squared is a geometric property define as the
+        radius of a ring with the same mass and moment of inertia of a body.
+        """
+        return sqrt(self.radius_of_gyration_sqr(axis))
+
 
 class Circle(Shape):
-    """A circle shape defined by a radius
+    f"""
+    A circle shape defined by a radius.
 
-    This is the fastest and simplest collision shape
+    This is the fastest and simplest collision shape. 
+
+    {SHAPE_BODY_NOTE}
+    
+    Args:
+        radius: Circle radius
+        offset: Center of circle with respect to the local body coordinates.
+        {SHAPE_ARGS}
     """
 
     _pickle_attrs_init = ["radius", "offset", *Shape._pickle_attrs_init]
@@ -400,13 +452,6 @@ class Circle(Shape):
 
     def __init__(self, radius: float, offset: VecLike = (0, 0),
                  body: Optional["Body"] = None, **kwargs) -> None:
-        """body is the body attach the circle to, offset is the offset from the
-        body's center of gravity in body local coordinates.
-
-        It is legal to send in None as body argument to indicate that this
-        shape is not attached to a body. However, you must attach it to a body
-        before adding the shape to a space or used for a space shape query.
-        """
         shape = lib.cpCircleShapeNew(cffi_body(body), radius, offset)
         super().__init__(shape, body, **kwargs)
 
@@ -416,13 +461,29 @@ class Circle(Shape):
     def _iter_bounding_boxes(self) -> Iterable["BB"]:
         yield self.bb
 
+    def radius_of_gyration_sqr(self, axis: VecLike = (0, 0)) -> float:
+        """
+        Return radius of gyration squared
+        """
+        return self.radius ** 2 / 2 + (self.offset + axis).length_sqr
+
 
 # noinspection PyShadowingBuiltins
 class Segment(Shape):
-    """A line segment shape between two points
+    f"""
+    A line segment shape between two points.
 
     Meant mainly as a static shape. Can be beveled in order to give them a
     thickness.
+
+    {SHAPE_BODY_NOTE}
+
+    Args:
+        a: The first endpoint of the segment
+        b: The second endpoint of the segment
+        radius: The thickness of the segment
+        body: The body to attach the segment to
+        {SHAPE_ARGS}
     """
 
     _pickle_attrs_init = ["a", "b", "radius", *Shape._pickle_attrs_init]
@@ -465,17 +526,6 @@ class Segment(Shape):
 
     def __init__(self, a: VecLike, b: VecLike, radius: float,
                  body: Optional["Body"] = None, **kwargs) -> None:
-        """Create a Segment
-
-        It is legal to send in None as body argument to indicate that this
-        shape is not attached to a body. However, you must attach it to a body
-        before adding the shape to a space or used for a space shape query.
-
-        :param Body body: The body to attach the segment to
-        :param a: The first endpoint of the segment
-        :param b: The second endpoint of the segment
-        :param float radius: The thickness of the segment
-        """
         shape = lib.cpSegmentShapeNew(cffi_body(body), a, b, radius)
         super().__init__(shape, body, **kwargs)
 
@@ -492,12 +542,53 @@ class Segment(Shape):
         lib.cpSegmentShapeSetNeighbors(self._cffi_ref, prev, next)
         return self
 
+    def radius_of_gyration_sqr(self, axis=(0, 0)) -> float:
+        return moment_for_segment(1, self.a, self.b, self.radius)
+
 
 class Poly(Shape):
-    """A convex polygon shape
+    f"""
+    A convex polygon shape, the slowest, but most flexible collision shape.
+    
+    A convex hull will be calculated from the vertexes automatically.
 
-    Slowest, but most flexible collision shape.
-    """
+    Adding a small radius will bevel the corners and can significantly
+    reduce problems where the poly gets stuck on seams in your geometry.
+
+    It is legal to send in None as body argument to indicate that this
+    shape is not attached to a body. However, you must attach it to a body
+    before adding the shape to a space or used for a space shape query.
+
+    
+    Args:
+        vertices: Define a convex hull of the polygon with a counterclockwise winding.
+        transform: Transform will be applied to every vertex.
+        radius: Set the radius of the poly shape
+        {SHAPE_ARGS}
+
+    .. note::
+        Make sure to put the vertices around (0,0) or the shape might
+        behave strange.
+
+        Either directly place the vertices like the below example:
+
+        >>> w, h = 10, 20
+        >>> vs = [(-w/2, -h/2), (w/2, -h/2), (w/2, h/2), (-w/2, h/2)]
+        >>> poly_good = mk.Poly(vs)
+        >>> poly_good.center_of_gravity
+        Vec2d(0.0, 0.0)
+
+        Or use a transform to move them:
+
+        >>> vs = [(0, 0), (w, 0), (w, h), (0, h)]
+        >>> poly_bad = mk.Poly(vs)
+        >>> poly_bad.center_of_gravity
+        Vec2d(5.0, 10.0)
+        >>> poly_good = mk.Poly(vs, transform=mk.Transform.translation(-w/2, -h/2))
+        >>> poly_good.center_of_gravity
+        Vec2d(0.0, 0.0)
+
+        """
 
     _pickle_attrs_init = ["radius", "vertices", *Shape._pickle_attrs_init]
     radius: float
@@ -520,9 +611,10 @@ class Poly(Shape):
     )
 
     @classmethod
-    def create_box(cls, size: Tuple[float, float] = (10, 10), radius: float = 0.0,
-                   body: Optional["Body"] = None, **kwargs) -> "Poly":
-        """Convenience function to create a box given a width and height.
+    def new_box(cls, size: Tuple[float, float] = (10, 10), radius: float = 0.0,
+                body: Optional["Body"] = None, **kwargs) -> "Poly":
+        f"""
+        Convenience function to create a box given a width and height.
 
         The boxes will always be centered at the center of gravity of the
         body you are attaching them to.  If you want to create an off-center
@@ -535,6 +627,7 @@ class Poly(Shape):
             body: The body to attach the poly to
             size: Size of the box as (width, height)
             radius: Radius of poly
+            {SHAPE_ARGS}
         """
         poly = cls.__new__(Poly)
         shape = lib.cpBoxShapeNew(cffi_body(body), size[0], size[1], radius)
@@ -542,9 +635,10 @@ class Poly(Shape):
         return poly
 
     @classmethod
-    def create_box_bb(cls, bb: BB, radius: float = 0.0, body: Optional["Body"] = None,
-                      **kwargs) -> "Poly":
-        """Convenience function to create a box shape from a :py:class:`BB`.
+    def new_box_bb(cls, bb: BB, radius: float = 0.0, body: Optional["Body"] = None,
+                   **kwargs) -> "Poly":
+        f"""
+        Convenience function to create a box shape from a :py:class:`BB`.
 
         The boxes will always be centered at the center of gravity of the
         body you are attaching them to.  If you want to create an off-center
@@ -554,9 +648,9 @@ class Poly(Shape):
         reduce problems where the box gets stuck on seams in your geometry.
 
         Args:
-            body: The body to attach the poly to
             bb: Size of the box
             radius: Radius of poly
+            {SHAPE_ARGS}
         """
 
         poly = cls.__new__(cls)
@@ -565,10 +659,11 @@ class Poly(Shape):
         return poly
 
     @staticmethod
-    def create_regular_poly(n: int, size: float, radius: float = 0.0, angle: float = 0.0,
-                            offset: VecLike = (0, 0), body: Optional["Body"] = None,
-                            **kwargs) -> "Poly":
-        """Convenience function to create a regular polygon of n sides of a
+    def new_regular_poly(n: int, size: float, radius: float = 0.0, angle: float = 0.0,
+                         offset: VecLike = (0, 0), body: Optional["Body"] = None,
+                         **kwargs) -> "Poly":
+        f"""
+        Convenience function to create a regular polygon of n sides of a
         given size.
 
         The polygon will always be centered at the center of gravity of the
@@ -582,60 +677,18 @@ class Poly(Shape):
         reduce problems where the box gets stuck on seams in your geometry.
 
         Args:
-            body: The body to attach the poly to
             n: Number of sides
             size: Length of each side
             radius: Radius of poly
-            angle: Rotation angle.
+            angle: Rotation angle
+            offset: An offset to the center of gravity
+            {SHAPE_ARGS}
         """
-        return Poly(vertices(n, size, angle, offset), radius=radius, body=body, **kwargs)
+        vertices = regular_poly_vertices(n, size, angle, offset)
+        return Poly(vertices, radius=radius, body=body, **kwargs)
 
     def __init__(self, vertices: Sequence[VecLike], transform: Optional[Transform] = None,
                  radius: float = 0, body: Optional["Body"] = None, **kwargs) -> None:
-        """Create a polygon.
-
-        A convex hull will be calculated from the vertexes automatically.
-
-        Adding a small radius will bevel the corners and can significantly
-        reduce problems where the poly gets stuck on seams in your geometry.
-
-        It is legal to send in None as body argument to indicate that this
-        shape is not attached to a body. However, you must attach it to a body
-        before adding the shape to a space or used for a space shape query.
-
-        .. note::
-            Make sure to put the vertices around (0,0) or the shape might
-            behave strange.
-
-            Either directly place the vertices like the below example:
-
-            >>> import easymunk
-            >>> w, h = 10, 20
-            >>> vs = [(-w/2,-h/2), (w/2,-h/2), (w/2,h/2), (-w/2,h/2)]
-            >>> poly_good = easymunk.Poly(None, vs)
-            >>> print(poly_good.center_of_gravity)
-            Vec2d(0.0, 0.0)
-
-            Or use a transform to move them:
-
-            >>> import easymunk
-            >>> width, height = 10, 20
-            >>> vs = [(0, 0), (width, 0), (width, height), (0, height)]
-            >>> poly_bad = easymunk.Poly(None, vs)
-            >>> print(poly_bad.center_of_gravity)
-            Vec2d(5.0, 10.0)
-            >>> t = easymunk.Transform(tx=-width/2, ty=-height/2)
-            >>> poly_good = easymunk.Poly(None, vs, transform=t)
-            >>> print(poly_good.center_of_gravity)
-            Vec2d(0.0, 0.0)
-
-        :param Body body: The body to attach the poly to
-        :param [(float,float)] vertices: Define a convex hull of the polygon
-            with a counterclockwise winding.
-        :param Transform transform: Transform will be applied to every vertex.
-        :param float radius: Set the radius of the poly shape
-
-        """
         if transform is None:
             transform = Transform.identity()
 
@@ -650,7 +703,8 @@ class Poly(Shape):
         return super().__repr__(args)
 
     def get_vertices(self, *, world: bool = False) -> List[Vec2d]:
-        """Return list of vertices in local coordinates.
+        """
+        Return list of vertices in local coordinates.
 
         Set ``world=True`` if you need the list of vertices in world coordinates.
         """
@@ -671,7 +725,8 @@ class Poly(Shape):
             *,
             world: bool = False,
     ) -> S:
-        """Set the vertices of the poly.
+        """
+        Set the vertices of the poly.
 
         .. note::
             This change is only picked up as a change to the position
@@ -688,6 +743,9 @@ class Poly(Shape):
             return self
         lib.cpPolyShapeSetVerts(self._cffi_ref, len(vertices), vertices, transform)
         return self
+
+    def radius_of_gyration_sqr(self, axis=(0, 0)) -> float:
+        return moment_for_poly(1, self.vertices, radius=self.radius)
 
 
 class MakeShapeMixin(ABC):
@@ -752,10 +810,10 @@ class MakeShapeMixin(ABC):
         """
         Create a regular polygon with n sides.
         """
-        return self.create_poly(vertices(n, size, angle, offset), **kwargs)
+        return self.create_poly(regular_poly_vertices(n, size, angle, offset), **kwargs)
 
 
-def vertices(
+def regular_poly_vertices(
         n: int, size: float, delta: float, offset: VecLike = (0, 0)
 ) -> List[Vec2d]:
     """

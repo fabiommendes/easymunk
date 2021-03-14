@@ -309,20 +309,18 @@ class UnitTestSegment(unittest.TestCase):
 
 class UnitTestPoly(unittest.TestCase):
     def testInit(self) -> None:
-        c = mk.Poly([(0, 0), (10, 10), (20, 0), (-10, 10)], None, 0, None)
+        c = mk.Poly([(0, 0), (10, 10), (20, 0), (-10, 10)], 0, None, None)
 
         b = mk.Body(1, 2)
-        c = mk.Poly(
-            [(0, 0), (10, 10), (20, 0), (-10, 10)], mk.Transform.identity(), 6, b
-        )
+        c = mk.Poly([(0, 0), (10, 10), (20, 0), (-10, 10)], 6, b, mk.Transform.identity())
 
     def test_vertices(self) -> None:
         vs = [(-10, 10), (0, 0), (20, 0), (10, 10)]
-        c = mk.Poly(vs, None, 0, None)
+        c = mk.Poly(vs, 0, None, None)
 
         assert c.get_vertices() == vs
 
-        c2 = mk.Poly(vs, mk.Transform(1, 2, 3, 4, 5, 6), 0, None)
+        c2 = mk.Poly(vs, 0, None, mk.Transform(1, 2, 3, 4, 5, 6))
 
         vs2 = [(5.0, 6.0), (25.0, 26.0), (45.0, 66.0), (25.0, 46.0)]
         assert c2.get_vertices() == vs2

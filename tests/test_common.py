@@ -77,11 +77,7 @@ class UnitTestBugs(unittest.TestCase):
         space.add(b1, c1, b2, c2, b3, c3)
 
         def remove_first(arbiter: p.Arbiter, space: p.Space, data: Any) -> None:
-            first_shape = arbiter.shapes[0]
-            if c1 in space.shapes:
-                space.remove(c1)
-            # space.add_post_step_callback(space.remove, first_shape, first_shape.body)
-            space.remove(c1)
+            space.discard(c1)
 
         space.add_collision_handler(2, 0).separate = remove_first
 

@@ -40,11 +40,8 @@ class Tangram:
         L = 100
         pos = Vec2d(self.width // 2, self.height // 2 + 100)
         add = self.space.add
-        shape = mk.Poly(
-            vertices=[(0, 0), (L, 0), (0, L)],
-            body=mk.Body(position=pos + (L, 0)),
-            density=1,
-        )
+        shape = mk.Poly(vertices=[(0, 0), (L, 0), (0, L)],
+                        body=mk.Body(position=pos + (L, 0)), density=1)
 
         yield add(t1 := shape.body)
         yield add(sqr := t1.copy().move(L, L).rotate(180).fuse_with(t1).move(-L, 0))

@@ -132,7 +132,7 @@ class PymunkDemo(RelativeLayout):
         space.add(chassi_b, chassi_s)
 
         vs = [(0, 0), (0, -45), (25, -45)]
-        shovel_s = easymunk.Poly(vs, transform=easymunk.Transform(tx=85), body=chassi_b)
+        shovel_s = easymunk.Poly(vs, body=chassi_b, transform=easymunk.Transform(tx=85))
         shovel_s.friction = 0.5
         shovel_s.color = shovel_color
         space.add(shovel_s)

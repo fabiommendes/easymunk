@@ -20,3 +20,4 @@ easymunk/*.pyd
 .idea/
 .mypy_cache/
 .coverage
+out.log

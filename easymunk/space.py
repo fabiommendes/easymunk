@@ -1,8 +1,10 @@
 __docformat__ = "reStructuredText"
 
 import logging
+import pickle
 import platform
 import weakref
+from contextlib import contextmanager
 from functools import lru_cache
 from typing import (
     TYPE_CHECKING,
@@ -21,8 +23,8 @@ from typing import (
 
 import sidekick.api as sk
 
-from . import _chipmunk_cffi, _version
-from ._mixins import PickleMixin, FilterElementsMixin, _State
+from . import _chipmunk_cffi
+from ._mixins import PickleMixin, FilterElementsMixin
 from .arbiter import Arbiter
 from .body import Body
 from .collections import Shapes, Bodies, Constraints
@@ -93,13 +95,9 @@ class Space(PickleMixin, FilterElementsMixin):
     >>> space2 = space.copy()
     >>> space3 = pickle.loads(pickle.dumps(space))
     """
-
-    _pickle_attrs_init = [
-        *PickleMixin._pickle_attrs_init,
-        "threaded",
-    ]
-    _pickle_attrs_general = [
-        *PickleMixin._pickle_attrs_general,
+    _pickle_format_version = 0
+    _pickle_args = "threaded",
+    _pickle_kwargs = (
         "iterations",
         "gravity",
         "damping",
@@ -109,13 +107,30 @@ class Space(PickleMixin, FilterElementsMixin):
         "collision_bias",
         "collision_persistence",
         "threads",
-    ]
-    _init_kwargs = set(_pickle_attrs_general)
+    )
+    _pickle_meta_hide = {
+        "_add_later",
+        "_bodies",
+        '_cffi_ref',
+        "_constraints",
+        "_forces",
+        "_handlers",
+        "_locked",
+        # "_post_step_callbacks",
+        "_removed_shapes",
+        "_remove_later",
+        "_shapes",
+        "bodies",
+        "constraints",
+        "shapes",
+        "static_body",
+    }
+    _init_kwargs = {*_pickle_args, *_pickle_kwargs}
 
     iterations: int
     iterations = property(  # type: ignore
-        lambda self: cp.cpSpaceGetIterations(self._space),
-        lambda self, value: void(cp.cpSpaceSetIterations(self._space, value)),
+        lambda self: cp.cpSpaceGetIterations(self._cffi_ref),
+        lambda self, value: void(cp.cpSpaceSetIterations(self._cffi_ref, value)),
         doc="""Iterations allow you to control the accuracy of the solver.
 
         Defaults to 10.
@@ -136,8 +151,8 @@ class Space(PickleMixin, FilterElementsMixin):
     )
     gravity: Vec2d
     gravity = property(  # type: ignore
-        lambda self: vec2d_from_cffi(cp.cpSpaceGetGravity(self._space)),
-        lambda self, g: void(cp.cpSpaceSetGravity(self._space, g)),
+        lambda self: vec2d_from_cffi(cp.cpSpaceGetGravity(self._cffi_ref)),
+        lambda self, g: void(cp.cpSpaceSetGravity(self._cffi_ref, g)),
         doc="""Global gravity applied to the space.
 
         Defaults to (0,0). Can be overridden on a per body basis by writing
@@ -147,8 +162,8 @@ class Space(PickleMixin, FilterElementsMixin):
     )
     damping: float
     damping = property(  # type: ignore
-        lambda self: cp.cpSpaceGetDamping(self._space),
-        lambda self, damping: void(cp.cpSpaceSetDamping(self._space, damping)),
+        lambda self: cp.cpSpaceGetDamping(self._cffi_ref),
+        lambda self, damping: void(cp.cpSpaceSetDamping(self._cffi_ref, damping)),
         doc="""Amount of simple damping to apply to the space.
 
         A value of 0.9 means that each body will lose 10% of its velocity per
@@ -158,8 +173,8 @@ class Space(PickleMixin, FilterElementsMixin):
     )
     idle_speed_threshold: float
     idle_speed_threshold = property(  # type: ignore
-        lambda self: cp.cpSpaceGetIdleSpeedThreshold(self._space),
-        lambda self, value: void(cp.cpSpaceSetIdleSpeedThreshold(self._space, value)),
+        lambda self: cp.cpSpaceGetIdleSpeedThreshold(self._cffi_ref),
+        lambda self, value: void(cp.cpSpaceSetIdleSpeedThreshold(self._cffi_ref, value)),
         doc="""Speed threshold for a body to be considered idle.
 
         The default value of 0 means the space estimates a good threshold
@@ -168,8 +183,8 @@ class Space(PickleMixin, FilterElementsMixin):
     )
     sleep_time_threshold: float
     sleep_time_threshold = property(  # type: ignore
-        lambda self: cp.cpSpaceGetSleepTimeThreshold(self._space),
-        lambda self, value: void(cp.cpSpaceSetSleepTimeThreshold(self._space, value)),
+        lambda self: cp.cpSpaceGetSleepTimeThreshold(self._cffi_ref),
+        lambda self, value: void(cp.cpSpaceSetSleepTimeThreshold(self._cffi_ref, value)),
         doc="""Time a group of bodies must remain idle in order to fall
         asleep.
 
@@ -178,8 +193,8 @@ class Space(PickleMixin, FilterElementsMixin):
     )
     collision_slop: float
     collision_slop = property(  # type: ignore
-        lambda self: cp.cpSpaceGetCollisionSlop(self._space),
-        lambda self, value: void(cp.cpSpaceSetCollisionSlop(self._space, value)),
+        lambda self: cp.cpSpaceGetCollisionSlop(self._cffi_ref),
+        lambda self, value: void(cp.cpSpaceSetCollisionSlop(self._cffi_ref, value)),
         doc="""Amount of overlap between shapes that is allowed.
 
         To improve stability, set this as high as you can without noticeable
@@ -188,8 +203,8 @@ class Space(PickleMixin, FilterElementsMixin):
     )
     collision_bias: float
     collision_bias = property(  # type: ignore
-        lambda self: cp.cpSpaceGetCollisionBias(self._space),
-        lambda self, value: void(cp.cpSpaceSetCollisionBias(self._space, value)),
+        lambda self: cp.cpSpaceGetCollisionBias(self._cffi_ref),
+        lambda self, value: void(cp.cpSpaceSetCollisionBias(self._cffi_ref, value)),
         doc="""Determines how fast overlapping shapes are pushed apart.
 
         Pymunk allows fast moving objects to overlap, then fixes the overlap
@@ -208,8 +223,9 @@ class Space(PickleMixin, FilterElementsMixin):
     )
     collision_persistence: int
     collision_persistence = property(  # type: ignore
-        lambda self: cp.cpSpaceGetCollisionPersistence(self._space),
-        lambda self, value: void(cp.cpSpaceSetCollisionPersistence(self._space, value)),
+        lambda self: cp.cpSpaceGetCollisionPersistence(self._cffi_ref),
+        lambda self, value: void(
+            cp.cpSpaceSetCollisionPersistence(self._cffi_ref, value)),
         doc="""The number of frames the space keeps collision solutions
         around for.
 
@@ -222,7 +238,7 @@ class Space(PickleMixin, FilterElementsMixin):
     )
     current_time_step: int
     current_time_step = property(  # type: ignore
-        lambda self: cp.cpSpaceGetCurrentTimeStep(self._space),
+        lambda self: cp.cpSpaceGetCurrentTimeStep(self._cffi_ref),
         doc="""Retrieves the current (if you are in a callback from
         Space.step()) or most recent (outside of a Space.step() call)
         timestep.
@@ -230,11 +246,11 @@ class Space(PickleMixin, FilterElementsMixin):
     )
     threads: int
     threads = property(  # type: ignore
-        lambda self: int(cp.cpHastySpaceGetThreads(self._space))
+        lambda self: int(cp.cpHastySpaceGetThreads(self._cffi_ref))
         if self.threaded
         else 1,
         lambda self, n: void(
-            self.threaded and cp.cpHastySpaceSetThreads(self._space, n)
+            self.threaded and cp.cpHastySpaceSetThreads(self._cffi_ref, n)
         ),
         doc="""The number of threads to use for running the step function. 
         
@@ -274,7 +290,7 @@ class Space(PickleMixin, FilterElementsMixin):
         body = Body(body_type=Body.STATIC)
         body._space = weakref.proxy(self)
 
-        cp.cpSpaceAddBody(self._space, cffi_body(body))
+        cp.cpSpaceAddBody(self._cffi_ref, cffi_body(body))
         return body
 
     @property
@@ -317,7 +333,7 @@ class Space(PickleMixin, FilterElementsMixin):
         return self.potential_energy + self.kinetic_energy
 
     @property
-    def center_of_mass(self):
+    def center_of_gravity(self):
         """
         Center of mass position of all dynamic objects.
         """
@@ -325,7 +341,7 @@ class Space(PickleMixin, FilterElementsMixin):
         pos_m_acc = Vec2d(0, 0)
         for o in self.filter_bodies(body_type=Body.DYNAMIC):
             m_acc += o.mass
-            pos_m_acc += o.mass * o.local_to_world(o.center_of_mass)
+            pos_m_acc += o.mass * o.local_to_world(o.center_of_gravity)
         return pos_m_acc / m_acc
 
     @property
@@ -346,7 +362,7 @@ class Space(PickleMixin, FilterElementsMixin):
         momentum = 0
         for o in self.filter_bodies(body_type=Body.DYNAMIC):
             momentum += o.moment * o.angular_velocity
-            momentum += o.local_to_world(o.center_of_mass).cross(o.velocity)
+            momentum += o.local_to_world(o.center_of_gravity).cross(o.velocity)
         return momentum
 
     def __init__(self, threaded: bool = False, **kwargs) -> None:
@@ -368,7 +384,7 @@ class Space(PickleMixin, FilterElementsMixin):
         else:
             cp_space = cp.cpSpaceNew()
             freefunc = cp.cpSpaceFree
-        self._space: Any = ffi.gc(cp_space, cffi_free_space(freefunc))
+        self._cffi_ref: Any = ffi.gc(cp_space, cffi_free_space(freefunc))
 
         # To prevent the gc to collect the callbacks.
         self._handlers: Dict[Any, CollisionHandler] = {}
@@ -380,6 +396,7 @@ class Space(PickleMixin, FilterElementsMixin):
         self._constraints: Set[Constraint] = set()
         self._add_later: Set[_AddableObjects] = set()
         self._remove_later: Set[_AddableObjects] = set()
+        self._forces: List[Any] = []  # TODO: Implement support for forces
         self._locked: bool = False
 
         # Save attributes
@@ -388,80 +405,51 @@ class Space(PickleMixin, FilterElementsMixin):
     def _get_self(self) -> "Space":
         return self
 
-    def __getstate__(self) -> _State:
-        """Return the state of this object
+    def __getstate__(self):
+        args, meta = super().__getstate__()
+        exclude = set(self._remove_later)
+        objects = {
+            "bodies": [b for b in self._bodies if b not in exclude],
+            "constraints": [c for c in self._constraints if c not in exclude],
+            "forces": [f for f in self._forces if f not in exclude],
+            "later": list(self._add_later),
+        }
+        objects["bodies"].append(self.__dict__.get('static_body'))
+        meta['$objects'] = objects
+        meta["$handlers"] = {k: v.as_dict() for k, v in self._handlers.items()}
+        return self._pickle_format_version, args, meta
 
-        This method allows the usage of the :mod:`copy` and :mod:`pickle`
-        modules with this class.
-        """
-        d = super(Space, self).__getstate__()
+    def __setstate__(self, state) -> None:
+        version, args, meta = state
+        if version != self._pickle_format_version:
+            expect = self._pickle_format_version
+            raise ValueError(f'invalid pickle version: {version}, expect {expect}.')
 
-        d["special"].append(("easymunk_version", _version.version))
-        d["special"].append(("bodies", self.bodies))
-        if "static_body" in self.__dict__:
-            d["special"].append(("static_body", self.static_body))
+        # Keep for later
+        objects = meta.pop("$objects")
+        handlers = meta.pop("$handlers")
 
-        d["special"].append(("shapes", self.shapes))
-        d["special"].append(("constraints", self.constraints))
+        super().__setstate__((args, meta))
 
-        handlers = []
-        for k, v in self._handlers.items():
-            h: Dict[str, Any] = {}
-            if v._begin_base is not None:
-                h["_begin_base"] = v._begin_base
-            if v._pre_solve_base is not None:
-                h["_pre_solve_base"] = v._pre_solve_base
-            if v._post_solve_base is not None:
-                h["_post_solve_base"] = v._post_solve_base
-            if v._separate_base is not None:
-                h["_separate_base"] = v._separate_base
-            handlers.append((k, h))
+        # Add objects to space
+        loads = lambda x: x
+        bodies = [loads(s) for s in objects["bodies"]]
+        static = bodies.pop()
+        if static is not None:
+            self.add(static)
+            self.static_body = static
+            self._bodies.discard(static)
+        self.add(*bodies)
 
-        d["special"].append(("_handlers", handlers))
-
-        return d
-
-    def __setstate__(self, state: _State) -> None:
-        """Unpack this object from a saved state.
-
-        This method allows the usage of the :mod:`copy` and :mod:`pickle`
-        modules with this class.
-        """
-        super(Space, self).__setstate__(state)
-
-        for k, v in state["special"]:
-            if k == "easymunk_version":
-                if _version.version != v:
-                    raise ValueError(
-                        f"Pymunk version {v} of pickled object does not match current "
-                        f"Pymunk version {_version.version}"
-                    )
-            elif k == "bodies":
-                self.add(*v)
-            elif k == "static_body":
-                self.static_body = v
-                v._space = weakref.proxy(self)
-                cp.cpSpaceAddBody(self._space, v._cffi_ref)
-            elif k == "shapes":
-                self.add(*v)
-            elif k == "constraints":
-                self.add(*v)
-            elif k == "_handlers":
-                for k2, hd in v:
-                    if k2 is None:
-                        h = self.add_default_collision_handler()
-                    elif isinstance(k2, tuple):
-                        h = self.add_collision_handler(k2[0], k2[1])
-                    else:
-                        h = self.add_wildcard_collision_handler(k2)
-                    if "_begin_base" in hd:
-                        h.begin = hd["_begin_base"]
-                    if "_pre_solve_base" in hd:
-                        h.pre_solve = hd["_pre_solve_base"]
-                    if "_post_solve_base" in hd:
-                        h.post_solve = hd["_post_solve_base"]
-                    if "_separate_base" in hd:
-                        h.separate = hd["_separate_base"]
+        # Register handlers
+        for k, data in handlers.items():
+            if k is None:
+                handler = self.add_default_collision_handler()
+            elif isinstance(k, tuple):
+                handler = self.add_collision_handler(*k)
+            else:
+                handler = self.add_wildcard_collision_handler(k)
+            handler.update(data)
 
     def _iter_bodies(self) -> Iterator["Body"]:
         return iter(self._bodies)
@@ -471,6 +459,13 @@ class Space(PickleMixin, FilterElementsMixin):
 
     def _iter_constraints(self) -> Iterator["Constraint"]:
         return iter(self._constraints)
+
+    @contextmanager
+    def locked(self):
+        locked = self._locked
+        self._locked = True
+        yield self
+        self._locked = locked
 
     def add(self: S, *objs: _AddableObjects, add_children=True) -> S:
         """Add one or many shapes, bodies or constraints (joints) to the space
@@ -523,7 +518,7 @@ class Space(PickleMixin, FilterElementsMixin):
         """
         return self._remove_or_discard(objs, remove_children, False)
 
-    def discard(self, *objs: _AddableObjects, remove_children=True):
+    def discard(self: S, *objs: _AddableObjects, remove_children=True) -> S:
         """
         Discard objects from space.
 
@@ -533,6 +528,11 @@ class Space(PickleMixin, FilterElementsMixin):
         return self._remove_or_discard(objs, remove_children, True)
 
     def _remove_or_discard(self, objs, remove_children, discard):
+        if not objs:
+            return
+
+        ids = {id(obj): obj for obj in objs}
+        with open('out.log', 'a') as fd: fd.write(f'{ids}, {self._locked}\n')
         if self._locked:
             self._remove_later.update(objs)
             return self
@@ -567,7 +567,7 @@ class Space(PickleMixin, FilterElementsMixin):
 
         shape._space = weakref.proxy(self)
         self._shapes[shape_id(shape)] = shape
-        cp.cpSpaceAddShape(self._space, get_cffi_ref(shape))
+        cp.cpSpaceAddShape(self._cffi_ref, get_cffi_ref(shape))
         clear_nursery(shape)
 
     def _add_body(self, body: "Body") -> None:
@@ -576,7 +576,7 @@ class Space(PickleMixin, FilterElementsMixin):
 
         body._space = weakref.proxy(self)
         self._bodies.add(body)
-        cp.cpSpaceAddBody(self._space, get_cffi_ref(body))
+        cp.cpSpaceAddBody(self._cffi_ref, get_cffi_ref(body))
         clear_nursery(body)
 
     def _add_constraint(self, constraint: "Constraint") -> None:
@@ -584,7 +584,7 @@ class Space(PickleMixin, FilterElementsMixin):
             return
 
         self._constraints.add(constraint)
-        cp.cpSpaceAddConstraint(self._space, get_cffi_ref(constraint))
+        cp.cpSpaceAddConstraint(self._cffi_ref, get_cffi_ref(constraint))
         clear_nursery(constraint)
 
     def _remove_shape(self, shape: "Shape", discard: bool) -> None:
@@ -598,8 +598,8 @@ class Space(PickleMixin, FilterElementsMixin):
         # During GC at program exit sometimes the shape might already be removed. Then
         # skip this step.
         ref = get_cffi_ref(shape)
-        if cp.cpSpaceContainsShape(self._space, ref):
-            cp.cpSpaceRemoveShape(self._space, ref)
+        if cp.cpSpaceContainsShape(self._cffi_ref, ref):
+            cp.cpSpaceRemoveShape(self._cffi_ref, ref)
         del self._shapes[id_]
 
     def _remove_body(self, body: "Body", discard: bool) -> None:
@@ -612,8 +612,8 @@ class Space(PickleMixin, FilterElementsMixin):
         # During GC at program exit sometimes the shape might already be removed. Then
         # skip this step.
         ref = get_cffi_ref(body)
-        if cp.cpSpaceContainsBody(self._space, ref):
-            cp.cpSpaceRemoveBody(self._space, ref)
+        if cp.cpSpaceContainsBody(self._cffi_ref, ref):
+            cp.cpSpaceRemoveBody(self._cffi_ref, ref)
         self._bodies.remove(body)
 
     def _remove_constraint(self, constraint: "Constraint", discard: bool) -> None:
@@ -625,27 +625,27 @@ class Space(PickleMixin, FilterElementsMixin):
         # During GC at program exit sometimes the constraint might already be removed.
         # Then skip this step.
         ref = get_cffi_ref(constraint)
-        if cp.cpSpaceContainsConstraint(self._space, ref):
-            cp.cpSpaceRemoveConstraint(self._space, ref)
+        if cp.cpSpaceContainsConstraint(self._cffi_ref, ref):
+            cp.cpSpaceRemoveConstraint(self._cffi_ref, ref)
         self._constraints.remove(constraint)
 
     def reindex_shape(self: S, shape: Shape) -> S:
         """Update the collision detection data for a specific shape in the
         space.
         """
-        cp.cpSpaceReindexShape(self._space, get_cffi_ref(shape))
+        cp.cpSpaceReindexShape(self._cffi_ref, get_cffi_ref(shape))
         return self
 
     def reindex_shapes_for_body(self: S, body: Body) -> S:
         """Reindex all the shapes for a certain body."""
-        cp.cpSpaceReindexShapesForBody(self._space, get_cffi_ref(body))
+        cp.cpSpaceReindexShapesForBody(self._cffi_ref, get_cffi_ref(body))
         return self
 
     def reindex_static(self: S) -> S:
         """Update the collision detection info for the static shapes in the
         space. You only need to call this if you move one of the static shapes.
         """
-        cp.cpSpaceReindexStatic(self._space)
+        cp.cpSpaceReindexStatic(self._cffi_ref)
         return self
 
     def use_spatial_hash(self: S, dim: float, count: int) -> S:
@@ -679,7 +679,7 @@ class Space(PickleMixin, FilterElementsMixin):
         :param dim: the size of the hash cells
         :param count: the suggested minimum number of cells in the hash table
         """
-        cp.cpSpaceUseSpatialHash(self._space, dim, count)
+        cp.cpSpaceUseSpatialHash(self._cffi_ref, dim, count)
         return self
 
     def step(self: S, dt: float) -> S:
@@ -707,16 +707,16 @@ class Space(PickleMixin, FilterElementsMixin):
         try:
             self._locked = True
             if self.threaded:
-                cp.cpHastySpaceStep(self._space, dt)
+                cp.cpHastySpaceStep(self._cffi_ref, dt)
             else:
-                cp.cpSpaceStep(self._space, dt)
+                cp.cpSpaceStep(self._cffi_ref, dt)
             self._removed_shapes = {}
         finally:
             self._locked = False
 
         self.add(*self._add_later)
         self._add_later.clear()
-        self.discard(*self._remove_later)
+        self.discard(*set(self._remove_later))
         self._remove_later.clear()
 
         for key in self._post_step_callbacks:
@@ -747,7 +747,7 @@ class Space(PickleMixin, FilterElementsMixin):
         if key in self._handlers:
             return self._handlers[key]
 
-        ptr = cp.cpSpaceAddCollisionHandler(self._space, a, b)
+        ptr = cp.cpSpaceAddCollisionHandler(self._cffi_ref, a, b)
         self._handlers[key] = handler = CollisionHandler(ptr, self)
         return handler
 
@@ -775,7 +775,7 @@ class Space(PickleMixin, FilterElementsMixin):
         if col_type in self._handlers:
             return self._handlers[col_type]
 
-        ptr = cp.cpSpaceAddWildcardHandler(self._space, col_type)
+        ptr = cp.cpSpaceAddWildcardHandler(self._cffi_ref, col_type)
         self._handlers[col_type] = handler = CollisionHandler(ptr, self)
         return handler
 
@@ -791,7 +791,7 @@ class Space(PickleMixin, FilterElementsMixin):
         if None in self._handlers:
             return self._handlers[None]
 
-        ptr = cp.cpSpaceAddDefaultCollisionHandler(self._space)
+        ptr = cp.cpSpaceAddDefaultCollisionHandler(self._cffi_ref)
         self._handlers[None] = handler = CollisionHandler(ptr, self)
         return handler
 
@@ -871,7 +871,7 @@ class Space(PickleMixin, FilterElementsMixin):
         result: List[PointQueryInfo] = []
         filter_ = filter or ShapeFilter()
         data = ffi.new_handle(self)
-        cp.cpSpacePointQuery(self._space, point, distance, filter_, cb, data)
+        cp.cpSpacePointQuery(self._cffi_ref, point, distance, filter_, cb, data)
         return result
 
     # noinspection PyShadowingBuiltins
@@ -895,7 +895,7 @@ class Space(PickleMixin, FilterElementsMixin):
         """
         info = ffi.new("cpPointQueryInfo *")
         filter = filter or ShapeFilter()
-        ptr = cp.cpSpacePointQueryNearest(self._space, point, distance, filter, info)
+        ptr = cp.cpSpacePointQueryNearest(self._cffi_ref, point, distance, filter, info)
         shape = shape_from_cffi(self, ptr)
         if shape:
             pos = Vec2d(info.point.x, info.point.y)
@@ -939,7 +939,7 @@ class Space(PickleMixin, FilterElementsMixin):
         query_hits: List[SegmentQueryInfo] = []
         filter = filter or ShapeFilter()
         data = ffi.new_handle(self)
-        cp.cpSpaceSegmentQuery(self._space, start, end, radius, filter, cb, data)
+        cp.cpSpaceSegmentQuery(self._cffi_ref, start, end, radius, filter, cb, data)
         return query_hits
 
     # noinspection PyShadowingBuiltins
@@ -959,7 +959,8 @@ class Space(PickleMixin, FilterElementsMixin):
 
         info = ffi.new("cpSegmentQueryInfo *")
         filter = filter or ShapeFilter()
-        ptr = cp.cpSpaceSegmentQueryFirst(self._space, start, end, radius, filter, info)
+        ptr = cp.cpSpaceSegmentQueryFirst(self._cffi_ref, start, end, radius, filter,
+                                          info)
         shape = shape_from_cffi(self, ptr)
         if shape is not None:
             pos = Vec2d(info.point.x, info.point.y)
@@ -986,7 +987,7 @@ class Space(PickleMixin, FilterElementsMixin):
 
         query_hits: List[Shape] = []
         data = ffi.new_handle(self)
-        cp.cpSpaceBBQuery(self._space, bb, filter, cb, data)
+        cp.cpSpaceBBQuery(self._cffi_ref, bb, filter, cb, data)
         return query_hits
 
     def shape_query(self, shape: Shape) -> List[ShapeQueryInfo]:
@@ -1005,7 +1006,7 @@ class Space(PickleMixin, FilterElementsMixin):
 
         query_hits: List[ShapeQueryInfo] = []
         data = ffi.new_handle(self)
-        cp.cpSpaceShapeQuery(self._space, get_cffi_ref(shape), cb, data)
+        cp.cpSpaceShapeQuery(self._cffi_ref, get_cffi_ref(shape), cb, data)
         return query_hits
 
     def debug_draw(
@@ -1039,7 +1040,7 @@ class Space(PickleMixin, FilterElementsMixin):
             cffi = get_cffi_ref(options)
             cffi.data = ptr = ffi.new_handle(self)
             with options:
-                cp.cpSpaceDebugDraw(self._space, cffi)
+                cp.cpSpaceDebugDraw(self._cffi_ref, cffi)
             del ptr
         return self
 

@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple, TypeVar, Iter
 from .mat22 import Mat22
 from .util import void, cffi_body, inner_shapes, py_space, init_attributes
 from ._chipmunk_cffi import ffi, lib
-from ._mixins import HasBBMixin
+from ._mixins import PickleMixin, HasBBMixin
 from .bb import BB
 from .contact_point_set import ContactPointSet, contact_point_set_from_cffi
 from .query_info import PointQueryInfo, SegmentQueryInfo
@@ -41,7 +41,7 @@ SHAPE_ARGS = """sensor: A boolean value if this shape is a sensor or not.
 """
 
 
-class Shape(HasBBMixin):
+class Shape(PickleMixin):
     """
     Base class for all the shapes.
 
@@ -53,17 +53,17 @@ class Shape(HasBBMixin):
     body (if any) will also be copied.
     """
 
-    _pickle_attrs_init = [
-        "sensor",
+    _pickle_args = ()
+    _pickle_kwargs = [
         "collision_type",
-        "filter",
         "elasticity",
+        "filter",
         "friction",
+        "sensor",
         "surface_velocity",
-        "body",
     ]
-    _pickle_meta_hide = {"_body", "_cffi_ref", "_nursery"}
-    _init_kwargs = {*_pickle_attrs_init, "mass", "moment", "density"}
+    _pickle_meta_hide = {"_body", "_cffi_ref", "_nursery", "_space", "body"}
+    _init_kwargs = {*_pickle_args, "mass", "moment", "density"}
     _space = None  # Weak ref to the space holding this body (if any)
     _body = None
     _cffi_ref = None
@@ -264,20 +264,10 @@ class Shape(HasBBMixin):
             body.space.add(self)
 
     def __getstate__(self):
-        meta = dict(self.__dict__)
-        args = [getattr(self, k) for k in self._pickle_attrs_init]
-        for k in self._pickle_meta_hide:
-            meta.pop(k)
+        args, meta = super().__getstate__()
         if self.density:
             meta["density"] = self.density
         return args, meta
-
-    def __setstate__(self, state):
-        args, meta = state
-        kwargs = {k: v for k, v in zip(self._pickle_attrs_init, args)}
-        self.__init__(**kwargs)
-        for k, v in meta.items():
-            setattr(self, k, v)
 
     def __repr__(self, *args):
         if args:
@@ -393,7 +383,7 @@ class Shape(HasBBMixin):
         Prepare a copy of shape possibly changing some parameters.
         """
         args, meta = self.__getstate__()
-        args[-1] = body
+        args[self._pickle_args.index("body")] = body
         new = object.__new__(type(self))
         new.__setstate__((args, meta))
         for k, v in kwargs.items():
@@ -446,7 +436,7 @@ class Circle(Shape):
         {SHAPE_ARGS}
     """
 
-    _pickle_attrs_init = ["radius", "offset", *Shape._pickle_attrs_init]
+    _pickle_args = ["radius", "offset", "body"]
     radius: float
     radius = property(  # type: ignore
         lambda self: lib.cpCircleShapeGetRadius(self._cffi_ref),
@@ -521,7 +511,7 @@ class Segment(Shape):
         {SHAPE_ARGS}
     """
 
-    _pickle_attrs_init = ["a", "b", "radius", *Shape._pickle_attrs_init]
+    _pickle_args = ["a", "b", "radius", "body"]
     radius: float
     radius = property(  # type: ignore
         lambda self: lib.cpSegmentShapeGetRadius(self._cffi_ref),
@@ -626,8 +616,8 @@ class Poly(Shape):
 
     Args:
         vertices: Define a convex hull of the polygon with a counterclockwise winding.
-        transform: Transform will be applied to every vertex.
         radius: Set the radius of the poly shape
+        transform: Transform will be applied to every vertex.
         {SHAPE_ARGS}
 
     .. note::
@@ -654,7 +644,7 @@ class Poly(Shape):
 
     """
 
-    _pickle_attrs_init = ["radius", "vertices", *Shape._pickle_attrs_init]
+    _pickle_args = ["vertices", "radius", "body"]
     radius: float
     radius = property(  # type: ignore
         lambda self: lib.cpPolyShapeGetRadius(self._cffi_ref),
@@ -762,14 +752,12 @@ class Poly(Shape):
         vertices = regular_poly_vertices(n, size, angle, offset)
         return Poly(vertices, radius=radius, body=body, **kwargs)
 
-    def __init__(
-            self,
-            vertices: Sequence[VecLike],
-            transform: Optional[Transform] = None,
-            radius: float = 0,
-            body: Optional["Body"] = None,
-            **kwargs,
-    ) -> None:
+    def __init__(self,
+                 vertices: Sequence[VecLike],
+                 radius: float = 0,
+                 body: Optional["Body"] = None,
+                 transform: Optional[Transform] = None,
+                 **kwargs) -> None:
         if transform is None:
             transform = Transform.identity()
 

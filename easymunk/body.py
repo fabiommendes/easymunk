@@ -21,8 +21,6 @@ import sidekick.api as sk
 from ._chipmunk_cffi import ffi, lib
 from ._mixins import (
     PickleMixin,
-    _State,
-    TypingAttrMixing,
     HasBBMixin,
     FilterElementsMixin,
 )
@@ -49,9 +47,7 @@ _PositionFunc = Callable[["Body", float], None]
 _VelocityFunc = Callable[["Body", Vec2d, float, float], None]
 
 
-class Body(
-    MakeShapeMixin, PickleMixin, TypingAttrMixing, HasBBMixin, FilterElementsMixin
-):
+class Body(MakeShapeMixin, PickleMixin, HasBBMixin, FilterElementsMixin):
     """A rigid body
 
     * Use forces to modify the rigid bodies if possible. This is likely to be
@@ -108,12 +104,8 @@ class Body(
     static geometry to be initialized or moved separately.
     """
 
-    _pickle_attrs_init = PickleMixin._pickle_attrs_init + [
-        "mass",
-        "moment",
-        "body_type",
-    ]
-    _pickle_attrs_general = PickleMixin._pickle_attrs_general + [
+    _pickle_args = "mass", "moment", "body_type"
+    _pickle_kwargs = [
         "force",
         "angle",
         "position",
@@ -122,20 +114,21 @@ class Body(
         "angular_velocity",
         "torque",
     ]
-    _pickle_attrs_skip = PickleMixin._pickle_attrs_skip + [
-        "is_sleeping",
-        "_velocity_func",
+    _pickle_meta_hide = {
+        "_cffi_ref",
+        "_constraints",
+        "_nursery",
+        "_shapes",
+        "_space",
         "_position_func",
-    ]
-    _init_kwargs = {
-        "position",
-        "velocity",
-        "center_of_gravity",
-        "angle",
-        "angular_velocity",
-        "space",
+        "_position_func_base",
+        "_velocity_func",
+        "_velocity_func_base",
+        "shapes",
+        "constraints",
+        "is_sleeping",
     }
-
+    _init_kwargs = {*_pickle_args, *_pickle_kwargs}
     _position_func_base: Optional[_PositionFunc] = None  # For pickle
     _velocity_func_base: Optional[_VelocityFunc] = None  # For pickle
     _id_counter = 1
@@ -145,7 +138,7 @@ class Body(
     #
     @staticmethod
     def update_velocity(
-        body: "Body", gravity: VecLike, damping: float, dt: float
+            body: "Body", gravity: VecLike, damping: float, dt: float
     ) -> None:
         """Default rigid body velocity integration function.
 
@@ -376,7 +369,7 @@ class Body(
         v2 = self.velocity.dot(self.velocity)
         w2 = self.angular_velocity * self.angular_velocity
         return 0.5 * (
-            (self.mass * v2 if v2 else 0.0) + (self.moment * w2 if w2 else 0.0)
+                (self.mass * v2 if v2 else 0.0) + (self.moment * w2 if w2 else 0.0)
         )
 
     @property
@@ -470,13 +463,13 @@ class Body(
         return int(ffi.cast("int", lib.cpBodyGetUserData(self._cffi_ref)))
 
     def __init__(
-        self,
-        mass: float = 0,
-        moment: float = 0,
-        body_type: _BodyType = DYNAMIC,
-        *,
-        space=None,
-        **kwargs,
+            self,
+            mass: float = 0,
+            moment: float = 0,
+            body_type: _BodyType = DYNAMIC,
+            *,
+            space=None,
+            **kwargs,
     ) -> None:
         """Create a new Body
 
@@ -520,44 +513,33 @@ class Body(
         self._space: Optional["Space"] = None
         self._constraints: WeakSet["Constraint"] = WeakSet()
         self._shapes: WeakSet["Shape"] = WeakSet()
-        self._nursery: List[
-            "Shape"
-        ] = []  # Keep references before adding objects to space
+
+        # Keep references before adding objects to space
+        self._nursery: List["Shape"] = []
 
         self._set_id()
         init_attributes(self, self._init_kwargs, kwargs)
         if space is not None:
             space.add(self)
 
-    def __getstate__(self) -> _State:
-        """Return the state of this object
+    def __getstate__(self):
+        args, meta = super().__getstate__()
 
-        This method allows the usage of the :mod:`copy` and :mod:`pickle`
-        modules with this class.
-        """
-        d = super(Body, self).__getstate__()
+        if self._position_func is not None:
+            meta['position_func'] = self._position_func_base
+        if self._velocity_func is not None:
+            meta['velocity_func'] = self._velocity_func_base
 
-        d["special"].append(("is_sleeping", self.is_sleeping))
-        d["special"].append(("_velocity_func", self._velocity_func_base))
-        d["special"].append(("_position_func", self._position_func_base))
+        meta["$shapes"] = {s.copy() for s in list(self._shapes)}
+        return args, meta
 
-        return d
+    def __setstate__(self, state):
+        args, meta = state
+        shapes = meta.pop("$shapes")
+        super().__setstate__((args, meta))
 
-    def __setstate__(self, state: _State) -> None:
-        """Unpack this object from a saved state.
-
-        This method allows the usage of the :mod:`copy` and :mod:`pickle`
-        modules with this class.
-        """
-        super(Body, self).__setstate__(state)
-
-        for k, v in state["special"]:
-            if k == "is_sleeping" and v:
-                pass
-            elif k == "_velocity_func" and v is not None:
-                self.velocity_func = v  # type: ignore
-            elif k == "_position_func" and v is not None:
-                self.position_func = v  # type: ignore
+        for shape in shapes:
+            shape.body = self
 
     def __repr__(self) -> str:
         if self.body_type == Body.DYNAMIC:
@@ -579,7 +561,7 @@ class Body(
         yield from self._shapes
 
     def _iter_bodies(self) -> Iterator["Body"]:
-        yield from self._bodies
+        yield self
 
     def _set_id(self) -> None:
         lib.cpBodySetUserData(
@@ -645,7 +627,7 @@ class Body(
         return self
 
     def apply_force_at_local_point(
-        self: B, force: VecLike, point: VecLike = (0, 0)
+            self: B, force: VecLike, point: VecLike = (0, 0)
     ) -> B:
         """Add the local force force to body as if applied from the body
         local point.
@@ -659,7 +641,7 @@ class Body(
         return self
 
     def apply_impulse_at_local_point(
-        self: B, impulse: VecLike, point: VecLike = (0, 0)
+            self: B, impulse: VecLike, point: VecLike = (0, 0)
     ) -> B:
         """Add the local impulse impulse to body as if applied from the body
         local point.
@@ -705,7 +687,7 @@ class Body(
         return self
 
     def each_arbiter(
-        self: B, func: Callable[..., None] = set_attrs, *args: Any, **kwargs: Any
+            self: B, func: Callable[..., None] = set_attrs, *args: Any, **kwargs: Any
     ) -> B:
         """Run func on each of the arbiters on this body.
 
@@ -961,6 +943,7 @@ class BodyShape(Body):
     """
     Base class for bodies with a single shape.
     """
+    shape: "Shape"
 
     # Properties
     radius: float = sk.delegate_to("shape", mutable=True)
@@ -988,9 +971,9 @@ class BodyShape(Body):
 
     def _post_init(self):
         if (
-            self.body_type == Body.DYNAMIC
-            and self.mass == 0.0
-            and self.space is not None
+                self.body_type == Body.DYNAMIC
+                and self.mass == 0.0
+                and self.space is not None
         ):
             self.mass = self.shape.area
             self.moment = self.mass * self.radius_of_gyration_sqr()

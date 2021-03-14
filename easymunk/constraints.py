@@ -70,6 +70,7 @@ import logging
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
 
 from ._chipmunk_cffi import ffi, lib
+from ._mixins import PickleMixin
 from .util import void, inner_constraints, cffi_body, init_attributes, cp_property
 from .vec2d import Vec2d, VecLike, vec2d_from_cffi
 
@@ -102,7 +103,7 @@ def anchor_property(name) -> Any:
     )
 
 
-class Constraint:
+class Constraint(PickleMixin):
     """Base class of all constraints.
 
     You usually don't want to create instances of this class directly, but
@@ -250,23 +251,12 @@ class Constraint:
         init_attributes(self, self._init_kwargs, kwargs)
 
     def __getstate__(self):
-        args = [getattr(self, k) for k in self._pickle_args]
-        meta = dict(self.__dict__)
-        for k in self._pickle_meta_hide:
-            meta.pop(k, None)
-        for k in self._pickle_kwargs:
-            meta[k] = getattr(self, k)
+        args, meta = super().__getstate__()
         if hasattr(self, '_pre_solve_func'):
             meta['pre_solve'] = self.pre_solve
         if hasattr(self, '_post_solve_func'):
             meta['post_solve'] = self.post_solve
         return args, meta
-
-    def __setstate__(self, state):
-        args, meta = state
-        self.__init__(*args)
-        for k, v in meta.items():
-            setattr(self, k, v)
 
     def activate_bodies(self) -> None:
         """Activate the bodies this constraint is attached to"""

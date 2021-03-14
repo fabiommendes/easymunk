@@ -1,9 +1,8 @@
 import operator
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from functools import reduce
 from typing import (
     Any,
-    ClassVar,
     Dict,
     List,
     Tuple,
@@ -12,6 +11,7 @@ from typing import (
     Callable,
     TYPE_CHECKING,
     Iterator,
+    Set,
 )
 
 from ._chipmunk_cffi import lib
@@ -34,55 +34,30 @@ BODY_TYPE_MAP = {
 }
 
 
-class PickleMixin:
+class PickleMixin(ABC):
     """PickleMixin is used to provide base functionality for pickle/unpickle
     and copy.
     """
 
-    _pickle_attrs_init: ClassVar[List[str]] = []
-    _pickle_attrs_general: ClassVar[List[str]] = []
-    _pickle_attrs_skip: ClassVar[List[str]] = []
+    _pickle_args: Tuple[str]
+    _pickle_kwargs: Tuple[str]
+    _pickle_meta_hide: Set[str]
 
-    def __getstate__(self) -> _State:
-        """Return the state of this object
+    def __getstate__(self):
+        args = [getattr(self, k) for k in self._pickle_args]
+        meta = dict(self.__dict__)
+        for k in self._pickle_meta_hide:
+            meta.pop(k, None)
+        for k in self._pickle_kwargs:
+            meta[k] = getattr(self, k)
+        return args, meta
 
-        This method allows the usage of the :mod:`copy` and :mod:`pickle`
-        modules with this class.
-        """
-
-        d: _State = {
-            "init": [],  # arguments for init
-            "general": [],  # general attributes
-            "custom": [],  # custom attributes set by user
-            "special": [],  # attributes needing special handling
-        }
-        for a in type(self)._pickle_attrs_init:
-            d["init"].append((a, self.__getattribute__(a)))
-
-        for a in type(self)._pickle_attrs_general:
-            d["general"].append((a, self.__getattribute__(a)))
-
-        for k, v in self.__dict__.items():
-            if k[0] != "_":
-                d["custom"].append((k, v))
-
-        return d
-
-    def __setstate__(self, state: _State) -> None:
-        """Unpack this object from a saved state.
-
-        This method allows the usage of the :mod:`copy` and :mod:`pickle`
-        modules with this class.
-        """
-
+    def __setstate__(self, state):
+        args, meta = state
         # noinspection PyArgumentList
-        self.__init__(*(v for k, v in state["init"]))  # type: ignore
-
-        for k, v in state["general"]:
-            self.__setattr__(k, v)
-
-        for k, v in state["custom"]:
-            self.__setattr__(k, v)
+        self.__init__(*args)  # type: ignore
+        for k, v in meta.items():
+            setattr(self, k, v)
 
     def copy(self: T) -> T:
         """Create a deep copy of this object."""

@@ -641,10 +641,11 @@ class UnitTestSpace(unittest.TestCase):
         s.add(b1, c1, b2, c2)
         s.gravity = 0, -100
 
-        self.separated = False
+        separated = False
 
         def separate(arb: p.Arbiter, space: p.Space, data: Any) -> None:
-            self.separated = data["test"]
+            nonlocal separated
+            separated = data["test"]
 
         h = s.add_collision_handler(0, 0)
         h.data["test"] = True
@@ -653,7 +654,7 @@ class UnitTestSpace(unittest.TestCase):
         for x in range(10):
             s.step(0.1)
 
-        assert self.separated
+        assert separated
 
     def testCollisionHandlerRemoveSeparateAdd(self) -> None:
         s = p.Space()
@@ -741,10 +742,10 @@ class UnitTestSpace(unittest.TestCase):
         self.calls = 0
 
         def callback(
-            space: p.Space,
-            key: Any,
-            shapes: Sequence[Shape],
-            test_self: "UnitTestSpace",
+                space: p.Space,
+                key: Any,
+                shapes: Sequence[Shape],
+                test_self: "UnitTestSpace",
         ) -> None:
             for shape in shapes:
                 s.remove(shape)
@@ -841,41 +842,14 @@ class UnitTestSpace(unittest.TestCase):
             print("\nActual", actual)
             raise
 
-    def testPicklePymunkVersionCheck(self) -> None:
-        pickle_string = (
-            b"\x80\x04\x95\xc5\x01\x00\x00\x00\x00\x00\x00\x8c\x0cpymunk"
-            b".space\x94\x8c\x05Space\x94\x93\x94)\x81\x94}\x94("
-            b"\x8c\x04init\x94]\x94\x8c\x08threaded\x94\x89\x86\x94a\x8c"
-            b"\x07general\x94]\x94("
-            b"\x8c\niterations\x94K\n\x86\x94\x8c\x07gravity\x94\x8c"
-            b"\x0cpymunk.vec2d\x94\x8c\x05Vec2d\x94\x93\x94G\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00G\x00\x00\x00\x00\x00\x00\x00\x00\x86"
-            b"\x94R\x94\x86\x94\x8c\x07damping\x94G?\xf0\x00\x00\x00\x00"
-            b"\x00\x00\x86\x94\x8c\x14idle_speed_threshold\x94G\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x86\x94\x8c\x14sleep_time_threshold\x94G"
-            b"\x7f\xf0\x00\x00\x00\x00\x00\x00\x86\x94\x8c"
-            b"\x0ecollision_slop\x94G?\xb9\x99\x99\xa0\x00\x00\x00\x86\x94"
-            b"\x8c\x0ecollision_bias\x94G?]q2\x0c\xdfCc\x86\x94\x8c"
-            b"\x15collision_persistence\x94K\x03\x86\x94\x8c\x07threads"
-            b"\x94K\x01\x86\x94e\x8c\x06custom\x94]\x94h\x07\x89\x86\x94a"
-            b"\x8c\x07special\x94]\x94("
-            b"\x8c\x0epymunk_version\x94\x8c\x050.0.1\x94\x86\x94\x8c"
-            b"\x06bodies\x94]\x94\x86\x94\x8c\x06shapes\x94]\x94\x86\x94"
-            b"\x8c\x0bconstraints\x94]\x94\x86\x94\x8c\t_handlers\x94]\x94"
-            b"\x86\x94eub."
-        )
-
-        with self.assertRaisesRegex(
-            AssertionError,
-            r"Pymunk version [0-9.]+ of pickled object does not match current "
-            r"Pymunk version [0-9.]+",
-        ):
-            pickle.loads(pickle_string)
-
-    @pytest.mark.skip()
-    def testCopyMethods(self) -> None:
+    def testPickleMethods(self) -> None:
         self._testCopyMethod(lambda x: pickle.loads(pickle.dumps(x)))
+
+    def testDeepCopyMethods(self) -> None:
         self._testCopyMethod(lambda x: copy.deepcopy(x))
+
+    @pytest.mark.skip('still segfaulting')
+    def testCopyMethods(self) -> None:
         self._testCopyMethod(lambda x: x.copy())
 
     def _testCopyMethod(self, copy_func: Callable[[Space], Space]) -> None:
@@ -931,8 +905,8 @@ class UnitTestSpace(unittest.TestCase):
         assert s.threads == s2.threads
 
         # Assert shapes, bodies and constraints
-        assert [c.radius for c in s2.shapes] == [7, 8, 9, 10]
-        assert [b.mass for b in s2.bodies] == [1, 3, 5]
+        assert {b.mass for b in s2.bodies} == {1, 3, 5}
+        assert {c.radius for c in s2.shapes} == {7, 8, 9, 10}
         assert s.static_body.custom == s2.static_body.custom
         ja = [j.a for j in s2.constraints]
         self.assertIn(s2.static_body, ja)

@@ -1,8 +1,12 @@
 __version__ = "$Id$"
 __docformat__ = "reStructuredText"
 
+import functools
 import warnings
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
+
+import sidekick.api as sk
 
 from ._chipmunk_cffi import ffi
 from .arbiter import Arbiter
@@ -11,11 +15,32 @@ from .util import void
 if TYPE_CHECKING:
     from .space import Space
 
-_CollisionCallbackBool = Callable[[Arbiter, "Space", Any], bool]
-_CollisionCallbackNoReturn = Callable[[Arbiter, "Space", Any], None]
+BoolCB = Callable[[Arbiter, "Space", Any], bool]
+NullCB = Callable[[Arbiter, "Space", Any], None]
+Ptr = ffi.CData
+CFFI_REF_ATTR = {
+    "begin": "beginFunc",
+    "pre_solve": "preSolveFunc",
+    "post_solve": "postSolveFunc",
+    "separate": "separateFunc",
+}
+CFFI_FUNC_TYPE = {
+    "begin": "cpCollisionBeginFunc",
+    "pre_solve": "cpCollisionPreSolveFunc",
+    "post_solve": "cpCollisionPostSolveFunc",
+    "separate": "cpCollisionSeparateFunc",
+}
 
 
-class CollisionHandler(object):
+def always_collide(arb, space, data):
+    return True
+
+
+def do_nothing(arb, space, data):
+    return None
+
+
+class CollisionHandler:
     """A collision handler is a set of 4 function callbacks for the different
     collision events that Pymunk recognizes.
 
@@ -43,10 +68,11 @@ class CollisionHandler(object):
         """
         return self._data
 
-    begin: Optional[_CollisionCallbackBool]
+    space = sk.alias('_space')
+    begin: Optional[BoolCB]
     begin = property(  # type: ignore
         lambda self: self._begin_base,
-        lambda self, cb: void(self.__set_begin_cb(cb)),
+        lambda self, cb: void(self._set_cb("begin", self._bool_cb, cb)),
         doc="""Two shapes just started touching for the first time this step.
 
         ``func(arbiter, space, data) -> bool``
@@ -58,10 +84,10 @@ class CollisionHandler(object):
         overlapping.
         """,
     )
-    pre_solve: Optional[_CollisionCallbackBool]
+    pre_solve: Optional[BoolCB]
     pre_solve = property(  # type: ignore
         lambda self: self._pre_solve_base,
-        lambda self, cb: void(self.__set_pre_solve_cb(cb)),
+        lambda self, cb: void(self._set_cb("pre_solve", self._bool_cb, cb)),
         doc="""Two shapes are touching during this step.
 
         ``func(arbiter, space, data) -> bool``
@@ -73,10 +99,10 @@ class CollisionHandler(object):
         or surface velocity values. See Arbiter for more info.
         """,
     )
-    post_solve: Optional[_CollisionCallbackNoReturn]
+    post_solve: Optional[NullCB]
     post_solve = property(  # type: ignore
         lambda self: self._post_solve_base,
-        lambda self, cb: void(self.__set_post_solve_cb(cb)),
+        lambda self, cb: void(self._set_cb("post_solve", self._null_cb, cb)),
         doc="""Two shapes are touching and their collision response has been
         processed.
 
@@ -87,10 +113,10 @@ class CollisionHandler(object):
         amounts. See Arbiter for more info.
         """,
     )
-    separate: Optional[_CollisionCallbackNoReturn]
+    separate: Optional[NullCB]
     separate = property(  # type: ignore
         lambda self: self._separate_base,
-        lambda self, cb: void(self.__set_separate_cb(cb)),
+        lambda self, cb: void(self._set_cb("separate", self._locked_cb, cb)),
         doc="""Two shapes have just stopped touching for the first time this
         step.
 
@@ -109,95 +135,81 @@ class CollisionHandler(object):
         .. note::
             You should never need to create an instance of this class directly.
         """
-        self._handler = _handler
+        self._cffi_ref = _handler
         self._space = space
         self._begin = None
-        self._begin_base: Optional[_CollisionCallbackBool] = None  # For pickle
+        self._begin_base: Optional[BoolCB] = None  # For pickle
         self._pre_solve = None
-        self._pre_solve_base: Optional[_CollisionCallbackBool] = None  # For pickle
+        self._pre_solve_base: Optional[BoolCB] = None  # For pickle
         self._post_solve = None
-        self._post_solve_base: Optional[_CollisionCallbackNoReturn] = None  # For pickle
+        self._post_solve_base: Optional[NullCB] = None  # For pickle
         self._separate = None
-        self._separate_base: Optional[_CollisionCallbackNoReturn] = None  # For pickle
-
+        self._separate_base: Optional[NullCB] = None  # For pickle
         self._data: Dict[Any, Any] = {}
 
-    def _reset(self) -> None:
-        always_collide = lambda arb, space, data: True
-        do_nothing = lambda arb, space, data: None
+    def as_dict(self) -> Dict[str, callable]:
+        """
+        Return handler state as a dictionary
+        """
+        return {
+            "begin": self.begin,
+            "pre_solve": self.pre_solve,
+            "post_solve": self.post_solve,
+            "separate": self.separate,
+        }
 
+    def update(self, data=MappingProxyType({}), **kwargs) -> None:
+        """
+        Update handler functions from dictionary or keyword arguments.
+        """
+        for k, v in {**data, **kwargs}.items():
+            setattr(self, k, v)
+
+    def _reset(self) -> None:
         self.begin = always_collide
         self.pre_solve = always_collide
         self.post_solve = do_nothing
         self.separate = do_nothing
 
-    def __set_begin_cb(self, func) -> None:
-        @ffi.callback("cpCollisionBeginFunc")
-        def cf(_arb: ffi.CData, _space: ffi.CData, _: ffi.CData) -> bool:
-            out = func(Arbiter(_arb, self._space), self._space, self._data)
-            if isinstance(out, bool):
-                return out
+    def _set_cb(self, name, factory, func) -> None:
+        attr = CFFI_REF_ATTR[name]
+        cb_type = CFFI_FUNC_TYPE[name]
+        cf = functools.partial(factory, func or always_collide)
+        ptr = ffi.callback(cb_type)(cf)
 
-            func_name = func.__code__.co_name
-            filename = func.__code__.co_filename
-            lineno = func.__code__.co_firstlineno
+        setattr(self, f'_{name}_base', func)
+        setattr(self, f'_{name}', ptr)
+        setattr(self._cffi_ref, attr, ptr)
 
-            msg = (
-                f"Function '{func_name}' should return a bool to"
-                " indicate if the collision should be processed or not when"
-                " used as 'begin' or 'pre_solve' collision callback."
-            )
-            warnings.warn_explicit(msg, UserWarning, filename, lineno, func.__module__)
-            return True
+    def _bool_cb(self, func: BoolCB, ptr: Ptr, space: Ptr, data: Ptr) -> bool:
+        arb = Arbiter(ptr, self._space)
+        out = func(arb, self._space, self._data)
 
-        self._begin = cf
-        self._begin_base = func
-        self._handler.beginFunc = cf
+        if isinstance(out, bool):
+            return out
 
-    def __set_pre_solve_cb(self, func) -> None:
-        @ffi.callback("cpCollisionPreSolveFunc")
-        def cf(_arb: ffi.CData, _space: ffi.CData, _: ffi.CData) -> bool:
-            out = func(Arbiter(_arb, self._space), self._space, self._data)
-            if isinstance(out, bool):
-                return out
+        code = getattr(func, '__code__', None)
+        func_name = getattr(func, "__name__", '<function>')
+        filename = getattr(code, "co_filename", '<unknown file>')
+        lineno = getattr(code, "co_firstlineno", -1)
+        module = getattr(func, '__module__', "<string>")
 
-            func_name = func.__code__.co_name
-            filename = func.__code__.co_filename
-            lineno = func.__code__.co_firstlineno
+        msg = (
+            f"Function '{func_name}' should return a bool to"
+            " indicate if the collision should be processed or not when"
+            " used as 'begin' or 'pre_solve' collision callback."
+        )
+        warnings.warn_explicit(msg, UserWarning, filename, lineno, module)
+        return True
 
-            msg = (
-                f"Function '{func_name}' should return a bool to indicate if the "
-                f"collision should be processed or not when used as 'begin' or "
-                f"'pre_solve' collision callback."
-            )
-            warnings.warn_explicit(msg, UserWarning, filename, lineno, func.__module__)
-            return True
+    def _null_cb(self, func: NullCB, ptr: Ptr, space: Ptr, data: Ptr) -> None:
+        arb = Arbiter(ptr, self._space)
+        func(arb, self._space, self._data)
 
-        self._pre_solve = cf
-        self._pre_solve_base = func
-        self._handler.preSolveFunc = cf
-
-    def __set_post_solve_cb(self, func: _CollisionCallbackNoReturn) -> None:
-        @ffi.callback("cpCollisionPostSolveFunc")
-        def cf(_arb: ffi.CData, _space: ffi.CData, _: ffi.CData) -> None:
-            func(Arbiter(_arb, self._space), self._space, self._data)
-
-        self._post_solve = cf
-        self._post_solve_base = func
-        self._handler.postSolveFunc = cf
-
-    def __set_separate_cb(self, func):
-        @ffi.callback("cpCollisionSeparateFunc")
-        def cf(_arb: ffi.CData, _space: ffi.CData, _: ffi.CData) -> None:
-            try:
-                # this try is needed since a separate callback will be called
-                # if a colliding object is removed, regardless if its in a
-                # step or not.
-                self._space._locked = True
-                func(Arbiter(_arb, self._space), self._space, self._data)
-            finally:
-                self._space._locked = False
-
-        self._separate = cf
-        self._separate_base = func
-        self._handler.separateFunc = cf
+    def _locked_cb(self, func: NullCB, ptr: Ptr, space: Ptr, data: Ptr) -> None:
+        # this try is needed since a separate callback will be called
+        # if a colliding object is removed, regardless if its in a
+        # step or not.
+        with self._space.locked():
+            arb = Arbiter(ptr, self._space)
+            func(arb, self._space, self._data)

@@ -24,7 +24,7 @@ def setup():
     global vec_ntuple
     s = easymunk.Space()
     s.gravity = 123, 456
-    g = easymunk.cp.cpSpaceGetGravity(s._space)
+    g = easymunk.cp.cpSpaceGetGravity(s._cffi_ref)
     vec_obj = Vec2dObject(123, 456)
     vec_ntuple = Vec2dNamedTuple(123, 456)
 

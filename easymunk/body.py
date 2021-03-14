@@ -1000,6 +1000,47 @@ class PolyBody(BodyShape, Body):
     get_vertices = sk.delegate_to("shape")
     set_vertices = sk.delegate_to("shape")
 
+    @classmethod
+    def _new_from_shape_factory(cls, mk_shape, *args, **kwargs):
+        new = object.__new__(PolyBody)
+        super(PolyBody, new).__init__(**new._extract_options(kwargs))
+        new.shape = mk_shape(new, **kwargs)
+        new._post_init()
+        return new
+
+    @classmethod
+    def new_box(cls,
+                size: Tuple[float, float] = (10, 10),
+                *args,
+                radius: float = 0.0,
+                **kwargs):
+        mk_box = lambda body, **opts: Poly.new_box(size, radius, body, **opts)
+        return cls._new_from_shape_factory(mk_box, *args, **kwargs)
+
+    @classmethod
+    def new_box(cls,
+                bb: "BB",
+                *args,
+                radius: float = 0.0,
+                **kwargs):
+        mk_box = lambda body, **opts: Poly.new_box_bb(bb, radius, body, **opts)
+        return cls._new_from_shape_factory(mk_box, *args, **kwargs)
+
+    @classmethod
+    def new_regular_poly(cls,
+                         n: int,
+                         size: float,
+                         radius: float = 0.0,
+                         body: Optional["Body"] = None,
+                         *args,
+                         angle: float = 0.0,
+                         offset: VecLike = (0, 0),
+                         **kwargs, ):
+        mk_box = lambda body, **opts: Poly.new_regular_poly(n, size, radius, body,
+                                                            angle=angle, offset=offset,
+                                                            **opts)
+        return cls._new_from_shape_factory(mk_box, *args, **kwargs)
+
     def __init__(self, vertices, *args, radius=0, **kwargs):
         super().__init__(*args, **self._extract_options(kwargs))
         self.shape: "Poly" = Poly(vertices, radius=radius, body=self, **kwargs)

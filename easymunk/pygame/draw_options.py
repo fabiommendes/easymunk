@@ -21,24 +21,6 @@
 # SOFTWARE.
 # ----------------------------------------------------------------------------
 
-"""This submodule contains helper functions to help with quick prototyping 
-using pymunk together with pygame.
-
-Intended to help with debugging and prototyping, not for actual production use
-in a full application. The methods contained in this module is opinionated 
-about your coordinate system and not in any way optimized. 
-"""
-
-__docformat__ = "reStructuredText"
-
-__all__ = [
-    "DrawOptions",
-    "get_mouse_pos",
-    "to_pygame",
-    "from_pygame",
-    "positive_y_is_up",
-]
-
 from typing import Sequence, Tuple
 
 import pygame

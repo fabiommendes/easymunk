@@ -8,7 +8,7 @@ Contents
     
     installation
     overview
-    pymunk
+    easymunk
     examples
     showcase
     tutorials

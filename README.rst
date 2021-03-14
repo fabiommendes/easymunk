@@ -9,7 +9,7 @@ in your game, demo or other application! It is built on top of the very
 capable 2d physics library `Chipmunk <http://chipmunk-physics.net>`_.
 
 
-Easymunk is a fork of the excellent Easymunk project, but it allows itself to deviate
+Easymunk is a fork of the excellent pymunk project, but it allows itself to deviate
 more from the original C-library. The goal is to explore a more Pythonic interface
 and tends to be easier to use.
 
@@ -17,8 +17,8 @@ The first version was released in 2021, based on Pymunk 6.0. It owns greatly fro
 maturity and 10 years of active development! Easymunk is a laboratory and we hope to
 give back code to Pymunk upstream and collaborate with its development.
 
-Pymunk: 2007 - 2020, Victor Blomqvist - vb@viblo.se, MIT License
-Easymunk: 2021, Fábio Macêdo Mendes - fabiomacedomendese@gmail.com, MIT License
+**Pymunk:** 2007 - 2020, Victor Blomqvist - vb@viblo.se, MIT License
+**Easymunk:** 2021, Fábio Macêdo Mendes - fabiomacedomendese@gmail.com, MIT License
 
 
 Installation

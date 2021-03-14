@@ -234,7 +234,7 @@ significant overhead and performance cost.
 
 
 Copy and Load/Save Easymunk objects
-=================================
+===================================
 
 Most Easymunk objects can be copied and/or saved with pickle from the standard
 library. Since the implementation is generic it will also work to use other 

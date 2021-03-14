@@ -1,5 +1,5 @@
-:mod:`easymunk.matplotlib_util` Module
-------------------------------------
+:mod:`easymunk.pygame` Module
+-----------------------------
 
 .. container:: custom-index
     
@@ -7,5 +7,5 @@
     
         <script type="text/javascript" src='_static/easymunk.js'></script>
     
-.. automodule:: easymunk.matplotlib_util
+.. automodule:: easymunk.pygame
     :special-members: __init__

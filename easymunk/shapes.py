@@ -694,7 +694,7 @@ class Poly(Shape):
 
     @classmethod
     def new_box_bb(
-            cls, bb: BB, radius: float = 0.0, body: Optional["Body"] = None, **kwargs
+            cls, bb: BB, radius: float = 0.0 ,body: Optional["Body"] = None,  **kwargs
     ) -> "Poly":
         f"""
         Convenience function to create a box shape from a :py:class:`BB`.
@@ -722,9 +722,10 @@ class Poly(Shape):
             n: int,
             size: float,
             radius: float = 0.0,
+            body: Optional["Body"] = None,
+            *,
             angle: float = 0.0,
             offset: VecLike = (0, 0),
-            body: Optional["Body"] = None,
             **kwargs,
     ) -> "Poly":
         f"""

@@ -1,5 +1,5 @@
 :mod:`easymunk.autogeometry` Module
----------------------------------
+-----------------------------------
 
 .. container:: custom-index
     

@@ -20,34 +20,32 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 # ----------------------------------------------------------------------------
-
-"""This module contain the Vec2d class that is used in all of pymunk when a
+"""
+This module contain the Vec2d class that is used in all of pymunk when a
 vector is needed.
 
-The Vec2d class is used almost everywhere in pymunk for 2d coordinates and
+The Vec2d class is used almost everywhere in easymunk for 2d coordinates and
 vectors, for example to define gravity vector in a space. However, pymunk is
 smart enough to convert tuples or tuple like objects to Vec2ds so you usually
 do not need to explicitly do conversions if you happen to have a tuple::
 
-    >>> import easymunk
-    >>> space = easymunk.Space()
+    >>> import easymunk as mk
+    >>> from easymunk import Vec2d
+    >>> space = mk.Space()
     >>> space.gravity
     Vec2d(0.0, 0.0)
+
     >>> space.gravity = 3,5
     >>> space.gravity
     Vec2d(3.0, 5.0)
-    >>> space.gravity += 2,6
-    >>> space.gravity
-    Vec2d(5.0, 11.0)
 
 More examples::
 
-    >>> from easymunk.vec2d import Vec2d
-    >>> Vec2d(7.3, 4.2)
-    Vec2d(7.3, 4.2)
-    >>> Vec2d(7.3, 4.2) + Vec2d(1, 2)
-    Vec2d(8.3, 6.2)
-
+    >>> v = Vec2d(3, 4)
+    >>> 2 * v
+    Vec2d(6, 8)
+    >>> v.length
+    5.0
 """
 __docformat__ = "reStructuredText"
 

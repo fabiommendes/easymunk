@@ -75,8 +75,9 @@ def main():
                 if line_point1 is not None:
 
                     line_point2 = Vec2d(event.pos[X], flipy(event.pos[Y]))
-                    shape = easymunk.Segment(line_point1, line_point2, 0.0,
-                                             space.static_body)
+                    shape = easymunk.Segment(
+                        line_point1, line_point2, 0.0, space.static_body
+                    )
                     shape.friction = 0.99
                     space.add(shape)
                     static_lines.append(shape)

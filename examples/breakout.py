@@ -64,7 +64,7 @@ def setup_level(space, player_body):
             y = y * 10 + 400
             brick_body = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
             brick_body.position = x, y
-            brick_shape = easymunk.Poly.create_box((20, 10), body=brick_body)
+            brick_shape = easymunk.Poly.new_box((20, 10), body=brick_body)
             brick_shape.elasticity = 1.0
             brick_shape.color = pygame.Color("blue")
             brick_shape.group = 1

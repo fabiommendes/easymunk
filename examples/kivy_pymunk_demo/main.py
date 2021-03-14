@@ -91,7 +91,7 @@ class PymunkDemo(RelativeLayout):
         mass = 10
         moment = easymunk.moment_for_box(mass, (40, 20))
         b = easymunk.Body(mass, moment)
-        s = easymunk.Poly.create_box((40, 20), body=b)
+        s = easymunk.Poly.new_box((40, 20), body=b)
         s.friction = 1
         b.position = 600, self.box_y
         self.box_y += 30
@@ -128,7 +128,7 @@ class PymunkDemo(RelativeLayout):
         size = (50, 30)
         moment = easymunk.moment_for_box(mass, size)
         chassi_b = easymunk.Body(mass, moment)
-        chassi_s = easymunk.Poly.create_box(size, body=chassi_b)
+        chassi_s = easymunk.Poly.new_box(size, body=chassi_b)
         space.add(chassi_b, chassi_s)
 
         vs = [(0, 0), (0, -45), (25, -45)]

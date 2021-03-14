@@ -42,7 +42,7 @@ def main():
 
         space1.add(l)
 
-    template_box = easymunk.Poly.create_box((20, 20), body=easymunk.Body())
+    template_box = easymunk.Poly.new_box((20, 20), body=easymunk.Body())
     template_box.mass = 1
     template_box.friction = 1
 

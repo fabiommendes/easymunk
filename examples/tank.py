@@ -47,7 +47,7 @@ def add_box(space, size, mass):
         random.random() * (480 - 2 * radius) + radius,
     )
 
-    shape = easymunk.Poly.create_box((size, size), 0.0, body)
+    shape = easymunk.Poly.new_box((size, size), 0.0, body)
     shape.mass = mass
     shape.friction = 0.7
     space.add(shape)

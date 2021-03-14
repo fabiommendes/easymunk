@@ -38,8 +38,9 @@ for i in range(6):
     sw = easymunk.Segment((0, i * box_size), (w, i * box_size), 1, space.static_body)
     sw.friction = 1
     sw.elasticity = 1
-    sh = easymunk.Segment((i * box_size, 0), (i * box_size, h - box_size), 1,
-                          space.static_body)
+    sh = easymunk.Segment(
+        (i * box_size, 0), (i * box_size, h - box_size), 1, space.static_body
+    )
     sh.friction = 1
     sh.elasticity = 1
     space.add(sw, sh)

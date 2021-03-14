@@ -37,7 +37,9 @@ class Main(pyglet.window.Window):
 
         static_lines = [
             easymunk.Segment(Vec2d(20, 55), Vec2d(600, 55), 1, self.space.static_body),
-            easymunk.Segment(Vec2d(550, 55), Vec2d(550, 400), 1, self.space.static_body),
+            easymunk.Segment(
+                Vec2d(550, 55), Vec2d(550, 400), 1, self.space.static_body
+            ),
         ]
         for l in static_lines:
             l.friction = 0.3
@@ -50,7 +52,7 @@ class Main(pyglet.window.Window):
                 moment = easymunk.moment_for_box(mass, (size, size))
                 body = easymunk.Body(mass, moment)
                 body.position = Vec2d(300 + x * 50, 105 + y * (size + 0.1))
-                shape = easymunk.Poly.create_box((size, size), body=body)
+                shape = easymunk.Poly.new_box((size, size), body=body)
                 shape.friction = 0.3
                 self.space.add(body, shape)
 

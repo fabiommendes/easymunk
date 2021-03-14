@@ -74,7 +74,7 @@ class DrawOptions(easymunk.SpaceDebugDrawOptions):
 
     def __exit__(
         self,
-        type: Optional[Type[BaseException]],
+        typ: Optional[Type[BaseException]],
         value: Optional[BaseException],
         traceback: Optional["TracebackType"],
     ):

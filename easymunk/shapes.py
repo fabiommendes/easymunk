@@ -68,6 +68,10 @@ class Shape(HasBBMixin):
     _body = None
     _cffi_ref = None
     _id_counter = 1
+    position: Vec2d
+    position = property(  # type: ignore
+        lambda self: self.body.position if self.body else Vec2d(0, 0),
+    )
 
     @property
     def _id(self) -> int:
@@ -241,11 +245,11 @@ class Shape(HasBBMixin):
             return None
 
     def __init__(
-        self,
-        shape: ffi.CData,
-        body: Optional["Body"] = None,
-        name: Optional[str] = None,
-        **kwargs,
+            self,
+            shape: ffi.CData,
+            body: Optional["Body"] = None,
+            name: Optional[str] = None,
+            **kwargs,
     ) -> None:
         self._nursery = []
         self._body = body
@@ -340,7 +344,7 @@ class Shape(HasBBMixin):
         return None
 
     def segment_query(
-        self, start: VecLike, end: VecLike, radius: float = 0.0
+            self, start: VecLike, end: VecLike, radius: float = 0.0
     ) -> Optional[SegmentQueryInfo]:
         """
         Check if the line segment from start to end intersects the shape.
@@ -411,6 +415,22 @@ class Shape(HasBBMixin):
         """
         return sqrt(self.radius_of_gyration_sqr(axis))
 
+    def local_to_world(self, vec: VecLike) -> Vec2d:
+        """
+        Convert vector from local coordinates to world coordinates.
+        """
+        if self.body is None:
+            return Vec2d(*vec)
+        return self.body.local_to_world(vec)
+
+    def world_to_local(self, vec: VecLike) -> Vec2d:
+        """
+        Convert vector from world coordinates to local coordinates.
+        """
+        if self.body is None:
+            return Vec2d(*vec)
+        return self.body.world_to_local(vec)
+
 
 class Circle(Shape):
     f"""
@@ -453,13 +473,19 @@ class Circle(Shape):
             what you are doing!
         """,
     )
+    offset_world: Vec2d
+    offset_world = property(  # type: ignore
+        lambda self: self.position + self.offset,
+        lambda self, o: setattr(self, 'offset', o - self.position),
+        doc="""Offset, in world coordinates.""",
+    )
 
     def __init__(
-        self,
-        radius: float,
-        offset: VecLike = (0, 0),
-        body: Optional["Body"] = None,
-        **kwargs,
+            self,
+            radius: float,
+            offset: VecLike = (0, 0),
+            body: Optional["Body"] = None,
+            **kwargs,
     ) -> None:
         shape = lib.cpCircleShapeNew(cffi_body(body), radius, offset)
         super().__init__(shape, body, **kwargs)
@@ -515,16 +541,34 @@ class Segment(Shape):
         lambda self, a: void(lib.cpSegmentShapeSetEndpoints(self._cffi_ref, a, self.b)),
         doc="The first of the two endpoints for this segment",
     )
+    a_world: Vec2d
+    a_world = property(  # type: ignore
+        lambda self: self.position + self.a,
+        lambda self, a: setattr(self, 'a', a - self.position),
+        doc="The first endpoint, in world coordinates",
+    )
     b: Vec2d
     b = property(  # type: ignore
         lambda self: vec2d_from_cffi(lib.cpSegmentShapeGetB(self._cffi_ref)),
         lambda self, b: void(lib.cpSegmentShapeSetEndpoints(self._cffi_ref, self.a, b)),
         doc="The second of the two endpoints for this segment",
     )
+    b_world: Vec2d
+    b_world = property(  # type: ignore
+        lambda self: self.position + self.b,
+        lambda self, b: setattr(self, 'b', b - self.position),
+        doc="The second endpoint, in world coordinates",
+    )
     endpoints: Tuple[Vec2d, Vec2d]
     endpoints = property(  # type: ignore
         lambda self: (self.a, self.b),
         lambda self, pts: void(lib.cpSegmentShapeSetEndpoints(self._cffi_ref, *pts)),
+        doc="A tuple with (a, b) endpoints.",
+    )
+    endpoints_world: Tuple[Vec2d, Vec2d]
+    endpoints_world = property(  # type: ignore
+        lambda self: (self.a_world, self.b_world),
+        lambda self, pts: void(self._set_endpoints_world(*pts)),
         doc="A tuple with (a, b) endpoints.",
     )
     normal: Vec2d
@@ -534,12 +578,12 @@ class Segment(Shape):
     )
 
     def __init__(
-        self,
-        a: VecLike,
-        b: VecLike,
-        radius: float,
-        body: Optional["Body"] = None,
-        **kwargs,
+            self,
+            a: VecLike,
+            b: VecLike,
+            radius: float,
+            body: Optional["Body"] = None,
+            **kwargs,
     ) -> None:
         shape = lib.cpSegmentShapeNew(cffi_body(body), a, b, radius)
         super().__init__(shape, body, **kwargs)
@@ -547,6 +591,10 @@ class Segment(Shape):
     def __repr__(self):
         args = f"{tuple(self.a)}, {tuple(self.b)}, radius={self.radius}"
         return super().__repr__(args)
+
+    def _set_endpoints_world(self, a: VecLike, b: VecLike) -> None:
+        pos = self.position
+        lib.cpSegmentShapeSetEndpoints(self._cffi_ref, a - pos, b - pos)
 
     def set_neighbors(self: S, prev: VecLike, next: VecLike) -> S:
         """When you have a number of segment shapes that are all joined
@@ -561,6 +609,7 @@ class Segment(Shape):
         return moment_for_segment(1, self.a, self.b, self.radius)
 
 
+# noinspection PyIncorrectDocstring
 class Poly(Shape):
     f"""
     A convex polygon shape, the slowest, but most flexible collision shape.
@@ -627,11 +676,11 @@ class Poly(Shape):
 
     @classmethod
     def new_box(
-        cls,
-        size: Tuple[float, float] = (10, 10),
-        radius: float = 0.0,
-        body: Optional["Body"] = None,
-        **kwargs,
+            cls,
+            size: Tuple[float, float] = (10, 10),
+            radius: float = 0.0,
+            body: Optional["Body"] = None,
+            **kwargs,
     ) -> "Poly":
         f"""
         Convenience function to create a box given a width and height.
@@ -644,7 +693,6 @@ class Poly(Shape):
         reduce problems where the box gets stuck on seams in your geometry.
 
         Args:
-            body: The body to attach the poly to
             size: Size of the box as (width, height)
             radius: Radius of poly
             {SHAPE_ARGS}
@@ -656,7 +704,7 @@ class Poly(Shape):
 
     @classmethod
     def new_box_bb(
-        cls, bb: BB, radius: float = 0.0, body: Optional["Body"] = None, **kwargs
+            cls, bb: BB, radius: float = 0.0, body: Optional["Body"] = None, **kwargs
     ) -> "Poly":
         f"""
         Convenience function to create a box shape from a :py:class:`BB`.
@@ -681,13 +729,13 @@ class Poly(Shape):
 
     @staticmethod
     def new_regular_poly(
-        n: int,
-        size: float,
-        radius: float = 0.0,
-        angle: float = 0.0,
-        offset: VecLike = (0, 0),
-        body: Optional["Body"] = None,
-        **kwargs,
+            n: int,
+            size: float,
+            radius: float = 0.0,
+            angle: float = 0.0,
+            offset: VecLike = (0, 0),
+            body: Optional["Body"] = None,
+            **kwargs,
     ) -> "Poly":
         f"""
         Convenience function to create a regular polygon of n sides of a
@@ -715,12 +763,12 @@ class Poly(Shape):
         return Poly(vertices, radius=radius, body=body, **kwargs)
 
     def __init__(
-        self,
-        vertices: Sequence[VecLike],
-        transform: Optional[Transform] = None,
-        radius: float = 0,
-        body: Optional["Body"] = None,
-        **kwargs,
+            self,
+            vertices: Sequence[VecLike],
+            transform: Optional[Transform] = None,
+            radius: float = 0,
+            body: Optional["Body"] = None,
+            **kwargs,
     ) -> None:
         if transform is None:
             transform = Transform.identity()
@@ -752,11 +800,11 @@ class Poly(Shape):
         return vs
 
     def set_vertices(
-        self: S,
-        vertices: Sequence[VecLike],
-        transform: Optional[Transform] = None,
-        *,
-        world: bool = False,
+            self: S,
+            vertices: Sequence[VecLike],
+            transform: Optional[Transform] = None,
+            *,
+            world: bool = False,
     ) -> S:
         """
         Set the vertices of the poly.
@@ -803,11 +851,11 @@ class MakeShapeMixin(ABC):
         return self._create_shape(Segment, (a, b, radius), kwargs)
 
     def create_poly(
-        self,
-        vertices: Iterable[VecLike],
-        transform: "Transform" = None,
-        radius: float = 0.0,
-        **kwargs,
+            self,
+            vertices: Iterable[VecLike],
+            transform: "Transform" = None,
+            radius: float = 0.0,
+            **kwargs,
     ):
         """
         Create polygon from vertices.
@@ -815,12 +863,12 @@ class MakeShapeMixin(ABC):
         return self._create_shape(Poly, (vertices, transform, radius), kwargs)
 
     def create_box(
-        self,
-        shape: Tuple[float, float],
-        offset: VecLike = (0, 0),
-        transform: "Transform" = None,
-        radius: float = 0.0,
-        **kwargs,
+            self,
+            shape: Tuple[float, float],
+            offset: VecLike = (0, 0),
+            transform: "Transform" = None,
+            radius: float = 0.0,
+            **kwargs,
     ):
         """
         Create a boxed-shaped polygon with given shape.
@@ -838,7 +886,7 @@ class MakeShapeMixin(ABC):
         return self.create_poly(tuple(v + offset for v in bb.vertices()), **kwargs)
 
     def create_regular_poly(
-        self, n: int, size: float, offset: VecLike = (0, 0), angle=0.0, **kwargs
+            self, n: int, size: float, offset: VecLike = (0, 0), angle=0.0, **kwargs
     ):
         """
         Create a regular polygon with n sides.
@@ -847,7 +895,7 @@ class MakeShapeMixin(ABC):
 
 
 def regular_poly_vertices(
-    n: int, size: float, delta: float, offset: VecLike = (0, 0)
+        n: int, size: float, delta: float, offset: VecLike = (0, 0)
 ) -> List[Vec2d]:
     """
     Return list of vertices to represent a regular polygon of size n.

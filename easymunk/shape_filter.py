@@ -1,4 +1,7 @@
-from typing import NamedTuple
+from typing import NamedTuple, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import easymunk as mk
 
 
 class ShapeFilter(NamedTuple):
@@ -60,22 +63,17 @@ class ShapeFilter(NamedTuple):
     Example of how category and mask can be used to filter out player from
     enemy object:
 
-    >>> import easymunk
-    >>> s = easymunk.Space()
-    >>> player_b = easymunk.Body(1,1)
-    >>> player_c = easymunk.Circle(player_b, 10)
-    >>> s.add(player_b, player_c)
-    >>> player_c.filter = easymunk.ShapeFilter(categories=0b1)
-    >>> hit = s.point_query_nearest((0,0), 0, easymunk.ShapeFilter())
+    >>> s = mk.Space()
+    >>> player = s.create_circle(10, mass=1, moment=1)
+    >>> player.filter = mk.ShapeFilter(categories=0b1)
+    >>> hit = s.point_query_nearest((0,0), 0, mk.ShapeFilter())
     >>> hit is not None
     True
-    >>> filter = easymunk.ShapeFilter(mask=easymunk.ShapeFilter.ALL_MASKS() ^ 0b1)
+    >>> filter = mk.ShapeFilter(mask=mk.ShapeFilter.ALL_MASKS() ^ 0b1)
     >>> hit = s.point_query_nearest((0,0), 0, filter)
     >>> hit is None
     True
-    >>> enemy_b = easymunk.Body(1,1)
-    >>> enemy_c = easymunk.Circle(enemy_b, 10)
-    >>> s.add(enemy_b, enemy_c)
+    >>> enemy = s.create_circle(10, mass=1, moment=1)
     >>> hit = s.point_query_nearest((0,0), 0, filter)
     >>> hit is not None
     True

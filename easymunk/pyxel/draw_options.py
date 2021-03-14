@@ -203,12 +203,12 @@ def draw_circle(s: Circle, col=None, mod=pyxel):
     color = getattr(s, "color", None)
     if color is None:
         color = FOREGROUND_COLOR if col is None else col
-    mod.circ(*(s.body.position + s.offset), s.radius, color)
+    mod.circ(*(s.position + s.offset), s.radius, color)
 
 
 @draw.register(Segment)
 def draw_segment(s: Segment, col=None, mod=pyxel):
-    (x1, y1), (x2, y2) = map(s.body.local_to_world, [s.a, s.b])
+    (x1, y1), (x2, y2) = map(s.local_to_world, [s.a, s.b])
     color = getattr(s, "color", None)
     if color is None:
         color = FOREGROUND_COLOR if col is None else col
@@ -217,7 +217,7 @@ def draw_segment(s: Segment, col=None, mod=pyxel):
 
 @draw.register(Poly)
 def draw_poly(s: Poly, col=None, mod=pyxel):
-    vertices = [s.body.local_to_world(v) for v in s.get_vertices()]
+    vertices = [s.local_to_world(v) for v in s.get_vertices()]
     color = getattr(s, "color", None)
     if color is None:
         color = FOREGROUND_COLOR if col is None else col
@@ -274,12 +274,12 @@ def drawb_circle(s: Circle, col=None, mod=pyxel):
     color = getattr(s, "color", None)
     if color is None:
         color = FOREGROUND_COLOR if col is None else col
-    mod.circb(*(s.body.position + s.offset), s.radius, color)
+    mod.circb(*(s.offset_world), s.radius, color)
 
 
 @drawb.register(Poly)
 def drawb_poly(s: Poly, col=None, mod=pyxel):
-    vertices = [s.body.local_to_world(v) for v in s.get_vertices()]
+    vertices = s.get_vertices(world=True)
     vertices.append(vertices[0])
     color = getattr(s, "color", None)
     if color is None:

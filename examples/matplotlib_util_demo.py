@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from shapes_for_draw_demos import fill_space
 
 import easymunk
-import easymunk.matplotlib_util
+import easymunk.matplotlib
 from easymunk.vec2d import Vec2d
 
 space = easymunk.Space()
@@ -15,6 +15,6 @@ for caption in captions:
     x, y = caption[0]
     y = y - 15
     ax.text(x, y, caption[1], fontsize=12)
-o = easymunk.matplotlib_util.DrawOptions(ax)
+o = easymunk.matplotlib.DrawOptions(ax)
 space.debug_draw(o)
 fig.savefig("matplotlib_util_demo.png", bbox_inches="tight")

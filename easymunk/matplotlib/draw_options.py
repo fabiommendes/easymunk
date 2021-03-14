@@ -13,33 +13,26 @@ from typing import TYPE_CHECKING, Any, Sequence
 
 import matplotlib.pyplot as plt  # type: ignore
 
-import easymunk
-from easymunk.space_debug_draw_options import SpaceDebugColor
-from easymunk.vec2d import Vec2d
+from ..space_debug_draw_options import SpaceDebugColor, SpaceDebugDrawOptions
+from ..vec2d import Vec2d
 
 if TYPE_CHECKING:
-    import matplotlib as mpl  # type: ignore
+    import easymunk as mk
 
 
-class DrawOptions(easymunk.SpaceDebugDrawOptions):
+class DrawOptions(SpaceDebugDrawOptions):
     def __init__(self, ax: Any) -> None:
         """DrawOptions for space.debug_draw() to draw a space on a ax object.
 
         Typical usage::
 
-        >>> import matplotlib as mpl
-        >>> import matplotlib.pyplot as plt
-        >>> import easymunk
-        >>> import easymunk.matplotlib_util
-        >>> space = easymunk.Space()
-        >>> ax = plt.subplot()
-        >>> options = easymunk.matplotlib_util.DrawOptions(ax)
-        >>> space.debug_draw(options)
+        >>> space = mk.Space()
+        >>> space.debug_draw("matplotlib")
 
         You can control the color of a Shape by setting shape.color to the color
         you want it drawn in.
 
-        >>> shape = easymunk.Circle(space.static_body, 10)
+        >>> shape = space.static_body.create_circle(10)
         >>> shape.color = (1, 0, 0, 1) # will draw shape in red
 
         See matplotlib_util.demo.py for a full example
@@ -80,7 +73,7 @@ class DrawOptions(easymunk.SpaceDebugDrawOptions):
         self.ax.add_line(line)
 
     def draw_segment(self, a: Vec2d, b: Vec2d, color: SpaceDebugColor) -> None:
-        line = plt.Line2D([a.x, b.x], [a.y, b.y], linewidth=1, color=color.as_float())  # type: ignore
+        line = plt.Line2D(a, b, linewidth=1, color=color.as_float())  # type: ignore
         line.set_solid_capstyle("round")  # type: ignore
         self.ax.add_line(line)
 
@@ -92,7 +85,7 @@ class DrawOptions(easymunk.SpaceDebugDrawOptions):
         outline_color: SpaceDebugColor,
         fill_color: SpaceDebugColor,
     ) -> None:
-        radius = max(1, 2 * radius)
+        radius = max(1.0, 2.0 * radius)
         line = plt.Line2D(  # type: ignore
             [a.x, b.x], [a.y, b.y], linewidth=radius, color=fill_color.as_float()
         )
@@ -106,7 +99,7 @@ class DrawOptions(easymunk.SpaceDebugDrawOptions):
         outline_color: SpaceDebugColor,
         fill_color: SpaceDebugColor,
     ) -> None:
-        radius = max(1, 2 * radius)
+        radius = max(1.0, 2.0 * radius)
         p = plt.Polygon(  # type: ignore
             verts,
             linewidth=radius,
@@ -117,5 +110,6 @@ class DrawOptions(easymunk.SpaceDebugDrawOptions):
         self.ax.add_patch(p)
 
     def draw_dot(self, size: float, pos: Vec2d, color: SpaceDebugColor) -> None:
-        p = plt.Circle(pos, size, facecolor=color.as_float(), edgecolor="None")  # type: ignore
+        color = color.as_float()
+        p = plt.Circle(pos, size, facecolor=color, edgecolor="None")  # type: ignore
         self.ax.add_patch(p)

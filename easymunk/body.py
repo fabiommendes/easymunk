@@ -728,7 +728,7 @@ class Body(
         """
 
         @ffi.callback("cpBodyArbiterIteratorFunc")
-        def cf(body, arb, _) -> None:
+        def cf(_body, arb, _) -> None:
             if self._space is None:
                 raise ValueError("Body does not belong to any space")
             arbiter = Arbiter(arb, self._space)
@@ -830,13 +830,15 @@ class Body(
 
     def prepare(self, **kwargs):
         state = self.__getstate__()
-        # from pprint import pprint; print(type(self)); pprint(state)
         new = object.__new__(type(self))
         new.__setstate__(state)
 
         for shape in self.shapes:
             sp = shape.prepare(body=new)
             new._nursery.append(sp)
+
+        for k, v in kwargs.items():
+            setattr(new, k, v)
 
         return new
 
@@ -1001,7 +1003,7 @@ class CircleBody(BodyShape, Body):
 
     offset: Vec2d = sk.delegate_to("shape", mutable=True)
 
-    def __init__(self, radius, *args, offset=(0, 0), density=0, **kwargs):
+    def __init__(self, radius, *args, offset=(0, 0), **kwargs):
         super().__init__(*args, **self._extract_options(kwargs))
         self.shape: "Circle" = Circle(radius, offset=offset, body=self, **kwargs)
         self._post_init()

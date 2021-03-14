@@ -54,7 +54,7 @@ def circ(x: float, y: float, r: float, **kwargs) -> CircleBody:
 
 @body_maker
 def line(
-    x1: float, y1: float, x2: float, y2: float, radius: float = 1.0, **kwargs
+        x1: float, y1: float, x2: float, y2: float, radius: float = 1.0, **kwargs
 ) -> SegmentBody:
     """
     Creates a body with a Segment shape attached to it.
@@ -73,14 +73,14 @@ def line(
 
 @body_maker
 def tri(
-    x1: float,
-    y1: float,
-    x2: float,
-    y2: float,
-    x3: float,
-    y3: float,
-    radius: float = 0.0,
-    **kwargs
+        x1: float,
+        y1: float,
+        x2: float,
+        y2: float,
+        x3: float,
+        y3: float,
+        radius: float = 0.0,
+        **kwargs
 ) -> PolyBody:
     """
     Creates a Pymunk body with a triangular Poly shape attached to it.
@@ -102,7 +102,7 @@ def tri(
 
 @body_maker
 def rect(
-    x: float, y: float, w: float, h: float, radius: float = 0.0, **kwargs
+        x: float, y: float, w: float, h: float, radius: float = 0.0, **kwargs
 ) -> PolyBody:
     """
     Creates a Pymunk body with a triangular Poly shape attached to it.
@@ -121,7 +121,7 @@ def rect(
 
 @body_maker
 def margin(
-    x: int = 0, y: int = 0, width: int = None, height: int = None, **kwargs
+        x: int = 0, y: int = 0, width: int = None, height: int = None, **kwargs
 ) -> Body:
     """
     Creates a margin around the screen.
@@ -142,13 +142,14 @@ def margin(
     return body
 
 
+# noinspection PyTypeHints
 def space(
-    bg: Color = pyxel.COLOR_BLACK,
-    col: Color = pyxel.COLOR_WHITE,
-    mod=pyxel,
-    flip_y: bool = False,
-    wireframe: bool = False,
-    **kwargs
+        bg: Color = pyxel.COLOR_BLACK,
+        col: Color = pyxel.COLOR_WHITE,
+        mod=pyxel,
+        flip_y: bool = False,
+        wireframe: bool = False,
+        **kwargs
 ):
     """
     Create a space object.
@@ -175,7 +176,7 @@ def space(
 
     def draw(clear: bool = False):
         if clear:
-            pyxel.cls(sp.bg)
+            pyxel.cls(sp.bg)  # type: ignore
         sp.debug_draw(draw_options)
 
     # noinspection PyShadowingNames
@@ -186,11 +187,11 @@ def space(
         draw_options.wireframe = wireframe
         pyxel.run(update, lambda: draw(clear=True))
 
-    sp.col = col
-    sp.bg = bg
-    sp.update = update
-    sp.draw = draw
-    sp.run = run
+    sp.col = col  # type: ignore
+    sp.bg = bg  # type: ignore
+    sp.update = update  # type: ignore
+    sp.draw = draw  # type: ignore
+    sp.run = run  # type: ignore
     return sp
 
 

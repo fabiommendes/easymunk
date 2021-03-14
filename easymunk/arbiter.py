@@ -1,6 +1,6 @@
 __docformat__ = "reStructuredText"
 
-from typing import TYPE_CHECKING, Tuple, Any, Callable
+from typing import TYPE_CHECKING, Tuple
 
 from ._chipmunk_cffi import ffi, lib
 from .contact_point_set import ContactPointSet, contact_point_set_from_cffi

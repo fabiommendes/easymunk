@@ -300,7 +300,7 @@ class Space(PickleMixin, FilterElementsMixin):
         energies.
         """
         energy = self.gravitational_energy
-        for force in self._forces:
+        for force in self._forces:  # TODO: implement external forces
             try:
                 acc = force.potential_energy
             except AttributeError:
@@ -513,28 +513,52 @@ class Space(PickleMixin, FilterElementsMixin):
     def remove(self: S, *objs: _AddableObjects, remove_children=True) -> S:
         """Remove one or many shapes, bodies or constraints from the space
 
-        Unlike Chipmunk and earlier versions of Pymunk its now allowed to
-        remove objects even from a callback during the simulation step.
-        However, the removal will not be performed until the end of the step.
+        If called from callback during update step, the removal will not be
+        performed until the end of the step.
 
         .. Note::
             When removing objects from the space, make sure you remove any
             other objects that reference it. For instance, when you remove a
             body, remove the joints and shapes attached to it.
         """
+        return self._remove_or_discard(objs, remove_children, False)
+
+    def discard(self, *objs: _AddableObjects, remove_children=True):
+        """
+        Discard objects from space.
+
+        Similar to remove, but do not throw errors if element is not present
+        in space.
+        """
+        return self._remove_or_discard(objs, remove_children, True)
+
+    def _remove_or_discard(self, objs, remove_children, discard):
         if self._locked:
             self._remove_later.update(objs)
             return self
 
         for o in objs:
             if isinstance(o, Body):
-                self._remove_body(o)
+                self._remove_body(o, discard)
             elif isinstance(o, Shape):
-                self._remove_shape(o)
+                self._remove_shape(o, discard)
             elif isinstance(o, Constraint):
-                self._remove_constraint(o)
+                self._remove_constraint(o, discard)
             else:
                 raise Exception(f"Unsupported type  {type(o)} of {o}.")
+
+        if not remove_children:
+            return self
+
+        for o in objs:
+            if not isinstance(o, Body):
+                continue
+            for s in o.shapes:
+                if s.space is self:
+                    self._remove_shape(s, True)
+            for c in o.constraints:
+                if c.space is self:
+                    self._remove_constraint(c, True)
         return self
 
     def _add_shape(self, shape: "Shape") -> None:
@@ -563,9 +587,11 @@ class Space(PickleMixin, FilterElementsMixin):
         cp.cpSpaceAddConstraint(self._space, get_cffi_ref(constraint))
         clear_nursery(constraint)
 
-    def _remove_shape(self, shape: "Shape") -> None:
+    def _remove_shape(self, shape: "Shape", discard: bool) -> None:
         id_ = shape_id(shape)
         if id_ not in self._shapes:
+            if discard:
+                return
             raise ValueError("shape not in space, already removed?")
         self._removed_shapes[id_] = shape
 
@@ -576,8 +602,10 @@ class Space(PickleMixin, FilterElementsMixin):
             cp.cpSpaceRemoveShape(self._space, ref)
         del self._shapes[id_]
 
-    def _remove_body(self, body: "Body") -> None:
+    def _remove_body(self, body: "Body", discard: bool) -> None:
         if body not in self._bodies:
+            if discard:
+                return
             raise ValueError("body not in space, already removed?")
         body._space = None
 
@@ -588,9 +616,10 @@ class Space(PickleMixin, FilterElementsMixin):
             cp.cpSpaceRemoveBody(self._space, ref)
         self._bodies.remove(body)
 
-    def _remove_constraint(self, constraint: "Constraint") -> None:
-        """Removes a constraint from the space"""
+    def _remove_constraint(self, constraint: "Constraint", discard: bool) -> None:
         if constraint not in self._constraints:
+            if discard:
+                return
             raise ValueError("constraint not in space, already removed?")
 
         # During GC at program exit sometimes the constraint might already be removed.
@@ -687,8 +716,7 @@ class Space(PickleMixin, FilterElementsMixin):
 
         self.add(*self._add_later)
         self._add_later.clear()
-        for obj in self._remove_later:
-            self.remove(obj)
+        self.discard(*self._remove_later)
         self._remove_later.clear()
 
         for key in self._post_step_callbacks:
@@ -768,11 +796,11 @@ class Space(PickleMixin, FilterElementsMixin):
         return handler
 
     def add_post_step_callback(
-        self,
-        callback_function: Callable[..., None],
-        key: Hashable,
-        *args: Any,
-        **kwargs: Any,
+            self,
+            callback_function: Callable[..., None],
+            key: Hashable,
+            *args: Any,
+            **kwargs: Any,
     ) -> bool:
         """Add a function to be called last in the next simulation step.
 
@@ -814,7 +842,7 @@ class Space(PickleMixin, FilterElementsMixin):
 
     # noinspection PyShadowingBuiltins
     def point_query(
-        self, point: VecLike, distance: float = 0, filter: ShapeFilter = None
+            self, point: VecLike, distance: float = 0, filter: ShapeFilter = None
     ) -> List[PointQueryInfo]:
         f"""Query space at point for shapes within the given distance range.
 
@@ -848,7 +876,7 @@ class Space(PickleMixin, FilterElementsMixin):
 
     # noinspection PyShadowingBuiltins
     def point_query_nearest(
-        self, point: VecLike, distance: float = 0.0, filter: ShapeFilter = None
+            self, point: VecLike, distance: float = 0.0, filter: ShapeFilter = None
     ) -> Optional[PointQueryInfo]:
         f"""Query space at point the nearest shape within the given distance
         range.
@@ -877,11 +905,11 @@ class Space(PickleMixin, FilterElementsMixin):
 
     # noinspection PyShadowingBuiltins
     def segment_query(
-        self,
-        start: VecLike,
-        end: VecLike,
-        radius: float = 0.0,
-        filter: ShapeFilter = None,
+            self,
+            start: VecLike,
+            end: VecLike,
+            radius: float = 0.0,
+            filter: ShapeFilter = None,
     ) -> List[SegmentQueryInfo]:
         """Query space along the line segment from start to end with the
         given radius.
@@ -916,11 +944,11 @@ class Space(PickleMixin, FilterElementsMixin):
 
     # noinspection PyShadowingBuiltins
     def segment_query_first(
-        self,
-        start: Tuple[float, float],
-        end: Tuple[float, float],
-        radius: float = 0.0,
-        filter: ShapeFilter = None,
+            self,
+            start: Tuple[float, float],
+            end: Tuple[float, float],
+            radius: float = 0.0,
+            filter: ShapeFilter = None,
     ) -> Optional[SegmentQueryInfo]:
         """Query space along the line segment from start to end with the
         given radius.
@@ -981,7 +1009,7 @@ class Space(PickleMixin, FilterElementsMixin):
         return query_hits
 
     def debug_draw(
-        self: S, options: Union["SpaceDebugDrawOptions", str, None] = None
+            self: S, options: Union["SpaceDebugDrawOptions", str, None] = None
     ) -> S:
         """Debug draw the current state of the space using the supplied drawing
         options.
@@ -1008,9 +1036,10 @@ class Space(PickleMixin, FilterElementsMixin):
                 options.draw_shape(shape)
         else:
             # We need to hold h until the end of cpSpaceDebugDraw to prevent GC
-            options._options.data = ptr = ffi.new_handle(self)
+            cffi = get_cffi_ref(options)
+            cffi.data = ptr = ffi.new_handle(self)
             with options:
-                cp.cpSpaceDebugDraw(self._space, options._options)
+                cp.cpSpaceDebugDraw(self._space, cffi)
             del ptr
         return self
 

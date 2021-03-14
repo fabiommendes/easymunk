@@ -72,8 +72,8 @@ class SpaceDebugDrawOptions:
     shape_sleeping_color = SpaceDebugColor(114, 148, 168, 255)
     shape_outline_color: SpaceDebugColor
     shape_outline_color = property(  # type: ignore
-        lambda self: self._to_color(self._options.shapeOutlineColor),
-        lambda self, c: setattr(self._options, "shapeOutlineColor", c),
+        lambda self: self._to_color(self._cffi_ref.shapeOutlineColor),
+        lambda self, c: setattr(self._cffi_ref, "shapeOutlineColor", c),
         doc="""The outline color of shapes.
         
         Should be a tuple of 4 ints between 0 and 255 (r, g, b, a).
@@ -81,8 +81,8 @@ class SpaceDebugDrawOptions:
     )
     constraint_color: SpaceDebugColor
     constraint_color = property(  # type: ignore
-        lambda self: self._to_color(self._options.constraintColor),
-        lambda self, c: setattr(self._options, "constraintColor", c),
+        lambda self: self._to_color(self._cffi_ref.constraintColor),
+        lambda self, c: setattr(self._cffi_ref, "constraintColor", c),
         doc="""The color of constraints.
 
         Should be a tuple of 4 ints between 0 and 255 (r, g, b, a).
@@ -90,8 +90,8 @@ class SpaceDebugDrawOptions:
     )
     collision_point_color: SpaceDebugColor
     collision_point_color = property(  # type: ignore
-        lambda self: self._to_color(self._options.collisionPointColor),
-        lambda self, c: setattr(self._options, "collisionPointColor", c),
+        lambda self: self._to_color(self._cffi_ref.collisionPointColor),
+        lambda self, c: setattr(self._cffi_ref, "collisionPointColor", c),
         doc="""The color of collisions.
 
         Should be a tuple of 4 ints between 0 and 255 (r, g, b, a).
@@ -99,8 +99,8 @@ class SpaceDebugDrawOptions:
     )
     flags: _DrawFlags
     flags = property(  # type: ignore
-        lambda self: self._options.flags,
-        lambda self, f: setattr(self._options, "flags", f),
+        lambda self: self._cffi_ref.flags,
+        lambda self, f: setattr(self._cffi_ref, "flags", f),
         doc="""Bit flags which of shapes, joints and collisions should be drawn.
     
         By default all 3 flags are set, meaning shapes, joints and collisions 
@@ -114,7 +114,7 @@ class SpaceDebugDrawOptions:
 
     def __init__(self, bypass_chipmunk=False) -> None:
         ptr = ffi.new("cpSpaceDebugDrawOptions *")
-        self._options = ptr
+        self._cffi_ref = ptr
         self.shape_outline_color = SpaceDebugColor(44, 62, 80, 255)
         self.constraint_color = SpaceDebugColor(142, 68, 173, 255)
         self.collision_point_color = SpaceDebugColor(231, 76, 60, 255)

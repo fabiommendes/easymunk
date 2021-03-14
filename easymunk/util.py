@@ -46,6 +46,7 @@ if TYPE_CHECKING:
     from .body import Body
     from .shapes import Shape
     from .constraints import Constraint
+    from .space_debug_draw_options import SpaceDebugDrawOptions
 
 X, Y = 0, 1
 T = TypeVar("T")
@@ -557,13 +558,14 @@ def get_nursery(obj: Union["Shape", "Body", "Constraint"]) -> set:
     return obj._nursery
 
 
-def clear_nursery(obj: Union["Shape", "Body", "Constraint"]) -> set:
+def clear_nursery(obj: Union["Shape", "Body", "Constraint"]) -> None:
     """Return the nursery set from object."""
     # noinspection PyProtectedMember
-    return obj._nursery.clear()
+    obj._nursery.clear()
 
 
-def get_cffi_ref(obj: Union["Shape", "Body", "Constraint"]) -> set:
+def get_cffi_ref(
+        obj: Union["Shape", "Body", "Constraint", "SpaceDebugDrawOptions"]) -> Any:
     """Return the nursery set from object."""
     # noinspection PyProtectedMember
     return obj._cffi_ref

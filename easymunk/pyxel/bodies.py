@@ -132,6 +132,7 @@ def margin(
         height = pyxel.height - 1
     a, b, c, d = (x, y), (x + width, y), (x + width, y + height), (x, y + height)
 
+    # noinspection PyProtectedMember
     opts = {k: kwargs.pop(k) for k in Body._init_kwargs if k in kwargs}
     body = Body(body_type=Body.STATIC, **opts)
     body.create_segment(a, b, **kwargs)
@@ -145,16 +146,20 @@ def space(
     bg: Color = pyxel.COLOR_BLACK,
     col: Color = pyxel.COLOR_WHITE,
     mod=pyxel,
-    flip_y=False,
-    wireframe=False,
+    flip_y: bool = False,
+    wireframe: bool = False,
     **kwargs
 ):
     """
     Create a space object.
 
     Args:
-        bg: Background color
-        col: Default foreground color
+        bg: Background color.
+        col: Default foreground color.
+        mod: Pyxel module or some module-like object with corresponding draw functions.
+        flip_y: Flip y coordinate, making coordinates consistent with mathematical
+            convention.
+        wireframe: Draw shapes in wireframe mode.
     """
     global DEFAULT_SPACE
     DEFAULT_SPACE = sp = Space(**kwargs)
@@ -173,7 +178,11 @@ def space(
             pyxel.cls(sp.bg)
         sp.debug_draw(draw_options)
 
+    # noinspection PyShadowingNames
     def run(wireframe=wireframe):
+        """
+        Run pyxel engine alongside with physics.
+        """
         draw_options.wireframe = wireframe
         pyxel.run(update, lambda: draw(clear=True))
 

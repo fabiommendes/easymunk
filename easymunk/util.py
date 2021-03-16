@@ -565,7 +565,8 @@ def clear_nursery(obj: Union["Shape", "Body", "Constraint"]) -> None:
 
 
 def get_cffi_ref(
-        obj: Union["Shape", "Body", "Constraint", "SpaceDebugDrawOptions"]) -> Any:
+    obj: Union["Shape", "Body", "Constraint", "SpaceDebugDrawOptions"]
+) -> Any:
     """Return the nursery set from object."""
     # noinspection PyProtectedMember
     return obj._cffi_ref

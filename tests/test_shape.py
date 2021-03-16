@@ -291,7 +291,7 @@ class UnitTestSegment(unittest.TestCase):
             self.num_of_begins += 1
             return True
 
-        s.add_default_collision_handler().begin = begin
+        s.default_collision_handler().begin = begin
         s.step(0.1)
 
         assert 1 == self.num_of_begins
@@ -312,7 +312,9 @@ class UnitTestPoly(unittest.TestCase):
         c = mk.Poly([(0, 0), (10, 10), (20, 0), (-10, 10)], 0, None, None)
 
         b = mk.Body(1, 2)
-        c = mk.Poly([(0, 0), (10, 10), (20, 0), (-10, 10)], 6, b, mk.Transform.identity())
+        c = mk.Poly(
+            [(0, 0), (10, 10), (20, 0), (-10, 10)], 6, b, mk.Transform.identity()
+        )
 
     def test_vertices(self) -> None:
         vs = [(-10, 10), (0, 0), (20, 0), (10, 10)]

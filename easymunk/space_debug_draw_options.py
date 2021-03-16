@@ -122,9 +122,9 @@ class SpaceDebugDrawOptions:
         # Set to false to bypass chipmunk shape drawing code
         self.bypass_chipmunk = bypass_chipmunk
         self.flags = (
-                SpaceDebugDrawOptions.DRAW_SHAPES
-                | SpaceDebugDrawOptions.DRAW_CONSTRAINTS
-                | SpaceDebugDrawOptions.DRAW_COLLISION_POINTS
+            SpaceDebugDrawOptions.DRAW_SHAPES
+            | SpaceDebugDrawOptions.DRAW_CONSTRAINTS
+            | SpaceDebugDrawOptions.DRAW_COLLISION_POINTS
         )
         self._callbacks = cffi_register_debug_draw_options_callbacks(self, ptr)
 
@@ -132,10 +132,10 @@ class SpaceDebugDrawOptions:
         pass
 
     def __exit__(
-            self,
-            typ: Optional[Type[BaseException]],
-            value: Optional[BaseException],
-            traceback: Optional["TracebackType"],
+        self,
+        typ: Optional[Type[BaseException]],
+        value: Optional[BaseException],
+        traceback: Optional["TracebackType"],
     ) -> None:
         pass
 
@@ -146,12 +146,12 @@ class SpaceDebugDrawOptions:
         return print(*args, **kwargs)
 
     def draw_circle(
-            self,
-            pos: Vec2d,
-            angle: float,
-            radius: float,
-            outline_color: SpaceDebugColor,
-            fill_color: SpaceDebugColor,
+        self,
+        pos: Vec2d,
+        angle: float,
+        radius: float,
+        outline_color: SpaceDebugColor,
+        fill_color: SpaceDebugColor,
     ) -> None:
         self._print("draw_circle", (pos, angle, radius, outline_color, fill_color))
 
@@ -159,21 +159,21 @@ class SpaceDebugDrawOptions:
         self._print("draw_segment", (a, b, color))
 
     def draw_fat_segment(
-            self,
-            a: Vec2d,
-            b: Vec2d,
-            radius: float,
-            outline_color: SpaceDebugColor,
-            fill_color: SpaceDebugColor,
+        self,
+        a: Vec2d,
+        b: Vec2d,
+        radius: float,
+        outline_color: SpaceDebugColor,
+        fill_color: SpaceDebugColor,
     ) -> None:
         self._print("draw_fat_segment", (a, b, radius, outline_color, fill_color))
 
     def draw_polygon(
-            self,
-            verts: Sequence[Vec2d],
-            radius: float,
-            outline_color: SpaceDebugColor,
-            fill_color: SpaceDebugColor,
+        self,
+        verts: Sequence[Vec2d],
+        radius: float,
+        outline_color: SpaceDebugColor,
+        fill_color: SpaceDebugColor,
     ) -> None:
         self._print("draw_polygon", (verts, radius, outline_color, fill_color))
 

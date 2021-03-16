@@ -98,7 +98,7 @@ def main():
     space.add(arrow_body, arrow_shape)
 
     flying_arrows: List[easymunk.Body] = []
-    handler = space.add_collision_handler(0, 1)
+    handler = space.collision_handler(0, 1)
     handler.data["flying_arrows"] = flying_arrows
     handler.post_solve = post_solve_arrow_hit
 

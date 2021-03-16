@@ -39,6 +39,9 @@ __all__ = [
     "chipmunk_version",
     "Space",
     "Body",
+    "CircleBody",
+    "SegmentBody",
+    "PolyBody",
     "Shape",
     "Circle",
     "Poly",
@@ -64,7 +67,7 @@ __all__ = [
 from . import _version
 from .arbiter import Arbiter
 from .bb import BB
-from .body import Body
+from .body import Body, CircleBody, SegmentBody, PolyBody
 from .collision_handler import CollisionHandler
 from .constraints import *
 from .contact_point_set import ContactPoint, ContactPointSet

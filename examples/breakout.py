@@ -76,7 +76,7 @@ def setup_level(space, player_body):
         brick_shape = arbiter.shapes[0]
         space.remove(brick_shape, brick_shape.body)
 
-    h = space.add_collision_handler(collision_types["brick"], collision_types["ball"])
+    h = space.collision_handler(collision_types["brick"], collision_types["ball"])
     h.separate = remove_brick
 
 
@@ -116,7 +116,7 @@ def main():
         space.remove(ball_shape, ball_shape.body)
         return True
 
-    h = space.add_collision_handler(collision_types["ball"], collision_types["bottom"])
+    h = space.collision_handler(collision_types["ball"], collision_types["bottom"])
     h.begin = remove_first
     space.add(bottom)
 
@@ -144,7 +144,7 @@ def main():
         arbiter.contact_point_set = set_
         return True
 
-    h = space.add_collision_handler(collision_types["player"], collision_types["ball"])
+    h = space.collision_handler(collision_types["player"], collision_types["ball"])
     h.pre_solve = pre_solve
 
     # restrict movement of player to a straigt line

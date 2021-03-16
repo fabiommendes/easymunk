@@ -22,6 +22,9 @@ class Objects(Set[T]):
     def __repr__(self):
         return f"{type(self).__name__}({self._as_list()})"
 
+    def __iter__(self):
+        return iter(self._objects)
+
     def __len__(self) -> int:
         return len(self._objects)
 

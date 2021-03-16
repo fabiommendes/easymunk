@@ -79,7 +79,7 @@ class UnitTestBugs(unittest.TestCase):
         def remove_first(arbiter: p.Arbiter, space: p.Space, data: Any) -> None:
             space.discard(c1)
 
-        space.add_collision_handler(2, 0).separate = remove_first
+        space.collision_handler(2, 0).separate = remove_first
 
         space.step(1.0 / 60)
         b2.position = 22, 0

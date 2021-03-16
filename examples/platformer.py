@@ -136,7 +136,7 @@ def main():
         else:
             return False
 
-    space.add_collision_handler(1, 2).begin = passthrough_handler
+    space.collision_handler(1, 2).begin = passthrough_handler
 
     # player
     body = easymunk.Body(5, float("inf"))

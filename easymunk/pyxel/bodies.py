@@ -2,7 +2,6 @@
 Easier factory functions for creating Pymunk objects.
 """
 from functools import wraps
-
 import pyxel
 
 from . import Color, DrawOptions
@@ -54,7 +53,7 @@ def circ(x: float, y: float, r: float, **kwargs) -> CircleBody:
 
 @body_maker
 def line(
-        x1: float, y1: float, x2: float, y2: float, radius: float = 1.0, **kwargs
+    x1: float, y1: float, x2: float, y2: float, radius: float = 1.0, **kwargs
 ) -> SegmentBody:
     """
     Creates a body with a Segment shape attached to it.
@@ -73,14 +72,14 @@ def line(
 
 @body_maker
 def tri(
-        x1: float,
-        y1: float,
-        x2: float,
-        y2: float,
-        x3: float,
-        y3: float,
-        radius: float = 0.0,
-        **kwargs
+    x1: float,
+    y1: float,
+    x2: float,
+    y2: float,
+    x3: float,
+    y3: float,
+    radius: float = 0.0,
+    **kwargs
 ) -> PolyBody:
     """
     Creates a Pymunk body with a triangular Poly shape attached to it.
@@ -102,7 +101,7 @@ def tri(
 
 @body_maker
 def rect(
-        x: float, y: float, w: float, h: float, radius: float = 0.0, **kwargs
+    x: float, y: float, w: float, h: float, radius: float = 0.0, **kwargs
 ) -> PolyBody:
     """
     Creates a Pymunk body with a triangular Poly shape attached to it.
@@ -121,7 +120,7 @@ def rect(
 
 @body_maker
 def margin(
-        x: int = 0, y: int = 0, width: int = None, height: int = None, **kwargs
+    x: float = 0, y: float = 0, width: float = None, height: float = None, **kwargs
 ) -> Body:
     """
     Creates a margin around the screen.
@@ -144,12 +143,12 @@ def margin(
 
 # noinspection PyTypeHints
 def space(
-        bg: Color = pyxel.COLOR_BLACK,
-        col: Color = pyxel.COLOR_WHITE,
-        mod=pyxel,
-        flip_y: bool = False,
-        wireframe: bool = False,
-        **kwargs
+    bg: Color = pyxel.COLOR_BLACK,
+    col: Color = pyxel.COLOR_WHITE,
+    mod=pyxel,
+    flip_y: bool = False,
+    wireframe: bool = False,
+    **kwargs
 ):
     """
     Create a space object.
@@ -207,5 +206,5 @@ def moment_multiplier(value: float = None) -> float:
     if value is None:
         return MOMENT_MULTIPLIER
     else:
-        MOMENT_MULTIPLIER = value
-        return value
+        MOMENT_MULTIPLIER = float(value)
+        return MOMENT_MULTIPLIER

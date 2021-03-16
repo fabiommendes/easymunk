@@ -59,17 +59,21 @@ def fill_space(space, custom_color=(255, 255, 0, 255)):
     b = easymunk.Body(body_type=easymunk.Body.STATIC)
     b.position = (50, 430)
     t = easymunk.Transform(ty=-100)
-    s = easymunk.Poly([
-        (0.0, -30.0),
-        (19.0, -23.0),
-        (30.0, -5.0),
-        (26.0, 15.0),
-        (10.0, 28.0),
-        (-10.0, 28.0),
-        (-26.0, 15.0),
-        (-30.0, -5.0),
-        (-19.0, -23.0),
-    ], body=b, transform=t)
+    s = easymunk.Poly(
+        [
+            (0.0, -30.0),
+            (19.0, -23.0),
+            (30.0, -5.0),
+            (26.0, 15.0),
+            (10.0, 28.0),
+            (-10.0, 28.0),
+            (-26.0, 15.0),
+            (-30.0, -5.0),
+            (-19.0, -23.0),
+        ],
+        body=b,
+        transform=t,
+    )
     space.add(b, s)
 
     # Kinematic
@@ -124,16 +128,20 @@ def fill_space(space, custom_color=(255, 255, 0, 255)):
     b = easymunk.Body(body_type=easymunk.Body.KINEMATIC)
     b.position = (230, 430)
     t = easymunk.Transform(ty=-100)
-    s = easymunk.Poly([
-        (19.0, -50.0),
-        (30.0, -5.0),
-        (26.0, 15.0),
-        (10.0, 38.0),
-        (-10.0, 38.0),
-        (-26.0, 15.0),
-        (-30.0, -5.0),
-        (-19.0, -50.0),
-    ], body=b, transform=t)
+    s = easymunk.Poly(
+        [
+            (19.0, -50.0),
+            (30.0, -5.0),
+            (26.0, 15.0),
+            (10.0, 38.0),
+            (-10.0, 38.0),
+            (-26.0, 15.0),
+            (-30.0, -5.0),
+            (-19.0, -50.0),
+        ],
+        body=b,
+        transform=t,
+    )
     space.add(b, s)
 
     # Dynamic
@@ -182,14 +190,21 @@ def fill_space(space, custom_color=(255, 255, 0, 255)):
 
     b = easymunk.Body(1, 1)
     b.position = (460, 500)
-    s = easymunk.Poly([(0, -25), (30, 25), (-30, 25)], radius=5, body=b,
-                      transform=easymunk.Transform(ty=-100))
+    s = easymunk.Poly(
+        [(0, -25), (30, 25), (-30, 25)],
+        radius=5,
+        body=b,
+        transform=easymunk.Transform(ty=-100),
+    )
     space.add(b, s)
 
     b = easymunk.Body(1, 1)
     b.position = (400, 430)
-    s = easymunk.Poly([(0, -50), (50, 0), (30, 50), (-30, 50), (-50, 0)], body=b,
-                      transform=easymunk.Transform(ty=-100))
+    s = easymunk.Poly(
+        [(0, -50), (50, 0), (30, 50), (-30, 50), (-50, 0)],
+        body=b,
+        transform=easymunk.Transform(ty=-100),
+    )
     space.add(b, s)
 
     # Constraints

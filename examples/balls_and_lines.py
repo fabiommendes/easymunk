@@ -41,9 +41,7 @@ def main():
     mouse_shape.collision_type = COLLTYPE_MOUSE
     space.add(mouse_body, mouse_shape)
 
-    space.add_collision_handler(
-        COLLTYPE_MOUSE, COLLTYPE_BALL
-    ).pre_solve = mouse_coll_func
+    space.collision_handler(COLLTYPE_MOUSE, COLLTYPE_BALL).pre_solve = mouse_coll_func
 
     # Static line
     line_point1 = None

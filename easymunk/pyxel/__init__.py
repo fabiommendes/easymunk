@@ -9,7 +9,7 @@ drawing, but there is probably room for optimizations still).
 """
 
 __docformat__ = "reStructuredText"
-from .draw_options import DrawOptions
 
 from .draw_options import DrawOptions, Color, bg, fg, draw, drawb
 from .bodies import circ, tri, rect, space, margin, moment_multiplier
+from .draw_mods import flip_y

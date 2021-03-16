@@ -68,7 +68,7 @@ class CollisionHandler:
         """
         return self._data
 
-    space = sk.alias('_space')
+    space = sk.alias("_space")
     begin: Optional[BoolCB]
     begin = property(  # type: ignore
         lambda self: self._begin_base,
@@ -177,8 +177,8 @@ class CollisionHandler:
         cf = functools.partial(factory, func or always_collide)
         ptr = ffi.callback(cb_type)(cf)
 
-        setattr(self, f'_{name}_base', func)
-        setattr(self, f'_{name}', ptr)
+        setattr(self, f"_{name}_base", func)
+        setattr(self, f"_{name}", ptr)
         setattr(self._cffi_ref, attr, ptr)
 
     def _bool_cb(self, func: BoolCB, ptr: Ptr, space: Ptr, data: Ptr) -> bool:
@@ -188,11 +188,11 @@ class CollisionHandler:
         if isinstance(out, bool):
             return out
 
-        code = getattr(func, '__code__', None)
-        func_name = getattr(func, "__name__", '<function>')
-        filename = getattr(code, "co_filename", '<unknown file>')
+        code = getattr(func, "__code__", None)
+        func_name = getattr(func, "__name__", "<function>")
+        filename = getattr(code, "co_filename", "<unknown file>")
         lineno = getattr(code, "co_firstlineno", -1)
-        module = getattr(func, '__module__', "<string>")
+        module = getattr(func, "__module__", "<string>")
 
         msg = (
             f"Function '{func_name}' should return a bool to"

@@ -42,9 +42,10 @@ else:
     Poly = sk.import_later(".shapes:Poly", __package__)
 
 B = TypeVar("B", bound="Body")
-_BodyType = int
-_PositionFunc = Callable[["Body", float], None]
-_VelocityFunc = Callable[["Body", Vec2d, float, float], None]
+BodyType = int
+PositionFunc = Callable[["Body", float], None]
+VelocityFunc = Callable[["Body", Vec2d, float, float], None]
+BODY_TYPES = {}
 
 
 class Body(MakeShapeMixin, PickleMixin, HasBBMixin, FilterElementsMixin):
@@ -64,7 +65,7 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin, FilterElementsMixin):
     constraints attached to the body will not be copied.
     """
 
-    DYNAMIC = lib.CP_BODY_TYPE_DYNAMIC
+    DYNAMIC = BODY_TYPES["dynamic"] = lib.CP_BODY_TYPE_DYNAMIC
     """Dynamic bodies are the default body type.
 
     They react to collisions,
@@ -74,7 +75,7 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin, FilterElementsMixin):
     and can generate collision callbacks.
     """
 
-    KINEMATIC = lib.CP_BODY_TYPE_KINEMATIC
+    KINEMATIC = BODY_TYPES["kinematic"] = lib.CP_BODY_TYPE_KINEMATIC
     """Kinematic bodies are bodies that are controlled from your code
     instead of inside the physics engine.
 
@@ -86,7 +87,7 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin, FilterElementsMixin):
     body are never allowed to fall asleep.
     """
 
-    STATIC = lib.CP_BODY_TYPE_STATIC
+    STATIC = BODY_TYPES["static"] = lib.CP_BODY_TYPE_STATIC
     """Static bodies are bodies that never (or rarely) move.
 
     Using static bodies for things like terrain offers a big performance
@@ -128,9 +129,9 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin, FilterElementsMixin):
         "constraints",
         "is_sleeping",
     }
-    _init_kwargs = {*_pickle_args, *_pickle_kwargs}
-    _position_func_base: Optional[_PositionFunc] = None  # For pickle
-    _velocity_func_base: Optional[_VelocityFunc] = None  # For pickle
+    _init_kwargs = {*_pickle_args, *_pickle_kwargs, "space"}
+    _position_func_base: Optional[PositionFunc] = None  # For pickle
+    _velocity_func_base: Optional[VelocityFunc] = None  # For pickle
     _id_counter = 1
 
     #
@@ -138,7 +139,7 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin, FilterElementsMixin):
     #
     @staticmethod
     def update_velocity(
-            body: "Body", gravity: VecLike, damping: float, dt: float
+        body: "Body", gravity: VecLike, damping: float, dt: float
     ) -> None:
         """Default rigid body velocity integration function.
 
@@ -369,7 +370,7 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin, FilterElementsMixin):
         v2 = self.velocity.dot(self.velocity)
         w2 = self.angular_velocity * self.angular_velocity
         return 0.5 * (
-                (self.mass * v2 if v2 else 0.0) + (self.moment * w2 if w2 else 0.0)
+            (self.mass * v2 if v2 else 0.0) + (self.moment * w2 if w2 else 0.0)
         )
 
     @property
@@ -463,13 +464,13 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin, FilterElementsMixin):
         return int(ffi.cast("int", lib.cpBodyGetUserData(self._cffi_ref)))
 
     def __init__(
-            self,
-            mass: float = 0,
-            moment: float = 0,
-            body_type: _BodyType = DYNAMIC,
-            *,
-            space=None,
-            **kwargs,
+        self,
+        mass: float = 0,
+        moment: float = 0,
+        body_type: BodyType = DYNAMIC,
+        *,
+        space=None,
+        **kwargs,
     ) -> None:
         """Create a new Body
 
@@ -494,12 +495,15 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin, FilterElementsMixin):
         overwrite your custom mass value when the shapes are added to the body.
         """
 
+        body_type = BODY_TYPES.get(body_type, body_type)
         if body_type == Body.DYNAMIC:
             self._cffi_ref = ffi.gc(lib.cpBodyNew(mass, moment), cffi_free_body)
         elif body_type == Body.KINEMATIC:
             self._cffi_ref = ffi.gc(lib.cpBodyNewKinematic(), cffi_free_body)
         elif body_type == Body.STATIC:
             self._cffi_ref = ffi.gc(lib.cpBodyNewStatic(), cffi_free_body)
+        else:
+            raise ValueError(f"invalid body type: {body_type!r}")
 
         # To prevent the gc to collect the callbacks.
         self._position_func = None
@@ -526,9 +530,9 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin, FilterElementsMixin):
         args, meta = super().__getstate__()
 
         if self._position_func is not None:
-            meta['position_func'] = self._position_func_base
+            meta["position_func"] = self._position_func_base
         if self._velocity_func is not None:
-            meta['velocity_func'] = self._velocity_func_base
+            meta["velocity_func"] = self._velocity_func_base
 
         meta["$shapes"] = {s.copy() for s in list(self._shapes)}
         return args, meta
@@ -575,7 +579,7 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin, FilterElementsMixin):
             self.space.add(shape)
         return shape
 
-    def _set_velocity_func(self, func: _VelocityFunc) -> None:
+    def _set_velocity_func(self, func: VelocityFunc) -> None:
         @ffi.callback("cpBodyVelocityFunc")
         def _impl(_: ffi.CData, gravity: ffi.CData, damping: float, dt: float) -> None:
             func(self, Vec2d(gravity.x, gravity.y), damping, dt)
@@ -627,7 +631,7 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin, FilterElementsMixin):
         return self
 
     def apply_force_at_local_point(
-            self: B, force: VecLike, point: VecLike = (0, 0)
+        self: B, force: VecLike, point: VecLike = (0, 0)
     ) -> B:
         """Add the local force force to body as if applied from the body
         local point.
@@ -641,7 +645,7 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin, FilterElementsMixin):
         return self
 
     def apply_impulse_at_local_point(
-            self: B, impulse: VecLike, point: VecLike = (0, 0)
+        self: B, impulse: VecLike, point: VecLike = (0, 0)
     ) -> B:
         """Add the local impulse impulse to body as if applied from the body
         local point.
@@ -687,7 +691,7 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin, FilterElementsMixin):
         return self
 
     def each_arbiter(
-            self: B, func: Callable[..., None] = set_attrs, *args: Any, **kwargs: Any
+        self: B, func: Callable[..., None] = set_attrs, *args: Any, **kwargs: Any
     ) -> B:
         """Run func on each of the arbiters on this body.
 
@@ -827,6 +831,14 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin, FilterElementsMixin):
     #
     # Transforms
     #
+    def update(self: B, **kwargs) -> B:
+        """
+        Update variables in body.
+        """
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+        return self
+
     def axis(self, obj: Union[str, VecLike]) -> Vec2d:
         """
         Return axis from string
@@ -943,16 +955,17 @@ class BodyShape(Body):
     """
     Base class for bodies with a single shape.
     """
+
     shape: "Shape"
 
     # Properties
     radius: float = sk.delegate_to("shape", mutable=True)
     area: float = sk.delegate_to("shape")
-    collision_type: int = sk.delegate_to("shape")
-    filter: "ShapeFilter" = sk.delegate_to("shape")
-    elasticity: float = sk.delegate_to("shape")
-    friction: float = sk.delegate_to("shape")
-    surface_velocity: Vec2d = sk.delegate_to("shape")
+    collision_type: int = sk.delegate_to("shape", mutable=True)
+    filter: "ShapeFilter" = sk.delegate_to("shape", mutable=True)
+    elasticity: float = sk.delegate_to("shape", mutable=True)
+    friction: float = sk.delegate_to("shape", mutable=True)
+    surface_velocity: Vec2d = sk.delegate_to("shape", mutable=True)
     bb: "BB" = sk.delegate_to("shape")
 
     # Methods
@@ -971,9 +984,9 @@ class BodyShape(Body):
 
     def _post_init(self):
         if (
-                self.body_type == Body.DYNAMIC
-                and self.mass == 0.0
-                and self.space is not None
+            self.body_type == Body.DYNAMIC
+            and self.mass == 0.0
+            and self.space is not None
         ):
             self.mass = self.shape.area
             self.moment = self.mass * self.radius_of_gyration_sqr()
@@ -994,7 +1007,7 @@ class CircleBody(BodyShape, Body):
 
 class PolyBody(BodyShape, Body):
     """
-    A body attached to a single circular shape.
+    A body attached to a single polygonal shape.
     """
 
     get_vertices = sk.delegate_to("shape")
@@ -1003,42 +1016,36 @@ class PolyBody(BodyShape, Body):
     @classmethod
     def _new_from_shape_factory(cls, mk_shape, *args, **kwargs):
         new = object.__new__(PolyBody)
-        super(PolyBody, new).__init__(**new._extract_options(kwargs))
+        Body.__init__(new, *args, **new._extract_options(kwargs))
+        # pprint(new.__dict__)
         new.shape = mk_shape(new, **kwargs)
         new._post_init()
         return new
 
     @classmethod
-    def new_box(cls,
-                size: Tuple[float, float] = (10, 10),
-                *args,
-                radius: float = 0.0,
-                **kwargs):
+    def new_box(cls, size: VecLike = (10, 10), *args, radius: float = 0.0, **kwargs):
         mk_box = lambda body, **opts: Poly.new_box(size, radius, body, **opts)
         return cls._new_from_shape_factory(mk_box, *args, **kwargs)
 
     @classmethod
-    def new_box(cls,
-                bb: "BB",
-                *args,
-                radius: float = 0.0,
-                **kwargs):
+    def new_box_bb(cls, bb: "BB", *args, radius: float = 0.0, **kwargs):
         mk_box = lambda body, **opts: Poly.new_box_bb(bb, radius, body, **opts)
         return cls._new_from_shape_factory(mk_box, *args, **kwargs)
 
     @classmethod
-    def new_regular_poly(cls,
-                         n: int,
-                         size: float,
-                         radius: float = 0.0,
-                         body: Optional["Body"] = None,
-                         *args,
-                         angle: float = 0.0,
-                         offset: VecLike = (0, 0),
-                         **kwargs, ):
-        mk_box = lambda body, **opts: Poly.new_regular_poly(n, size, radius, body,
-                                                            angle=angle, offset=offset,
-                                                            **opts)
+    def new_regular_poly(
+        cls,
+        n: int,
+        size: float,
+        radius: float = 0.0,
+        *args,
+        angle: float = 0.0,
+        offset: VecLike = (0, 0),
+        **kwargs,
+    ):
+        mk_box = lambda body, **opts: Poly.new_regular_poly(
+            n, size, radius, body, angle=angle, offset=offset, **opts
+        )
         return cls._new_from_shape_factory(mk_box, *args, **kwargs)
 
     def __init__(self, vertices, *args, radius=0, **kwargs):

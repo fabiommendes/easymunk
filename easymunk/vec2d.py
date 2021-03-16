@@ -29,13 +29,11 @@ vectors, for example to define gravity vector in a space. However, pymunk is
 smart enough to convert tuples or tuple like objects to Vec2ds so you usually
 do not need to explicitly do conversions if you happen to have a tuple::
 
-    >>> import easymunk as mk
-    >>> from easymunk import Vec2d
     >>> space = mk.Space()
     >>> space.gravity
     Vec2d(0.0, 0.0)
 
-    >>> space.gravity = 3,5
+    >>> space.gravity = 3, 5
     >>> space.gravity
     Vec2d(3.0, 5.0)
 
@@ -50,13 +48,15 @@ More examples::
 __docformat__ = "reStructuredText"
 
 import numbers
-from typing import NamedTuple, Tuple, Any
+from typing import NamedTuple, Tuple, Any, TypeVar
+from numbers import Real
 
 from .math import sqrt, atan2, cos, sin, radians, degrees
 
 __all__ = ["Vec2d", "VecLike", "vec2d_from_cffi"]
 
-VecLike = Tuple[float, float]
+T = TypeVar("T", bound=float)
+VecLike = Tuple[T, T]
 
 
 class Vec2d(NamedTuple):
@@ -64,8 +64,8 @@ class Vec2d(NamedTuple):
     provides some high level functions.
     """
 
-    x: float
-    y: float
+    x: T
+    y: T
 
     @property
     def int_tuple(self) -> Tuple[int, int]:
@@ -381,6 +381,12 @@ class Vec2d(NamedTuple):
         """The inverse of cpvrotate"""
         u, v = other
         return Vec2d(self.x * u + self.y * v, self.y * u - self.x * v)
+
+    def copy(self, x=None, y=None):
+        """
+        Return a copy, possibly changing the x or y coordinates.
+        """
+        return Vec2d(x or self.x, y or self.y)
 
 
 def vec2d_from_cffi(cffi: Any) -> Vec2d:

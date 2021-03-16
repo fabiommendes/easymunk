@@ -167,13 +167,13 @@ class UnitTestSpace(unittest.TestCase):
             assert c in s.shapes
             return True
 
-        s.add_collision_handler(0, 0).pre_solve = pre_solve_add
+        s.collision_handler(0, 0).pre_solve = pre_solve_add
 
         s.step(0.1)
         assert b in s.bodies
         assert c in s.shapes
 
-        s.add_collision_handler(0, 0).pre_solve = pre_solve_remove
+        s.collision_handler(0, 0).pre_solve = pre_solve_remove
 
         s.step(0.1)
 
@@ -188,7 +188,7 @@ class UnitTestSpace(unittest.TestCase):
             space.remove(*arb.shapes)
             return True
 
-        s.add_collision_handler(0, 0).pre_solve = pre_solve
+        s.collision_handler(0, 0).pre_solve = pre_solve
 
         s.step(0.1)
 
@@ -538,7 +538,7 @@ class UnitTestSpace(unittest.TestCase):
             self.hits += h.data["test"]
             return True
 
-        h = s.add_collision_handler(0, 0)
+        h = s.collision_handler(0, 0)
         h.data["test"] = 1
         h.begin = begin
 
@@ -561,7 +561,7 @@ class UnitTestSpace(unittest.TestCase):
             def begin(arb: p.Arbiter, space: p.Space, data: Any) -> bool:
                 return  # type: ignore
 
-            s.add_collision_handler(0, 0).begin = begin
+            s.collision_handler(0, 0).begin = begin
             s.step(0.1)
 
             assert w is not None
@@ -585,7 +585,7 @@ class UnitTestSpace(unittest.TestCase):
             d["test"] = data["test"]
             return True
 
-        h = s.add_collision_handler(0, 1)
+        h = s.collision_handler(0, 1)
         h.data["test"] = 1
         h.pre_solve = pre_solve
         s.step(0.1)
@@ -605,7 +605,7 @@ class UnitTestSpace(unittest.TestCase):
         def pre_solve(arb: p.Arbiter, space: p.Space, data: Any) -> bool:
             return  # type: ignore
 
-        s.add_collision_handler(0, 0).pre_solve = pre_solve
+        s.collision_handler(0, 0).pre_solve = pre_solve
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
@@ -622,7 +622,7 @@ class UnitTestSpace(unittest.TestCase):
         def post_solve(arb: p.Arbiter, space: p.Space, data: Any) -> None:
             self.hit += 1
 
-        self.s.add_collision_handler(0, 0).post_solve = post_solve
+        self.s.collision_handler(0, 0).post_solve = post_solve
         self.s.step(0.1)
         assert self.hit == 1
         self._tearDown()
@@ -647,7 +647,7 @@ class UnitTestSpace(unittest.TestCase):
             nonlocal separated
             separated = data["test"]
 
-        h = s.add_collision_handler(0, 0)
+        h = s.collision_handler(0, 0)
         h.data["test"] = True
         h.separate = separate
 
@@ -668,15 +668,15 @@ class UnitTestSpace(unittest.TestCase):
             s.add(p.Circle(2, body=s.static_body))
             s.remove(c1)
 
-        s.add_default_collision_handler().separate = separate
+        s.default_collision_handler().separate = separate
 
         s.step(1)
         s.remove(c1)
 
     def testCollisionHandlerKeyOrder(self) -> None:
         s = p.Space()
-        h1 = s.add_collision_handler(1, 2)
-        h2 = s.add_collision_handler(2, 1)
+        h1 = s.collision_handler(1, 2)
+        h2 = s.collision_handler(2, 1)
 
         assert h1 == h2
 
@@ -695,7 +695,7 @@ class UnitTestSpace(unittest.TestCase):
             d["space"] = space  # type: ignore
             return True
 
-        s.add_wildcard_collision_handler(1).pre_solve = pre_solve
+        s.wildcard_collision_handler(1).pre_solve = pre_solve
         s.step(0.1)
 
         assert {} == d
@@ -724,7 +724,7 @@ class UnitTestSpace(unittest.TestCase):
             d["space"] = space  # type: ignore
             return True
 
-        s.add_default_collision_handler().pre_solve = pre_solve
+        s.default_collision_handler().pre_solve = pre_solve
         s.step(0.1)
 
         assert {c1, c2} == set(d["shapes"])
@@ -742,10 +742,10 @@ class UnitTestSpace(unittest.TestCase):
         self.calls = 0
 
         def callback(
-                space: p.Space,
-                key: Any,
-                shapes: Sequence[Shape],
-                test_self: "UnitTestSpace",
+            space: p.Space,
+            key: Any,
+            shapes: Sequence[Shape],
+            test_self: "UnitTestSpace",
         ) -> None:
             for shape in shapes:
                 s.remove(shape)
@@ -757,7 +757,7 @@ class UnitTestSpace(unittest.TestCase):
             space.add_post_step_callback(callback, 0, arb.shapes, test_self=self)
             return True
 
-        ch = s.add_collision_handler(0, 0).pre_solve = pre_solve
+        ch = s.collision_handler(0, 0).pre_solve = pre_solve
 
         s.step(0.1)
         assert [] == s.shapes
@@ -848,7 +848,7 @@ class UnitTestSpace(unittest.TestCase):
     def testDeepCopyMethods(self) -> None:
         self._testCopyMethod(lambda x: copy.deepcopy(x))
 
-    @pytest.mark.skip('still segfaulting')
+    @pytest.mark.skip("still segfaulting")
     def testCopyMethods(self) -> None:
         self._testCopyMethod(lambda x: x.copy())
 
@@ -878,16 +878,16 @@ class UnitTestSpace(unittest.TestCase):
         j2 = PinJoint(s.static_body, b2)
         s.add(j1, j2)
 
-        h = s.add_default_collision_handler()
+        h = s.default_collision_handler()
         h.begin = f1
 
-        h = s.add_wildcard_collision_handler(1)
+        h = s.wildcard_collision_handler(1)
         h.pre_solve = f1
 
-        h = s.add_collision_handler(1, 2)
+        h = s.collision_handler(1, 2)
         h.post_solve = f1
 
-        h = s.add_collision_handler(3, 4)
+        h = s.collision_handler(3, 4)
         h.separate = f1
 
         s2 = copy_func(s)
@@ -912,25 +912,25 @@ class UnitTestSpace(unittest.TestCase):
         self.assertIn(s2.static_body, ja)
 
         # Assert collision handlers
-        h2 = s2.add_default_collision_handler()
+        h2 = s2.default_collision_handler()
         self.assertIsNotNone(h2.begin)
         self.assertIsNone(h2.pre_solve)
         self.assertIsNone(h2.post_solve)
         self.assertIsNone(h2.separate)
 
-        h2 = s2.add_wildcard_collision_handler(1)
+        h2 = s2.wildcard_collision_handler(1)
         self.assertIsNone(h2.begin)
         self.assertIsNotNone(h2.pre_solve)
         self.assertIsNone(h2.post_solve)
         self.assertIsNone(h2.separate)
 
-        h2 = s2.add_collision_handler(1, 2)
+        h2 = s2.collision_handler(1, 2)
         self.assertIsNone(h2.begin)
         self.assertIsNone(h2.pre_solve)
         self.assertIsNotNone(h2.post_solve)
         self.assertIsNone(h2.separate)
 
-        h2 = s2.add_collision_handler(3, 4)
+        h2 = s2.collision_handler(3, 4)
         self.assertIsNone(h2.begin)
         self.assertIsNone(h2.pre_solve)
         self.assertIsNone(h2.post_solve)

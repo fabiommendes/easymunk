@@ -28,7 +28,7 @@ class UnitTestArbiter(unittest.TestCase):
             arb.restitution = 1
             return True
 
-        s.add_collision_handler(1, 2).pre_solve = pre_solve
+        s.collision_handler(1, 2).pre_solve = pre_solve
 
         for x in range(10):
             s.step(0.1)
@@ -57,7 +57,7 @@ class UnitTestArbiter(unittest.TestCase):
             arb.friction = 1
             return True
 
-        s.add_collision_handler(1, 2).pre_solve = pre_solve
+        s.collision_handler(1, 2).pre_solve = pre_solve
 
         for x in range(10):
             s.step(0.1)
@@ -89,7 +89,7 @@ class UnitTestArbiter(unittest.TestCase):
             # TODO: add assert check that setting surface_velocity has any effect
             return True
 
-        s.add_collision_handler(1, 2).pre_solve = pre_solve
+        s.collision_handler(1, 2).pre_solve = pre_solve
 
         for x in range(5):
             s.step(0.1)
@@ -147,7 +147,7 @@ class UnitTestArbiter(unittest.TestCase):
 
             return True
 
-        s.add_default_collision_handler().pre_solve = pre_solve
+        s.default_collision_handler().pre_solve = pre_solve
 
         s.step(0.1)
 
@@ -175,7 +175,7 @@ class UnitTestArbiter(unittest.TestCase):
             self.assertAlmostEqual(arb.total_impulse.y, 4.3438914027)
             self.post_solve_done = True
 
-        s.add_collision_handler(1, 2).post_solve = post_solve
+        s.collision_handler(1, 2).post_solve = post_solve
 
         s.step(0.1)
 
@@ -202,7 +202,7 @@ class UnitTestArbiter(unittest.TestCase):
             self.assertAlmostEqual(arb.total_ke, 43.438914027)
             return True
 
-        s.add_collision_handler(1, 2).post_solve = post_solve
+        s.collision_handler(1, 2).post_solve = post_solve
 
         s.step(0.1)
 
@@ -227,7 +227,7 @@ class UnitTestArbiter(unittest.TestCase):
             self.assertTrue(arb.is_first_contact)
             return True
 
-        s.add_collision_handler(1, 2).pre_solve = pre_solve1
+        s.collision_handler(1, 2).pre_solve = pre_solve1
 
         s.step(0.1)
 
@@ -235,7 +235,7 @@ class UnitTestArbiter(unittest.TestCase):
             self.assertFalse(arb.is_first_contact)
             return True
 
-        s.add_collision_handler(1, 2).pre_solve = pre_solve2
+        s.collision_handler(1, 2).pre_solve = pre_solve2
 
         s.step(0.1)
 
@@ -255,7 +255,7 @@ class UnitTestArbiter(unittest.TestCase):
             self.assertAlmostEqual(arb.normal.y, 0.89442719)
             return True
 
-        s.add_default_collision_handler().pre_solve = pre_solve1
+        s.default_collision_handler().pre_solve = pre_solve1
 
         s.step(0.1)
 
@@ -282,7 +282,7 @@ class UnitTestArbiter(unittest.TestCase):
             self.called1 = True
             self.assertFalse(arb.is_removal)
 
-        s.add_collision_handler(1, 2).separate = separate1
+        s.collision_handler(1, 2).separate = separate1
 
         for x in range(10):
             s.step(0.1)
@@ -298,7 +298,7 @@ class UnitTestArbiter(unittest.TestCase):
             self.assertTrue(arb.is_removal)
             return True
 
-        s.add_collision_handler(1, 2).separate = separate2
+        s.collision_handler(1, 2).separate = separate2
         s.remove(b1, c1)
 
         self.assertTrue(self.called2)
@@ -329,7 +329,7 @@ class UnitTestArbiter(unittest.TestCase):
             self.assertEqual(arb.shapes[1], c2)
             return True
 
-        s.add_collision_handler(1, 2).pre_solve = pre_solve
+        s.collision_handler(1, 2).pre_solve = pre_solve
 
         s.step(0.1)
         self.assertTrue(self.called)

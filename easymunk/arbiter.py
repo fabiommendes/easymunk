@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from .shapes import Shape
 
 
-class Arbiter(object):
+class Arbiter:
     """The Arbiter object encapsulates a pair of colliding shapes and all of
     the data about their collision.
 
@@ -25,6 +25,9 @@ class Arbiter(object):
         destroyed! Use them within the callback where they are given to you
         and then forget about them or copy out the information you need from
         them.
+
+    .. note::
+        You should never need to create an instance of this class directly.
     """
 
     def _get_contact_point_set(self) -> ContactPointSet:
@@ -164,16 +167,16 @@ class Arbiter(object):
             raise ValueError("invalid shape in arbiter")
         return a, b
 
+    @property
+    def space(self):
+        """
+        The space the arbiter is attached to.
+        """
+        return self._space
+
     def _shape_from_cffi(self, space: "Space", _) -> "Shape":
         return NotImplemented
 
     def __init__(self, _arbiter: ffi.CData, space: "Space") -> None:
-        """Initialize an Arbiter object from the Chipmunk equivalent struct
-        and the Space.
-
-        .. note::
-            You should never need to create an instance of this class directly.
-        """
-
         self._cffi_ref = _arbiter
         self._space = space

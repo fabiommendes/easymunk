@@ -19,11 +19,7 @@ from weakref import WeakSet
 import sidekick.api as sk
 
 from ._chipmunk_cffi import ffi, lib
-from ._mixins import (
-    PickleMixin,
-    HasBBMixin,
-    FilterElementsMixin,
-)
+from ._mixins import PickleMixin, HasBBMixin
 from .arbiter import Arbiter
 from .collections import Shapes, Constraints
 from .shapes import MakeShapeMixin
@@ -48,7 +44,7 @@ VelocityFunc = Callable[["Body", Vec2d, float, float], None]
 BODY_TYPES = {}
 
 
-class Body(MakeShapeMixin, PickleMixin, HasBBMixin, FilterElementsMixin):
+class Body(MakeShapeMixin, PickleMixin, HasBBMixin):
     """A rigid body
 
     * Use forces to modify the rigid bodies if possible. This is likely to be

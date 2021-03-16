@@ -23,7 +23,7 @@ from typing import (
 import sidekick.api as sk
 
 from . import _chipmunk_cffi
-from ._mixins import PickleMixin, FilterElementsMixin
+from ._mixins import PickleMixin
 from .arbiter import Arbiter
 from .body import Body
 from .collections import Shapes, Bodies, Constraints
@@ -86,27 +86,18 @@ COLLISION_HANDLER_KWARGS = """
 """
 
 
-class Space(PickleMixin, FilterElementsMixin):
+class Space(PickleMixin):
     """Spaces are the basic unit of simulation. You add rigid bodies, shapes
     and joints to it and then step them all forward together through time.
 
-    A Space can be copied and pickled. Note that any post step callbacks are
-    not copied. Also note that some internal collision cache data is not copied,
-    which can make the simulation a bit unstable the first few steps of the
-    fresh copy.
+    A Space can be copied and pickled. Note that some internal collision cache
+    data is not copied, which can make the simulation a bit unstable the
+    first few steps of the fresh copy.
 
-    Custom properties set on the space will also be copied/pickled.
-
-    Any collision handlers will also be copied/pickled. Note that depending on
+    Custom properties set on the space will also be copied/pickled and any
+    collision handlers will also be copied/pickled. Note that depending on
     the pickle protocol used there are some restrictions on what functions can
     be copied/pickled.
-
-    Example::
-
-    >>> import easymunk, pickle
-    >>> space = easymunk.Space()
-    >>> space2 = space.copy()
-    >>> space3 = pickle.loads(pickle.dumps(space))
     """
 
     _pickle_format_version = 0

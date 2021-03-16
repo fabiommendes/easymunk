@@ -1,7 +1,6 @@
 __docformat__ = "reStructuredText"
 
 import logging
-import pickle
 import platform
 import weakref
 from contextlib import contextmanager
@@ -48,6 +47,7 @@ from .vec2d import Vec2d, vec2d_from_cffi, VecLike
 if TYPE_CHECKING:
     from .bb import BB
     from .space_debug_draw_options import SpaceDebugDrawOptions
+    import easymunk as mk
 
 cp = _chipmunk_cffi.lib
 ffi = _chipmunk_cffi.ffi
@@ -56,7 +56,8 @@ DEBUG_DRAW_PYGAME = sk.import_later(".pygame:DrawOptions", package=__package__)
 DEBUG_DRAW_PYXEL = sk.import_later(".pyxel:DrawOptions", package=__package__)
 DEBUG_DRAW_PYGLET = sk.import_later(".pyglet:DrawOptions", package=__package__)
 
-_AddableObjects = Union[Body, Shape, Constraint]
+ColType = int
+AddableObjects = Union[Body, Shape, Constraint]
 S = TypeVar("S", bound="Space")
 
 POINT_QUERY_ARGS = """
@@ -70,6 +71,18 @@ POINT_QUERY_ARGS = """
                 considered a match.
             filter:
                 Only pick shapes matching the filter.
+"""
+
+COLLISION_HANDLER_KWARGS = """
+    Keyword Args:
+            begin:
+                Handler callback called before the first frame of collision
+            pre_solve:
+                Handler callback called before each frame
+            post_solve:
+                Handler callback called after each frame
+            separate:
+                Handler callback called after the final frame
 """
 
 
@@ -95,8 +108,9 @@ class Space(PickleMixin, FilterElementsMixin):
     >>> space2 = space.copy()
     >>> space3 = pickle.loads(pickle.dumps(space))
     """
+
     _pickle_format_version = 0
-    _pickle_args = "threaded",
+    _pickle_args = ("threaded",)
     _pickle_kwargs = (
         "iterations",
         "gravity",
@@ -111,7 +125,7 @@ class Space(PickleMixin, FilterElementsMixin):
     _pickle_meta_hide = {
         "_add_later",
         "_bodies",
-        '_cffi_ref',
+        "_cffi_ref",
         "_constraints",
         "_forces",
         "_handlers",
@@ -125,7 +139,7 @@ class Space(PickleMixin, FilterElementsMixin):
         "shapes",
         "static_body",
     }
-    _init_kwargs = {*_pickle_args, *_pickle_kwargs}
+    _init_kwargs = {*_pickle_args, *_pickle_kwargs, "elasticity", "friction"}
 
     iterations: int
     iterations = property(  # type: ignore
@@ -174,7 +188,9 @@ class Space(PickleMixin, FilterElementsMixin):
     idle_speed_threshold: float
     idle_speed_threshold = property(  # type: ignore
         lambda self: cp.cpSpaceGetIdleSpeedThreshold(self._cffi_ref),
-        lambda self, value: void(cp.cpSpaceSetIdleSpeedThreshold(self._cffi_ref, value)),
+        lambda self, value: void(
+            cp.cpSpaceSetIdleSpeedThreshold(self._cffi_ref, value)
+        ),
         doc="""Speed threshold for a body to be considered idle.
 
         The default value of 0 means the space estimates a good threshold
@@ -184,7 +200,9 @@ class Space(PickleMixin, FilterElementsMixin):
     sleep_time_threshold: float
     sleep_time_threshold = property(  # type: ignore
         lambda self: cp.cpSpaceGetSleepTimeThreshold(self._cffi_ref),
-        lambda self, value: void(cp.cpSpaceSetSleepTimeThreshold(self._cffi_ref, value)),
+        lambda self, value: void(
+            cp.cpSpaceSetSleepTimeThreshold(self._cffi_ref, value)
+        ),
         doc="""Time a group of bodies must remain idle in order to fall
         asleep.
 
@@ -225,7 +243,8 @@ class Space(PickleMixin, FilterElementsMixin):
     collision_persistence = property(  # type: ignore
         lambda self: cp.cpSpaceGetCollisionPersistence(self._cffi_ref),
         lambda self, value: void(
-            cp.cpSpaceSetCollisionPersistence(self._cffi_ref, value)),
+            cp.cpSpaceSetCollisionPersistence(self._cffi_ref, value)
+        ),
         doc="""The number of frames the space keeps collision solutions
         around for.
 
@@ -394,8 +413,8 @@ class Space(PickleMixin, FilterElementsMixin):
         self._shapes: Dict[int, Shape] = {}
         self._bodies: Set[Body] = set()
         self._constraints: Set[Constraint] = set()
-        self._add_later: Set[_AddableObjects] = set()
-        self._remove_later: Set[_AddableObjects] = set()
+        self._add_later: Set[AddableObjects] = set()
+        self._remove_later: Set[AddableObjects] = set()
         self._forces: List[Any] = []  # TODO: Implement support for forces
         self._locked: bool = False
 
@@ -414,8 +433,8 @@ class Space(PickleMixin, FilterElementsMixin):
             "forces": [f for f in self._forces if f not in exclude],
             "later": list(self._add_later),
         }
-        objects["bodies"].append(self.__dict__.get('static_body'))
-        meta['$objects'] = objects
+        objects["bodies"].append(self.__dict__.get("static_body"))
+        meta["$objects"] = objects
         meta["$handlers"] = {k: v.as_dict() for k, v in self._handlers.items()}
         return self._pickle_format_version, args, meta
 
@@ -423,7 +442,7 @@ class Space(PickleMixin, FilterElementsMixin):
         version, args, meta = state
         if version != self._pickle_format_version:
             expect = self._pickle_format_version
-            raise ValueError(f'invalid pickle version: {version}, expect {expect}.')
+            raise ValueError(f"invalid pickle version: {version}, expect {expect}.")
 
         # Keep for later
         objects = meta.pop("$objects")
@@ -444,11 +463,11 @@ class Space(PickleMixin, FilterElementsMixin):
         # Register handlers
         for k, data in handlers.items():
             if k is None:
-                handler = self.add_default_collision_handler()
+                handler = self.default_collision_handler()
             elif isinstance(k, tuple):
-                handler = self.add_collision_handler(*k)
+                handler = self.collision_handler(*k)
             else:
-                handler = self.add_wildcard_collision_handler(k)
+                handler = self.wildcard_collision_handler(k)
             handler.update(data)
 
     def _iter_bodies(self) -> Iterator["Body"]:
@@ -467,7 +486,7 @@ class Space(PickleMixin, FilterElementsMixin):
         yield self
         self._locked = locked
 
-    def add(self: S, *objs: _AddableObjects, add_children=True) -> S:
+    def add(self: S, *objs: AddableObjects, add_children=True) -> S:
         """Add one or many shapes, bodies or constraints (joints) to the space
 
         Unlike Chipmunk and earlier versions of pymunk its now allowed to add
@@ -505,7 +524,7 @@ class Space(PickleMixin, FilterElementsMixin):
 
         return self
 
-    def remove(self: S, *objs: _AddableObjects, remove_children=True) -> S:
+    def remove(self: S, *objs: AddableObjects, remove_children=True) -> S:
         """Remove one or many shapes, bodies or constraints from the space
 
         If called from callback during update step, the removal will not be
@@ -518,7 +537,7 @@ class Space(PickleMixin, FilterElementsMixin):
         """
         return self._remove_or_discard(objs, remove_children, False)
 
-    def discard(self: S, *objs: _AddableObjects, remove_children=True) -> S:
+    def discard(self: S, *objs: AddableObjects, remove_children=True) -> S:
         """
         Discard objects from space.
 
@@ -532,7 +551,6 @@ class Space(PickleMixin, FilterElementsMixin):
             return
 
         ids = {id(obj): obj for obj in objs}
-        with open('out.log', 'a') as fd: fd.write(f'{ids}, {self._locked}\n')
         if self._locked:
             self._remove_later.update(objs)
             return self
@@ -676,8 +694,9 @@ class Space(PickleMixin, FilterElementsMixin):
         Setting count to ~10x the number of objects in the space is probably a
         good starting point. Tune from there if necessary.
 
-        :param dim: the size of the hash cells
-        :param count: the suggested minimum number of cells in the hash table
+        Args:
+            dim: the size of the hash cells
+            count: the suggested minimum number of cells in the hash table
         """
         cp.cpSpaceUseSpatialHash(self._cffi_ref, dim, count)
         return self
@@ -693,16 +712,16 @@ class Space(PickleMixin, FilterElementsMixin):
         calling it 100 times with a dt of 0.01 even if the end result is
         that the simulation moved forward 100 units. Performing  multiple
         calls with a smaller dt creates a more stable and accurate
-        simulation. Therefor it sometimes make sense to have a little for loop
+        simulation. Therefore it sometimes make sense to have a little for loop
         around the step call, like in this example:
 
-        >>> import easymunk
-        >>> s = easymunk.Space()
+        >>> s = mk.Space()
         >>> steps = 10
         >>> for x in range(steps): # move simulation forward 0.1 seconds:
         ...     s.step(0.1 / steps)
 
-        :param dt: Time step length
+        Args:
+            dt: Time step length
         """
         try:
             self._locked = True
@@ -725,8 +744,8 @@ class Space(PickleMixin, FilterElementsMixin):
         self._post_step_callbacks = {}
         return self
 
-    def add_collision_handler(self, a: int, b: int) -> CollisionHandler:
-        """Return the :py:class:`CollisionHandler` for collisions between
+    def collision_handler(self, a: ColType, b: ColType, **kwargs) -> CollisionHandler:
+        f"""Define the :py:class:`CollisionHandler` for collisions between
         objects of type "a" and "b".
 
         Fill the desired collision callback functions, for details see the
@@ -738,21 +757,25 @@ class Space(PickleMixin, FilterElementsMixin):
         set to builtin callbacks that perform the default behavior (call the
         wildcard handlers, and accept all collisions).
 
-        :param int a: Collision type a
-        :param int b: Collision type b
+        Args:
+            a: Collision type a
+            b: Collision type b
 
-        :rtype: :py:class:`CollisionHandler`
+        {COLLISION_HANDLER_KWARGS}
         """
-        key = min(a, b), max(a, b)
-        if key in self._handlers:
-            return self._handlers[key]
 
-        ptr = cp.cpSpaceAddCollisionHandler(self._cffi_ref, a, b)
-        self._handlers[key] = handler = CollisionHandler(ptr, self)
+        key = min(a, b), max(a, b)
+        try:
+            handler = self._handlers[key]
+        except KeyError:
+            ptr = cp.cpSpaceAddCollisionHandler(self._cffi_ref, a, b)
+            self._handlers[key] = handler = CollisionHandler(ptr, self)
+
+        handler.update(kwargs)
         return handler
 
-    def add_wildcard_collision_handler(self, col_type: int) -> CollisionHandler:
-        """Add a wildcard collision handler for given collision type.
+    def wildcard_collision_handler(self, col_type: int, **kwargs) -> CollisionHandler:
+        f"""Define the wildcard collision handler for given collision type.
 
         This handler will be used any time an object with this type collides
         with another object, regardless of its type. A good example is a
@@ -768,39 +791,47 @@ class Space(PickleMixin, FilterElementsMixin):
         :py:func:`~CollisionHandler.post_solve` and
         :py:func:`~CollisionHandler.separate`.
 
-        :param int col_type: Collision type
-        :rtype: :py:class:`CollisionHandler`
+        Args:
+            col_type: Collision type
+
+        {COLLISION_HANDLER_KWARGS}
         """
 
-        if col_type in self._handlers:
+        try:
             return self._handlers[col_type]
+        except KeyError:
+            ptr = cp.cpSpaceAddWildcardHandler(self._cffi_ref, col_type)
+            self._handlers[col_type] = handler = CollisionHandler(ptr, self)
 
-        ptr = cp.cpSpaceAddWildcardHandler(self._cffi_ref, col_type)
-        self._handlers[col_type] = handler = CollisionHandler(ptr, self)
+        handler.update(kwargs)
         return handler
 
-    def add_default_collision_handler(self) -> CollisionHandler:
-        """Return a reference to the default collision handler or that is
+    def default_collision_handler(self, **kwargs) -> CollisionHandler:
+        f"""Return a reference to the default collision handler or that is
         used to process all collisions that don't have a more specific
         handler.
 
         The default behavior for each of the callbacks is to call
         the wildcard handlers, ANDing their return values together if
         applicable.
-        """
-        if None in self._handlers:
-            return self._handlers[None]
 
-        ptr = cp.cpSpaceAddDefaultCollisionHandler(self._cffi_ref)
-        self._handlers[None] = handler = CollisionHandler(ptr, self)
+        {COLLISION_HANDLER_KWARGS}
+        """
+
+        try:
+            return self._handlers[None]
+        except KeyError:
+            ptr = cp.cpSpaceAddDefaultCollisionHandler(self._cffi_ref)
+            self._handlers[None] = handler = CollisionHandler(ptr, self)
+        handler.update(kwargs)
         return handler
 
     def add_post_step_callback(
-            self,
-            callback_function: Callable[..., None],
-            key: Hashable,
-            *args: Any,
-            **kwargs: Any,
+        self,
+        callback_function: Callable[..., None],
+        key: Hashable,
+        *args: Any,
+        **kwargs: Any,
     ) -> bool:
         """Add a function to be called last in the next simulation step.
 
@@ -842,7 +873,7 @@ class Space(PickleMixin, FilterElementsMixin):
 
     # noinspection PyShadowingBuiltins
     def point_query(
-            self, point: VecLike, distance: float = 0, filter: ShapeFilter = None
+        self, point: VecLike, distance: float = 0, filter: ShapeFilter = None
     ) -> List[PointQueryInfo]:
         f"""Query space at point for shapes within the given distance range.
 
@@ -876,7 +907,7 @@ class Space(PickleMixin, FilterElementsMixin):
 
     # noinspection PyShadowingBuiltins
     def point_query_nearest(
-            self, point: VecLike, distance: float = 0.0, filter: ShapeFilter = None
+        self, point: VecLike, distance: float = 0.0, filter: ShapeFilter = None
     ) -> Optional[PointQueryInfo]:
         f"""Query space at point the nearest shape within the given distance
         range.
@@ -905,11 +936,11 @@ class Space(PickleMixin, FilterElementsMixin):
 
     # noinspection PyShadowingBuiltins
     def segment_query(
-            self,
-            start: VecLike,
-            end: VecLike,
-            radius: float = 0.0,
-            filter: ShapeFilter = None,
+        self,
+        start: VecLike,
+        end: VecLike,
+        radius: float = 0.0,
+        filter: ShapeFilter = None,
     ) -> List[SegmentQueryInfo]:
         """Query space along the line segment from start to end with the
         given radius.
@@ -944,11 +975,11 @@ class Space(PickleMixin, FilterElementsMixin):
 
     # noinspection PyShadowingBuiltins
     def segment_query_first(
-            self,
-            start: Tuple[float, float],
-            end: Tuple[float, float],
-            radius: float = 0.0,
-            filter: ShapeFilter = None,
+        self,
+        start: Tuple[float, float],
+        end: Tuple[float, float],
+        radius: float = 0.0,
+        filter: ShapeFilter = None,
     ) -> Optional[SegmentQueryInfo]:
         """Query space along the line segment from start to end with the
         given radius.
@@ -959,8 +990,9 @@ class Space(PickleMixin, FilterElementsMixin):
 
         info = ffi.new("cpSegmentQueryInfo *")
         filter = filter or ShapeFilter()
-        ptr = cp.cpSpaceSegmentQueryFirst(self._cffi_ref, start, end, radius, filter,
-                                          info)
+        ptr = cp.cpSpaceSegmentQueryFirst(
+            self._cffi_ref, start, end, radius, filter, info
+        )
         shape = shape_from_cffi(self, ptr)
         if shape is not None:
             pos = Vec2d(info.point.x, info.point.y)
@@ -1010,7 +1042,7 @@ class Space(PickleMixin, FilterElementsMixin):
         return query_hits
 
     def debug_draw(
-            self: S, options: Union["SpaceDebugDrawOptions", str, None] = None
+        self: S, options: Union["SpaceDebugDrawOptions", str, None] = None
     ) -> S:
         """Debug draw the current state of the space using the supplied drawing
         options.

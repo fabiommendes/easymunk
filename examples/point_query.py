@@ -25,7 +25,7 @@ def main():
     space = easymunk.Space()
     space.gravity = Vec2d(0.0, 900.0)
     draw_options = easymunk.pygame.DrawOptions(screen)
-    ## Balls
+    # Balls
     balls = []
 
     # walls
@@ -75,14 +75,14 @@ def main():
             space.remove(ball, ball.body)
             balls.remove(ball)
 
-        mouse_pos = easymunk.pygame.get_mouse_pos(screen)
+        mouse_pos = draw_options.mouse_pos()
 
         shape = space.point_query_nearest(
             mouse_pos, float("inf"), easymunk.ShapeFilter()
         ).shape
         if shape is not None and isinstance(shape, easymunk.Circle):
             r = shape.radius + 4
-            p = easymunk.pygame.to_pygame(shape.body.position, screen)
+            p = draw_options.to_pygame(shape.body.position)
             pygame.draw.circle(screen, pygame.Color("red"), p, int(r), 2)
 
         # Update physics

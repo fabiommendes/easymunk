@@ -24,17 +24,15 @@ class Tangram:
         a = Vec2d(20, 30)
         b = Vec2d(self.width - 20, 70)
         body = self.space.static_body
-        line = lambda u, v: mk.Segment(u, v, radius=10.0, body=body, friction=1.0)
-        shapes = [line(a, b), line(a, a + (-10, 200)), line(b, b + (10, 200))]
-        self.space.add(*shapes)
+        line = lambda u, v: body.create_segment(u, v, radius=10.0, friction=1.0)
+        line(a, b), line(a, a + (-10, 200)), line(b, b + (10, 200))
 
         # Actions
         self.step = 0
         self.next_action = iter(self.actions()).__next__
 
         # Draw options for drawing
-        util.positive_y_is_up = True
-        self.draw_options = mk.pygame.DrawOptions(self.screen)
+        self.draw_options = mk.pygame.DrawOptions(self.screen, flip_y=True)
 
     def actions(self):
         L = 100

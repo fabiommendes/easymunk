@@ -8,4 +8,4 @@ about your coordinate system and not in any way optimized.
 """
 __docformat__ = "reStructuredText"
 
-from .draw_options import DrawOptions, to_pygame, get_mouse_pos, set_y_positive
+from .draw_options import DrawOptions

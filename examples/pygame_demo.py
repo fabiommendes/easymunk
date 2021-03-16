@@ -21,15 +21,13 @@ def main():
     clock = pygame.time.Clock()
     font = pygame.font.SysFont("Arial", 16)
 
-    easymunk.pygame.positive_y_is_up = True
     space = easymunk.Space()
-
     captions = shapes_for_draw_demos.fill_space(space)
 
     # Draw it
     screen.fill(pygame.Color("white"))
 
-    options = easymunk.pygame.DrawOptions(screen)
+    options = easymunk.pygame.DrawOptions(screen, flip_y=True)
     space.debug_draw(options)
     # easymunk.pygame_util.draw(screen, space)
 

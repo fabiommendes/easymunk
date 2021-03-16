@@ -42,7 +42,7 @@ elif sys.argv[1] == "/i":  # interactive
     is_interactive = True
 
 
-import easymunk as pm
+import easymunk as mk
 from easymunk import Vec2d
 
 
@@ -110,10 +110,10 @@ def main():
     font = pygame.font.Font(None, 16)
 
     # Physics stuff
-    space = pm.Space()
+    space = mk.Space()
     space.gravity = (0.0, -1900.0)
     space.damping = 0.999  # to prevent it from blowing up.
-    mouse_body = pm.Body(body_type=pm.Body.KINEMATIC)
+    mouse_body = mk.Body(body_type=mk.Body.KINEMATIC)
 
     bodies = []
     for x in range(-100, 150, 50):
@@ -121,15 +121,15 @@ def main():
         offset_y = height / 2
         mass = 10
         radius = 25
-        moment = pm.moment_for_circle(mass, 0, radius, (0, 0))
-        body = pm.Body(mass, moment)
+        moment = mk.moment_for_circle(mass, 0, radius, (0, 0))
+        body = mk.Body(mass, moment)
         body.position = (x, -125 + offset_y)
         body.start_position = Vec2d(*body.position)
-        shape = pm.Circle(radius, body=body)
+        shape = mk.Circle(radius, body=body)
         shape.elasticity = 0.9999999
         space.add(body, shape)
         bodies.append(body)
-        pj = pm.PinJoint(space.static_body, body, (x, 125 + offset_y), (0, 0))
+        pj = mk.PinJoint(space.static_body, body, (x, 125 + offset_y), (0, 0))
         space.add(pj)
 
     reset_bodies(space)
@@ -174,11 +174,11 @@ def main():
                 if selected is not None:
                     space.remove(selected)
                 p = from_pygame(Vec2d(*event.pos))
-                hit = space.point_query_nearest(p, 0, pm.ShapeFilter())
+                hit = space.point_query_nearest(p, 0, mk.ShapeFilter())
                 if hit is not None:
                     shape = hit.shape
                     rest_length = mouse_body.position.distance(shape.body.position)
-                    ds = pm.DampedSpring(
+                    ds = mk.DampedSpring(
                         mouse_body, shape.body, (0, 0), (0, 0), rest_length, 1000, 10
                     )
                     space.add(ds)

@@ -51,11 +51,11 @@ def main():
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_p:
                 pygame.image.save(screen, "damped_rotary_sprint_pointer.png")
             elif event.type == pygame.MOUSEMOTION:
-                mouse_pos = easymunk.pygame.get_mouse_pos(screen)
+                mouse_pos = draw_options.mouse_pos()
                 pointer_body.position = mouse_pos
                 pointer_body.angle = (pointer_body.position - gun_body.position).angle
 
-            # to easily find good values for the damped rortary spring
+            # to easily find good values for the damped rotary spring
             # as with most simulations done with pymunk, the imporant thing
             # is that it looks good, not the exact parameters
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_q:

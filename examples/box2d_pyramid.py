@@ -50,8 +50,7 @@ class PyramidDemo:
             x += deltaX
 
         # draw options for drawing
-        easymunk.pygame.positive_y_is_up = True
-        self.draw_options = easymunk.pygame.DrawOptions(self.screen)
+        self.draw_options = easymunk.pygame.DrawOptions(self.screen, flip_y=True)
 
     def run(self):
         while self.running:

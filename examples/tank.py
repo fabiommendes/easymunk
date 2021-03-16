@@ -16,7 +16,7 @@ def update(space, dt, surface):
     global tank_control_body
 
     mpos = pygame.mouse.get_pos()
-    mouse_pos = easymunk.pygame.from_pygame(Vec2d(*mpos), surface)
+    mouse_pos = draw_options.from_pygame(Vec2d(*mpos))
 
     mouse_delta = mouse_pos - tank_body.position
     turn = tank_body.rotation_vector.cpvunrotate(mouse_delta).angle

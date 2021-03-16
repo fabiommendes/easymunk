@@ -99,7 +99,6 @@ def main():
         space.add(body, shape)
 
     draw_options = easymunk.pygame.DrawOptions(screen)
-    easymunk.pygame.positive_y_is_up = False
 
     fps = 60
     while True:

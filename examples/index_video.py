@@ -31,7 +31,6 @@ space.gravity = 0, 900
 space.sleep_time_threshold = 0.3
 
 draw_options = easymunk.pygame.DrawOptions(screen)
-easymunk.pygame.positive_y_is_up = False
 
 # Generate geometry from pymunk logo image
 logo_img = pygame.image.load("pymunk_logo_sphinx.png")
@@ -40,7 +39,7 @@ logo_bb = easymunk.BB(0, 0, logo_img.get_width(), logo_img.get_height())
 
 def sample_func(point):
     try:
-        p = easymunk.pygame.to_pygame(point, logo_img)
+        p = draw_options.to_pygame(point, logo_img)
         color = logo_img.get_at(p)
 
         return color.a
@@ -261,7 +260,7 @@ while True:
     screen.blit(logo_img, (0, 0))
 
     for b in space.bodies:
-        p = easymunk.pygame.to_pygame(b.position, screen)
+        p = draw_options.to_pygame(b.position)
 
     pygame.display.flip()
 

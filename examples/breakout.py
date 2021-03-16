@@ -89,8 +89,7 @@ def main():
     font = pygame.font.SysFont("Arial", 16)
     # Physics stuff
     space = easymunk.Space()
-    easymunk.pygame.positive_y_is_up = True
-    draw_options = easymunk.pygame.DrawOptions(screen)
+    draw_options = easymunk.pygame.DrawOptions(screen, flip_y=True)
 
     # Game area
     # walls - the left-top-right walls

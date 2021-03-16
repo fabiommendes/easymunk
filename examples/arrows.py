@@ -142,16 +142,14 @@ def main():
         if keys[pygame.K_RIGHT]:
             cannon_body.position += Vec2d(1, 0) * speed
 
-        mouse_position = easymunk.pygame.from_pygame(
-            Vec2d(*pygame.mouse.get_pos()), screen
-        )
+        mouse_position = draw_options.mouse_pos()
         cannon_body.angle = (mouse_position - cannon_body.position).angle
+
         # move the unfired arrow together with the cannon
         arrow_body.position = cannon_body.position + Vec2d(
             cannon_shape.radius + 40, 0
         ).rotated(cannon_body.angle)
         arrow_body.angle = cannon_body.angle
-        # print(arrow_body.angle)
 
         for flying_arrow in flying_arrows:
             drag_constant = 0.0002

@@ -68,8 +68,7 @@ def main():
     # Physics stuff
     space = easymunk.Space()
     space.gravity = Vec2d(0, -1000)
-    easymunk.pygame.positive_y_is_up = True
-    draw_options = easymunk.pygame.DrawOptions(screen)
+    draw_options = easymunk.pygame.DrawOptions(screen, flip_y=True)
 
     # box walls
     static = [
@@ -295,7 +294,7 @@ def main():
         else:
             animation_offset = 32 * 0
         position = body.position + (-16, 28)
-        p = easymunk.pygame.to_pygame(position, screen)
+        p = draw_options.to_pygame(position)
         screen.blit(img, p, (animation_offset, direction_offset, 32, 48))
 
         # Did we land?
@@ -306,7 +305,7 @@ def main():
         else:
             landed_previous = False
         if landing["n"] > 0:
-            p = easymunk.pygame.to_pygame(landing["p"], screen)
+            p = draw_options.to_pygame(landing["p"])
             pygame.draw.circle(screen, pygame.Color("yellow"), p, 5)
             landing["n"] -= 1
 

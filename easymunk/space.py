@@ -17,7 +17,6 @@ from typing import (
     Tuple,
     Union,
     TypeVar,
-    Iterator,
 )
 
 import sidekick.api as sk
@@ -25,14 +24,14 @@ import sidekick.api as sk
 from . import _chipmunk_cffi
 from ._mixins import PickleMixin
 from .arbiter import Arbiter
-from .body import Body
+from .body import Body, CircleBody, SegmentBody, PolyBody
 from .collections import Shapes, Bodies, Constraints
 from .collision_handler import CollisionHandler
 from .constraints import Constraint
 from .contact_point_set import contact_point_set_from_cffi
 from .query_info import PointQueryInfo, SegmentQueryInfo, ShapeQueryInfo
 from .shape_filter import ShapeFilter
-from .shapes import Shape
+from .shapes import Shape, Circle, Segment, Poly, MakeShapeMixin
 from .util import (
     void,
     init_attributes,
@@ -59,6 +58,7 @@ DEBUG_DRAW_PYGLET = sk.import_later(".pyglet:DrawOptions", package=__package__)
 ColType = int
 AddableObjects = Union[Body, Shape, Constraint]
 S = TypeVar("S", bound="Space")
+SHAPE_TO_BODY = {Circle: CircleBody, Segment: SegmentBody, Poly: PolyBody}
 
 POINT_QUERY_ARGS = """
         Args:
@@ -86,7 +86,7 @@ COLLISION_HANDLER_KWARGS = """
 """
 
 
-class Space(PickleMixin):
+class Space(MakeShapeMixin, PickleMixin):
     """Spaces are the basic unit of simulation. You add rigid bodies, shapes
     and joints to it and then step them all forward together through time.
 
@@ -272,7 +272,7 @@ class Space(PickleMixin):
         """,
     )
 
-    @sk.lazy
+    @property
     def shapes(self) -> Shapes:
         """A list of all the shapes added to this space
 
@@ -280,12 +280,12 @@ class Space(PickleMixin):
         """
         return Shapes(self, self._shapes.values())
 
-    @sk.lazy
+    @property
     def bodies(self) -> Bodies:
         """A list of the bodies added to this space"""
         return Bodies(self, self._bodies)
 
-    @sk.lazy
+    @property
     def constraints(self) -> Constraints:
         """A list of the constraints added to this space"""
         return Constraints(self, self._constraints)
@@ -308,7 +308,7 @@ class Space(PickleMixin):
         """
         Total kinetic energy of dynamic bodies.
         """
-        bodies = self.filter_bodies(body_type=Body.DYNAMIC)
+        bodies = self.bodies.filter(body_type=Body.DYNAMIC)
         return sum(b.kinetic_energy for b in bodies)
 
     @property
@@ -316,7 +316,7 @@ class Space(PickleMixin):
         """
         Potential energy of dynamic bodies due to gravity.
         """
-        bodies = self.filter_bodies(body_type=Body.DYNAMIC)
+        bodies = self.bodies.filter(body_type=Body.DYNAMIC)
         return sum(b.gravitational_energy for b in bodies)
 
     @property
@@ -349,7 +349,7 @@ class Space(PickleMixin):
         """
         m_acc = 0.0
         pos_m_acc = Vec2d(0, 0)
-        for o in self.filter_bodies(body_type=Body.DYNAMIC):
+        for o in self.bodies.filter(body_type=Body.DYNAMIC):
             m_acc += o.mass
             pos_m_acc += o.mass * o.local_to_world(o.center_of_gravity)
         return pos_m_acc / m_acc
@@ -360,7 +360,7 @@ class Space(PickleMixin):
         Total Linear momentum assigned to dynamic objects.
         """
         momentum = Vec2d(0, 0)
-        for o in self.filter_bodies(body_type=Body.DYNAMIC):
+        for o in self.bodies.filter(body_type=Body.DYNAMIC):
             momentum += o.mass * o.velocity
         return momentum
 
@@ -369,8 +369,8 @@ class Space(PickleMixin):
         """
         Total angular momentum assigned to dynamic objects.
         """
-        momentum = 0
-        for o in self.filter_bodies(body_type=Body.DYNAMIC):
+        momentum = 0.0
+        for o in self.bodies.filter(body_type=Body.DYNAMIC):
             momentum += o.moment * o.angular_velocity
             momentum += o.local_to_world(o.center_of_gravity).cross(o.velocity)
         return momentum
@@ -461,14 +461,27 @@ class Space(PickleMixin):
                 handler = self.wildcard_collision_handler(k)
             handler.update(data)
 
-    def _iter_bodies(self) -> Iterator["Body"]:
-        return iter(self._bodies)
+    def _create_shape(self, cls, args, kwargs):
+        space = kwargs.pop("space", self)
 
-    def _iter_shapes(self) -> Iterator["Shape"]:
-        return iter(self._shapes.values())
+        try:
+            body = kwargs.pop("body")
+        except KeyError:
+            body_cls = SHAPE_TO_BODY[cls]
+            body = body_cls(*args, **kwargs)
+        else:
+            # noinspection PyProtectedMember
+            opts = Body._extract_options(kwargs)
+            if opts:
+                raise TypeError(f"cannot set parameter to body: {set(opts)}")
+            if body == "static_body":
+                body = self.static_body
 
-    def _iter_constraints(self) -> Iterator["Constraint"]:
-        return iter(self._constraints)
+        if space is self:
+            self.add(body)
+        elif space is not None:
+            raise ValueError(f"cannot add to a different space: {space!r}")
+        return body
 
     @contextmanager
     def locked(self):
@@ -541,7 +554,6 @@ class Space(PickleMixin):
         if not objs:
             return
 
-        ids = {id(obj): obj for obj in objs}
         if self._locked:
             self._remove_later.update(objs)
             return self
@@ -1061,6 +1073,7 @@ class Space(PickleMixin):
         else:
             # We need to hold h until the end of cpSpaceDebugDraw to prevent GC
             cffi = get_cffi_ref(options)
+            # noinspection PyUnusedLocal
             cffi.data = ptr = ffi.new_handle(self)
             with options:
                 cp.cpSpaceDebugDraw(self._cffi_ref, cffi)

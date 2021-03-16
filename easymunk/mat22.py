@@ -203,7 +203,7 @@ class Mat22(NamedTuple):
             return self.d
         raise IndexError(idx)
 
-    def replace(self, **kwargs):
+    def copy(self, **kwargs):
         """
         Replace coordinate of matrix.
         """

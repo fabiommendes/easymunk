@@ -100,16 +100,17 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin):
     useful for simplifying your code by allowing different parts of your
     static geometry to be initialized or moved separately.
     """
-
     _pickle_args = "mass", "moment", "body_type"
     _pickle_kwargs = [
+        # Arguments not included in init_args
         "force",
+        "torque",
+        # Init args arguments
         "angle",
         "position",
         "center_of_gravity",
         "velocity",
         "angular_velocity",
-        "torque",
     ]
     _pickle_meta_hide = {
         "_cffi_ref",
@@ -125,7 +126,7 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin):
         "constraints",
         "is_sleeping",
     }
-    _init_kwargs = {*_pickle_args, *_pickle_kwargs, "space"}
+    _init_kwargs = {*_pickle_args, *_pickle_kwargs[2:], "space"}
     _position_func_base: Optional[PositionFunc] = None  # For pickle
     _velocity_func_base: Optional[VelocityFunc] = None  # For pickle
     _id_counter = 1
@@ -154,6 +155,17 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin):
         correction process.
         """
         lib.cpBodyUpdatePosition(body._cffi_ref, dt)
+
+    @classmethod
+    def _extract_options(cls, kwargs):
+        """
+        Extract init keyword args mutating dictionary and return those values.
+        """
+        opts = {}
+        for k in cls._init_kwargs:
+            if k in kwargs:
+                opts[k] = kwargs.pop(k)
+        return opts
 
     mass: float
     mass = property(  # type: ignore
@@ -273,13 +285,12 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin):
         
         Example of a callback that sets gravity to zero for a object.
 
-        >>> import pymunk
-        >>> space = easymunk.Space()
+        >>> space = mk.Space()
         >>> space.gravity = 0, 10
-        >>> body = easymunk.Body(1,2)
+        >>> body = mk.Body(1,2)
         >>> space.add(body)
         >>> def zero_gravity(body, gravity, damping, dt):
-        ...     easymunk.Body.update_velocity(body, (0,0), damping, dt)
+        ...     mk.Body.update_velocity(body, (0,0), damping, dt)
         ... 
         >>> body.velocity_func = zero_gravity
         >>> space.step(1)
@@ -290,10 +301,10 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin):
         Example of a callback that limits the velocity:
 
         >>> import pymunk
-        >>> body = easymunk.Body(1,2)
+        >>> body = mk.Body(1, 2)
         >>> def limit_velocity(body, gravity, damping, dt):
         ...     max_velocity = 1000
-        ...     easymunk.Body.update_velocity(body, gravity, damping, dt)
+        ...     mk.Body.update_velocity(body, gravity, damping, dt)
         ...     l = body.velocity.length
         ...     if l > max_velocity:
         ...         scale = max_velocity / l
@@ -554,15 +565,6 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin):
             if not s.sensor:
                 yield s.bb
 
-    def _iter_constraints(self) -> Iterator["Constraint"]:
-        yield from self._constraints
-
-    def _iter_shapes(self) -> Iterator["Shape"]:
-        yield from self._shapes
-
-    def _iter_bodies(self) -> Iterator["Body"]:
-        yield self
-
     def _set_id(self) -> None:
         lib.cpBodySetUserData(
             self._cffi_ref, ffi.cast("cpDataPointer", Body._id_counter)
@@ -807,10 +809,7 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin):
             space.reindex_shapes_for_body(self)
         return self
 
-    def copy(self):
-        return self.prepare()
-
-    def prepare(self, **kwargs):
+    def copy(self, **kwargs):
         state = self.__getstate__()
         new = object.__new__(type(self))
         new.__setstate__(state)
@@ -852,14 +851,8 @@ class Body(MakeShapeMixin, PickleMixin, HasBBMixin):
         """
         Rotate body by angle.
         """
-        # if not angle:
-        #     return self
-
-        print(self.position, self.cache_bb())
-        # print(self.center_of_gravity, self.position)
         if axis is not None:
             center = self.axis(axis)
-            print("center:", center)
             self.position += center.rotated(angle) - center
         self.angle += angle
         return self
@@ -970,13 +963,6 @@ class BodyShape(Body):
     shapes_collide = sk.delegate_to("shape")
     body: "Body" = property(lambda self: self)
     radius_of_gyration_sqr = sk.delegate_to("shape")
-
-    def _extract_options(self, kwargs):
-        opts = {}
-        for k in self._init_kwargs:
-            if k in kwargs:
-                opts[k] = kwargs.pop(k)
-        return opts
 
     def _post_init(self):
         if (
